@@ -3,13 +3,17 @@
 #include "QFileDialog"
 #include "QDebug"
 
-soilInferenceFromSamples::soilInferenceFromSamples(QWidget *parent) :
+soilInferenceFromSamples::soilInferenceFromSamples(SoLIMProject project, QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::soilInferenceFromSamples)
-{
+    ui(new Ui::soilInferenceFromSamples),
+    proj(project) {
     ui->setupUi(this);
+    for (int i=0;i<proj.layernames.size();i++){
+        ui->Layers_comboBox->addItem(proj.layernames[i].c_str());
+    }
     ui->RAMEfficient_medium_rbtn->setChecked(TRUE);
     ui->progressBar->setVisible(FALSE);
+    ui->CovariateFiles_tableWidget->clear();
     ui->CovariateFiles_tableWidget->setColumnCount(3);
     ui->CovariateFiles_tableWidget->setHorizontalHeaderItem(0,new QTableWidgetItem("File Name"));
     ui->CovariateFiles_tableWidget->setHorizontalHeaderItem(1,new QTableWidgetItem("Datatype"));
@@ -19,6 +23,7 @@ soilInferenceFromSamples::soilInferenceFromSamples(QWidget *parent) :
 
 soilInferenceFromSamples::~soilInferenceFromSamples()
 {
+//    ui->CovariateFiles_tableWidget->clear();
     delete ui;
 }
 
@@ -27,7 +32,7 @@ void soilInferenceFromSamples::on_SampleFileRead_btn_clicked()
     QString samplesFileName = QFileDialog::getOpenFileName(this,
                                                            tr("Open samples file"),
                                                            "./",
-                                                           tr("Sample files(*.csv *.txt)"));
+                                                           tr("Sample file(*.csv *.txt)"));
     ui->SampleFileName_lineEdit->setText(samplesFileName);
     QFile sampleFile(samplesFileName);
     if(!sampleFile.open(QIODevice::ReadOnly))
@@ -41,10 +46,34 @@ void soilInferenceFromSamples::on_SampleFileRead_btn_clicked()
 
 void soilInferenceFromSamples::on_CovariateFileRead_btn_clicked()
 {
+    QString layername = ui->Layers_comboBox->currentText();
+    string filename = "";
+    for(int i = 0;i<proj.layernames.size();i++){
+        if(layername.compare(proj.layernames[i].c_str())==0){
+            filename = proj.filenames[i];
+        }
+    }
+    ui->CovariateFiles_tableWidget->insertRow(ui->CovariateFiles_tableWidget->rowCount());
+    ui->CovariateFiles_tableWidget->setItem(ui->CovariateFiles_tableWidget->rowCount()-1,
+                                            0,
+                                            new QTableWidgetItem(filename.c_str()));
+    QComboBox *datatype = new QComboBox();
+    datatype->addItem("CONTINUOUS");
+    datatype->addItem("CATEGORICAL");
+    ui->CovariateFiles_tableWidget->setCellWidget(ui->CovariateFiles_tableWidget->rowCount()-1,
+                                            1,
+                                            datatype);
+    ui->CovariateFiles_tableWidget->setItem(ui->CovariateFiles_tableWidget->rowCount()-1,
+                                            2,
+                                            new QTableWidgetItem(layername));
+}
+
+void soilInferenceFromSamples::on_CovariateFileNew_btn_clicked()
+{
     QString covariateName = QFileDialog::getOpenFileName(this,
                                                            tr("Open environmental covariate file"),
                                                            "./",
-                                                           tr("Sample files(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
+                                                           tr("Covariate file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
     ui->CovariateFiles_tableWidget->insertRow(ui->CovariateFiles_tableWidget->rowCount());
     ui->CovariateFiles_tableWidget->setItem(ui->CovariateFiles_tableWidget->rowCount()-1,
                                             0,
@@ -68,11 +97,14 @@ void soilInferenceFromSamples::on_CovariateFileRead_btn_clicked()
 
 void soilInferenceFromSamples::on_CovariateFileDelete_btn_clicked()
 {
-    ui->CovariateFiles_listWidget->takeItem(ui->CovariateFiles_listWidget->currentRow());
     ui->CovariateFiles_tableWidget->removeRow(ui->CovariateFiles_tableWidget->currentRow());
 }
 void soilInferenceFromSamples::on_InferFromSmaples_OK_btn_clicked()
 {
+    setWindowFlags(Qt::Window
+        | Qt::WindowMinimizeButtonHint
+        | Qt::WindowMaximizeButtonHint);
+    show();
     string sampleFile = ui->SampleFileName_lineEdit->text().toStdString();
     vector<string> envFileNames;
     vector<string> datatypes;
@@ -101,6 +133,12 @@ void soilInferenceFromSamples::on_InferFromSmaples_OK_btn_clicked()
     ui->InferFromSmaples_OK_btn->setEnabled(false);
     solim::Inference::iPSMInferSoil(envFileNames,datatypes,layernames,threshold,sampleFile,
                                     targetName,idName,outSoil,outUncer,ramEfficient,ui->progressBar);
+//    setWindowFlags(Qt::Window
+//        | Qt::WindowMinimizeButtonHint
+//        | Qt::WindowMaximizeButtonHint
+//        | Qt::WindowCloseButtonHint);
+//    show();
+    this->close();
 }
 
 void soilInferenceFromSamples::on_buttonBox_accepted(){}
@@ -110,7 +148,7 @@ void soilInferenceFromSamples::on_SoilFileCreate_btn_clicked()
     QString soilFile = QFileDialog::getSaveFileName(this,
                                                     tr("Save output soil file"),
                                                     "./",
-                                                    tr("Sample files(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
+                                                    tr("Output soil file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
     ui->OutputSoilFile_lineEdit->setText(soilFile);
 }
 
@@ -119,7 +157,8 @@ void soilInferenceFromSamples::on_UncerFileCreate_btn_clicked()
     QString uncerFile = QFileDialog::getSaveFileName(this,
                                                  tr("Save output uncertainty file"),
                                                  "./",
-                                                 tr("Sample files(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
+                                                 tr("Output uncertainty file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
     ui->OutputUncerFile_lineEdit->setText(uncerFile);
 
 }
+

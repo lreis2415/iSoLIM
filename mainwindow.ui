@@ -35,11 +35,6 @@
           <string>data details</string>
          </property>
         </widget>
-        <widget class="QPlainTextEdit" name="plainTextEdit_2">
-         <property name="plainText">
-          <string>computation status</string>
-         </property>
-        </widget>
        </widget>
       </widget>
      </widget>
@@ -61,6 +56,7 @@
     </property>
     <addaction name="actionNew"/>
     <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
    </widget>
    <widget class="QMenu" name="menuCovariates">
     <property name="title">
@@ -112,6 +108,11 @@
   <action name="actionOpen">
    <property name="text">
     <string>Open</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save</string>
    </property>
   </action>
  </widget>

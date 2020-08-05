@@ -92,7 +92,7 @@ private:
     int dataEndLoc;
 
 public:
-    BaseIO(string filename, FileDataType newFileDataType);
+    BaseIO(string filename, FileDataType newFileDataType = FLOAT_TYPE);
     ~BaseIO();
     //void parallelInit(MPI_Datatype MPIt);
     void blockInit(double divide);
@@ -462,6 +462,7 @@ namespace solim {
         double getProperty(string propName);
         void writeRules(string fileName);
         void writePrototype(string fileName);
+        TiXmlElement* writePrototypeXmlElement();
         void readPrototype(string filename);
         double calcSimi(EnvUnit *e);
         double calcSimi_preChecked(EnvUnit *e);

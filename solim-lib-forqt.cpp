@@ -1481,6 +1481,57 @@ namespace solim {
         delete doc;
     }
 
+    TiXmlElement* Prototype::writePrototypeXmlElement() {
+        TiXmlElement *root_node = new TiXmlElement("Prototype");
+        TiXmlElement *curves_node = new TiXmlElement("CurveLib");
+        root_node->LinkEndChild(curves_node);
+
+        for (auto it = envConditions.begin(); it != envConditions.end(); ++it) {
+            // add envAttri to curveLib
+            TiXmlElement *envAttri_node = new TiXmlElement("EnvAttri");
+            envAttri_node->SetAttribute("Name", (*it).covariateName.c_str());
+            curves_node->LinkEndChild(envAttri_node);
+
+            // add curve to envAttri
+            TiXmlElement *curve_node = new TiXmlElement("Curve");
+            envAttri_node->LinkEndChild(curve_node);
+
+            // add nodenum to curve
+            TiXmlElement *nodeNum_node = new TiXmlElement("NodeNum");
+            curve_node->LinkEndChild(nodeNum_node);
+            TiXmlText *nodeNum_text = new TiXmlText(to_string((*it).getKnotNum()).c_str());
+            nodeNum_node->LinkEndChild(nodeNum_text);
+
+            TiXmlElement *datatype_node = new TiXmlElement("DataType");
+            curve_node->LinkEndChild(datatype_node);
+            TiXmlText *datatype_text = new TiXmlText(getDatatypeInString((*it).dataType).c_str());
+            datatype_node->LinkEndChild(datatype_text);
+
+
+            // add coordinates to curve
+            TiXmlElement *coords_node = new TiXmlElement("Coordinates");
+            curve_node->LinkEndChild(coords_node);
+            TiXmlText *coords_text = new TiXmlText((*it).getCoords().c_str());
+            coords_node->LinkEndChild(coords_text);
+        }
+
+        TiXmlElement *props_node = new TiXmlElement("PropertyLib");
+        root_node->LinkEndChild(props_node);
+        for (auto it = properties.begin(); it != properties.end(); ++it) {
+            // add soil property to propertyLib
+            TiXmlElement *prop_node = new TiXmlElement("Property");
+            prop_node->SetAttribute("Name", (*it).propertyName.c_str());
+            props_node->LinkEndChild(prop_node);
+
+            TiXmlText *propValue_text = new TiXmlText(to_string((*it).propertyValue).c_str());
+            prop_node->LinkEndChild(propValue_text);
+
+        }
+
+        return root_node;
+    }
+
+
     void Prototype::sortEnvCons(vector<string> layernames) {
         if (layernames.size() != envConditionSize)
             throw invalid_argument("Error: inconsistant rule number and layer number");
@@ -1929,7 +1980,7 @@ namespace solim {
             for (int k = 0; k < eds->Layers.size(); ++k) {
                 eds->Layers.at(k)->ReadByBlock(i);
             }
-#pragma omp parallel for schedule(static) num_threads(4)
+#pragma omp parallel for schedule(dynamic)
             for (int n = 0; n < nx*ny; ++n) {
                 // for each unit in the block, calculate their predicted value and uncertainty
                 bool validEnvUnitFlag = TRUE;

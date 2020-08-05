@@ -2,7 +2,7 @@
 #define SOILINFERENCEFROMSAMPLES_H
 
 #include <QDialog>
-#include "solim-lib-forqt.h"
+#include "project.h"
 
 namespace Ui {
 class soilInferenceFromSamples;
@@ -13,7 +13,7 @@ class soilInferenceFromSamples : public QDialog
     Q_OBJECT
 
 public:
-    explicit soilInferenceFromSamples(QWidget *parent = nullptr);
+    explicit soilInferenceFromSamples(SoLIMProject project, QWidget *parent = nullptr);
     ~soilInferenceFromSamples();
 
 private slots:
@@ -31,8 +31,13 @@ private slots:
 
     void on_UncerFileCreate_btn_clicked();
 
+    void on_CovariateFileNew_btn_clicked();
+
 private:
     Ui::soilInferenceFromSamples *ui;
+    SoLIMProject proj;
+public:
+    void setProj(SoLIMProject project){proj=project;}
 };
 
 #endif // SOILINFERENCEFROMSAMPLES_H

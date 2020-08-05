@@ -18,6 +18,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
+    projectnew.cpp \
     soilinferencefromsamples.cpp \
     solim-lib-forqt.cpp \
     third_party/tinystr.cpp \
@@ -27,6 +28,8 @@ SOURCES += \
 
 HEADERS += \
     mainwindow.h \
+    project.h \
+    projectnew.h \
     soilinferencefromsamples.h \
     solim-lib-forQt_global.h \
     solim-lib-forqt.h \
@@ -35,6 +38,7 @@ HEADERS += \
 
 FORMS += \
     mainwindow.ui \
+    projectnew.ui \
     soilinferencefromsamples.ui
 
 # Default rules for deployment.
