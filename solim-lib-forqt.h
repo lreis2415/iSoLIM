@@ -192,8 +192,10 @@ namespace solim {
     enum PrototypeSource {
         SAMPLE,
         EXPERT,
-        MAP
+        MAP,
+        UNKNOWN
     };
+    static const char* PrototypeSource_str[] = {"SAMPLE","EXPERT","MAP","UNKNOW"};
     enum ExceptionType {
         OCCURRENCE,
         EXCLUSION
@@ -201,7 +203,7 @@ namespace solim {
     struct SoilProperty {
         string propertyName;
         double propertyValue;
-        //DataTypeEnum soilPropertyType;
+        DataTypeEnum soilPropertyType;
     };
     static void ParseStr(string str, char c, vector<string>& tokens) {
         unsigned int posL = 0;
@@ -216,7 +218,7 @@ namespace solim {
 
     static DataTypeEnum getDatatypeFromString(string sDatatype) {
         for (int i = 0; i<sDatatype.length(); i++)
-            putchar(toupper(sDatatype[i]));
+            sDatatype[i] = toupper(sDatatype[i]);
 
         if (sDatatype == "CATEGORICAL")
             return CATEGORICAL;
@@ -371,7 +373,7 @@ namespace solim {
     public:
         EnvDataset();
 
-        EnvDataset(vector<string> &envLayerFilenames, vector<string> &datatypes, vector<string>& layernames, double ramEfficent);
+        EnvDataset(vector<string> &envLayerFilenames, vector<string> &datatypes, vector<string>& layernames, double ramEfficent=0.25);
 
         ~EnvDataset();
 
@@ -414,6 +416,8 @@ namespace solim {
     public:
         string covariateName;
         DataTypeEnum dataType;
+        double typicalValue;
+        PrototypeSource source;
     private:
         vector <double> vecKnotX;
         vector <double> vecKnotY;
@@ -424,7 +428,7 @@ namespace solim {
     public:
         Curve();
         Curve(string covName, DataTypeEnum type);
-        Curve(string covName, DataTypeEnum type, int knotNum, string coords);
+        Curve(string covName, DataTypeEnum type, int knotNum, string coords,string source="UNKNOWN");
         Curve(string covName, DataTypeEnum type, vector<double> *x, vector<double> *y);	// freehand rule
         Curve(string covName, double lowUnity, double highUnity, double lowCross, double highCross, double lowRange, double highRange, CurveTypeEnum curveType);	// range rule
         Curve(string covName, double xcoord, double ycoord, EnvLayer *layer);	// point rule
@@ -443,22 +447,22 @@ namespace solim {
 
     class Prototype {
     public:
+        string prototypeBaseName;
         string prototypeID;
         vector<Curve> envConditions;
         vector<SoilProperty> properties;
     public:
         double uncertainty;
         int envConditionSize;
-        PrototypeSource source;
     private:
         bool envConsIsSorted;
 
     public:
         Prototype();
-        static vector<Prototype> *getPrototypesFromSample(string filename, EnvDataset* eds);
+        static vector<Prototype> *getPrototypesFromSample(string filename, EnvDataset* eds, string prototypeBaseName="", string xfield="x", string yfield="y");
         void addConditions(string filename);
         void addConditions(Curve con) { envConditions.push_back(con); }
-        void addProperties(string propertyName, double propertyValue/*, DataTypeEnum type*/);
+        void addProperties(string propertyName, double propertyValue, DataTypeEnum type=CONTINUOUS);
         double getProperty(string propName);
         void writeRules(string fileName);
         void writePrototype(string fileName);

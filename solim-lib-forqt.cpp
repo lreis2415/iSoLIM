@@ -614,6 +614,7 @@ namespace solim {
 
     EnvLayer::~EnvLayer(void) {
         delete[]EnvData;
+        delete baseRef;
     }
 
     void EnvLayer::WriteByBlock(BaseIO *outFile, int blockRank) {
@@ -670,10 +671,15 @@ namespace solim {
     }
 
     EnvDataset::~EnvDataset() {
+        delete LayerRef;
+        RemoveAllLayers();
     }
 
 
     void EnvDataset::RemoveAllLayers() {
+        for(EnvLayer* layer : Layers){
+            delete layer;
+        }
         Layers.clear();
     }
 
@@ -891,6 +897,8 @@ namespace solim {
         vecDDY.clear();
         vecS.clear();
         iKnotNum = 0;
+        typicalValue = NODATA;
+        source = UNKNOWN;
     }
 
     Curve::Curve(string covName, DataTypeEnum type, vector<double> *x, vector<double> *y) {
@@ -900,8 +908,16 @@ namespace solim {
         vecKnotX = *x;
         vecKnotY = *y;
         iKnotNum = vecKnotX.size();
+        source = UNKNOWN;
+        typicalValue = NODATA;
         if (iKnotNum != vecKnotY.size()) {
             throw invalid_argument("Error in knot coordinates");
+        }
+        for(int i = 0;i<iKnotNum;i++){
+            if(fabs(vecKnotY[i]-1)<VERY_SMALL){
+                typicalValue = vecKnotX[i];
+                break;
+            }
         }
         if (dataType == CONTINUOUS) {
             bubbleSort();
@@ -918,10 +934,12 @@ namespace solim {
         vecDDY.clear();
         vecS.clear();
         iKnotNum = 0;
+        typicalValue = NODATA;
+        source = UNKNOWN;
 
     }
 
-    Curve::Curve(string covName, DataTypeEnum type, int knotNum, string coords) {
+    Curve::Curve(string covName, DataTypeEnum type, int knotNum, string coords, string source_str) {
         // knowledge from experts: word rule
         covariateName = covName;
         dataType = type;
@@ -931,6 +949,12 @@ namespace solim {
         vecDDY.clear();
         vecS.clear();
         iKnotNum = knotNum;
+        if(source_str=="SAMPLE")
+            source = SAMPLE;
+        else if(source_str=="EXPERT")
+            source = EXPERT;
+        else if(source_str=="MAP")
+            source = MAP;
 
         vector<string> xycoord;
         ParseStr(coords, ',', xycoord);
@@ -945,6 +969,8 @@ namespace solim {
                 throw invalid_argument("invalid coordinate description.");
             vecKnotX.push_back(atof(coord[0].c_str()));
             vecKnotY.push_back(atof(coord[1].c_str()));
+            if(fabs(atof(coord[1].c_str())-1)<VERY_SMALL)
+                typicalValue = atof(coord[0].c_str());
         }
         if (type == CATEGORICAL || knotNum < 1) return;
         bubbleSort();
@@ -954,6 +980,7 @@ namespace solim {
     Curve::Curve(string covName, double lowUnity, double highUnity, double lowCross, double highCross, double lowRange, double highRange, CurveTypeEnum curveType) {
         // knowledge from experts: range rule
         covariateName = covName;
+        source = EXPERT;
         dataType = CONTINUOUS;
         vecKnotX.clear();
         vecKnotY.clear();
@@ -971,6 +998,7 @@ namespace solim {
             addKnot(highUnity, 1);
             addKnot(highCross, 0.5);
             addKnot(highRange, exp(pow(fabs(highRange - highUnity) / (highUnity - highCross), 2)*log(0.5)));
+            typicalValue = (highUnity+lowUnity)*0.5;
         }
         else if (curveType == S_SHAPED) {
             highUnity = (lowUnity + highRange) / 2;
@@ -979,14 +1007,16 @@ namespace solim {
             addKnot(lowUnity, 1);
             addKnot(highUnity, 1);
             addKnot(highRange, 1);
+            typicalValue = highUnity;
         }
-        else if (curveType == BELL_SHAPED) {
+        else if (curveType == Z_SHAPED) {
             lowUnity = (highUnity + lowRange) / 2;
             addKnot(lowRange, 1);
             addKnot(lowUnity, 1);
             addKnot(highUnity, 1);
             addKnot(highCross, 0.5);
             addKnot(highRange, exp(pow(fabs(highRange - highUnity) / (highUnity - highCross), 2)*log(0.5)));
+            typicalValue = lowUnity;
         }
         bubbleSort();
         calcSpline();
@@ -995,6 +1025,7 @@ namespace solim {
     Curve::Curve(string covName, double x, double y, EnvLayer *layer) {
         // knowledge from sample
         // knowledge from experts: point rule
+        source = SAMPLE;
         covariateName = covName;
         dataType = layer->DataType;
         iKnotNum = 0;
@@ -1006,9 +1037,9 @@ namespace solim {
         int row, col;
         int halfKnotNum = 3;
         layer->baseRef->geoToGlobalXY(x, y, col, row);
-        double centerValue = layer->baseRef->getValue(col, row);
+        typicalValue = layer->baseRef->getValue(col, row);
         if (dataType == CATEGORICAL) {
-            addKnot(centerValue, 1);
+            addKnot(typicalValue, 1);
             return;
         }
         double dataMin = layer->Data_Min;
@@ -1027,7 +1058,7 @@ namespace solim {
                 if (fabs(value - layer->NoDataValue) < VERY_SMALL || value<NODATA) continue;
                 sum += value;
                 squareSum += value*value;
-                SDjSquareSum += pow(value - centerValue, 2);
+                SDjSquareSum += pow(value - typicalValue, 2);
                 ++cellNum;
             }
         }
@@ -1035,20 +1066,20 @@ namespace solim {
         double SDSquare = squareSum / (double)cellNum - mean * mean;
         double SDjSquare = SDjSquareSum / (double)cellNum;
 
-        addKnot(dataMin, exp(-pow(dataMin - centerValue, 2) / 2.0 / (SDSquare*SDSquare / SDjSquare)));
+        addKnot(dataMin, exp(-pow(dataMin - typicalValue, 2) / 2.0 / (SDSquare*SDSquare / SDjSquare)));
         for (int i = 0; i < halfKnotNum; ++i) {
-            double knotX = dataMin + (centerValue - dataMin) / (double)halfKnotNum*i;
-            double knotY = exp(-pow(knotX - centerValue, 2) / 2.0 / pow(SDSquare*SDSquare / SDjSquare, 2));
+            double knotX = dataMin + (typicalValue - dataMin) / (double)halfKnotNum*i;
+            double knotY = exp(-pow(knotX - typicalValue, 2) / 2.0 / pow(SDSquare*SDSquare / SDjSquare, 2));
             addKnot(knotX, knotY);
         }
-        addKnot(centerValue, 1);
+        addKnot(typicalValue, 1);
 
         for (int i = 0; i < halfKnotNum; ++i) {
-            double knotX = centerValue + (dataMax - centerValue) / (double)halfKnotNum * i;
-            double knotY = exp(-pow(knotX - centerValue, 2) / 2.0 / (SDSquare*SDSquare / SDjSquare));
+            double knotX = typicalValue + (dataMax - typicalValue) / (double)halfKnotNum * i;
+            double knotY = exp(-pow(knotX - typicalValue, 2) / 2.0 / (SDSquare*SDSquare / SDjSquare));
             addKnot(knotX, knotY);
         }
-        addKnot(dataMax, exp(-pow(dataMax - centerValue, 2) / 2.0 / (SDSquare*SDSquare / SDjSquare)));
+        addKnot(dataMax, exp(-pow(dataMax - typicalValue, 2) / 2.0 / (SDSquare*SDSquare / SDjSquare)));
 
         bubbleSort();
         calcSpline();
@@ -1225,10 +1256,10 @@ namespace solim {
         properties.clear();
         envConsIsSorted = false;
         envConditionSize = 0;
-        uncertainty = 0;
+        uncertainty = 0;        
     }
 
-    vector<Prototype> *Prototype::getPrototypesFromSample(string filename, EnvDataset* eds) {
+    vector<Prototype> *Prototype::getPrototypesFromSample(string filename, EnvDataset* eds, string prototypeName, string xfield, string yfield) {
         vector<Prototype> *prototypes = new vector<Prototype>;
         ifstream file(filename); // declare file stream:
         string line;
@@ -1241,12 +1272,12 @@ namespace solim {
         bool id_found = false;
         ParseStr(line, ',', names);
         for (int i = 0; i < names.size(); ++i) {
-            if (names[i] == "X" || names[i] == "x") {
+            if (names[i] == "X" || names[i] == "x"||strcmp(names[i].c_str(),xfield.c_str())==0) {
                 pos_X = i;
                 break;
             }
         }
-        for (int i = 0; i < names.size(); ++i) {
+        for (int i = 0; i < names.size(); ++i||strcmp(names[i].c_str(),yfield.c_str())==0) {
             if (names[i] == "Y" || names[i] == "y") {
                 pos_Y = i;
                 break;
@@ -1280,7 +1311,6 @@ namespace solim {
             }
             if (e != NULL && (!nullSample)) {
                 Prototype pt;
-                pt.source = SAMPLE;
                 for (int i = 0; i < eds->Layers.size(); ++i) {
                     EnvLayer *layer = eds->Layers[i];
                     Curve *condition = new Curve(layer->LayerName, x, y, layer);
@@ -1291,7 +1321,9 @@ namespace solim {
                     if (i == pos_X || i == pos_Y || i == pos_idName) continue;
                     pt.addProperties(names[i], atof(values[i].c_str()));
                 }
-                pt.prototypeID = values[pos_idName].c_str();
+                pt.prototypeBaseName = prototypeName;
+                if(id_found)
+                    pt.prototypeID = values[pos_idName];
                 pt.uncertainty = 0;
                 prototypes->push_back(pt);
             }
@@ -1355,11 +1387,11 @@ namespace solim {
         }
     }
 
-    void Prototype::addProperties(string propertyName, double propertyValue/*, DataTypeEnum type*/) {
+    void Prototype::addProperties(string propertyName, double propertyValue, DataTypeEnum type) {
         SoilProperty sp;
         sp.propertyName = propertyName;
         sp.propertyValue = propertyValue;
-        //sp.soilPropertyType = type;
+        sp.soilPropertyType = type;
         properties.push_back(sp);
     }
 
@@ -1483,6 +1515,8 @@ namespace solim {
 
     TiXmlElement* Prototype::writePrototypeXmlElement() {
         TiXmlElement *root_node = new TiXmlElement("Prototype");
+        root_node->SetAttribute("BaseName", prototypeBaseName.c_str());
+        root_node->SetAttribute("ID",prototypeID.c_str());
         TiXmlElement *curves_node = new TiXmlElement("CurveLib");
         root_node->LinkEndChild(curves_node);
 
@@ -1491,9 +1525,15 @@ namespace solim {
             TiXmlElement *envAttri_node = new TiXmlElement("EnvAttri");
             envAttri_node->SetAttribute("Name", (*it).covariateName.c_str());
             curves_node->LinkEndChild(envAttri_node);
+            // add typical value
+            TiXmlElement *typicalV_node = new TiXmlElement("TypicalValue");
+            envAttri_node->LinkEndChild(typicalV_node);
+            TiXmlText *typicalV_text = new TiXmlText(to_string((*it).typicalValue).c_str());
+            typicalV_node->LinkEndChild(typicalV_text);
 
             // add curve to envAttri
             TiXmlElement *curve_node = new TiXmlElement("Curve");
+            curve_node->SetAttribute("Source",PrototypeSource_str[(*it).source]);
             envAttri_node->LinkEndChild(curve_node);
 
             // add nodenum to curve
@@ -1521,6 +1561,7 @@ namespace solim {
             // add soil property to propertyLib
             TiXmlElement *prop_node = new TiXmlElement("Property");
             prop_node->SetAttribute("Name", (*it).propertyName.c_str());
+            prop_node->SetAttribute("Type", getDatatypeInString((*it).soilPropertyType).c_str());
             props_node->LinkEndChild(prop_node);
 
             TiXmlText *propValue_text = new TiXmlText(to_string((*it).propertyValue).c_str());

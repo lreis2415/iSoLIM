@@ -19,6 +19,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     projectnew.cpp \
+    prototypefromsamples.cpp \
     soilinferencefromsamples.cpp \
     solim-lib-forqt.cpp \
     third_party/tinystr.cpp \
@@ -30,6 +31,7 @@ HEADERS += \
     mainwindow.h \
     project.h \
     projectnew.h \
+    prototypefromsamples.h \
     soilinferencefromsamples.h \
     solim-lib-forQt_global.h \
     solim-lib-forqt.h \
@@ -39,6 +41,7 @@ HEADERS += \
 FORMS += \
     mainwindow.ui \
     projectnew.ui \
+    prototypefromsamples.ui \
     soilinferencefromsamples.ui
 
 # Default rules for deployment.

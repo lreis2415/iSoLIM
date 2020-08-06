@@ -9,5 +9,14 @@ public:
     vector<string> layernames;
     vector<solim::Prototype> prototypes;
     vector<solim::Exception> exceptions;
+public:
+    SoLIMProject(){
+        projName = "";
+        workingDiret = "";
+        filenames.clear();
+        layernames.clear();
+        prototypes.clear();
+        exceptions.clear();
+    }
 };
 #endif // PROJECT_H

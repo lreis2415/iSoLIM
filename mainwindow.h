@@ -5,6 +5,7 @@
 #include <QStandardItemModel>
 #include "soilinferencefromsamples.h"
 #include "project.h"
+#include "prototypefromsamples.h"
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -19,29 +20,26 @@ public:
     ~MainWindow();
 
     QStandardItemModel* model;
-    QMenu* gisDataMenu;
-    QAction *addLayer;
     QMenu* prototypeMenu;
     QAction *addPrototype;
     QAction *addExclusion;
     QAction *addOccurrence;
-    QStandardItem *gisDataChild;
+    QStandardItem *resultChild;
     QStandardItem *prototypeChild;
-    SoLIMProject proj;
+    SoLIMProject *proj;
 private slots:
     void onSoilInferenceFromSample();
     void onProjectNew();
     void onProjectSave();
     void onProjectOpen();
-    void onAddLayer();
     void onAddPrototype();
-    void onAddExclusion();
-    void onAddOccurrence();
     void onCustomContextMenu(const QPoint &point);
+    void onGetPrototype();
 
 private:
     Ui::MainWindow *ui;
     soilInferenceFromSamples *inferFromSamples;
+    prototypeFromSamples *getPrototype;
     string projectFileName;
     void drawLayer(string filename);
 };
