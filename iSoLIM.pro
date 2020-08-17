@@ -16,11 +16,10 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    inference.cpp \
     main.cpp \
     mainwindow.cpp \
-    projectnew.cpp \
     prototypefromsamples.cpp \
-    soilinferencefromsamples.cpp \
     solim-lib-forqt.cpp \
     third_party/tinystr.cpp \
     third_party/tinyxml.cpp \
@@ -28,21 +27,19 @@ SOURCES += \
     third_party/tinyxmlparser.cpp
 
 HEADERS += \
+    inference.h \
     mainwindow.h \
     project.h \
-    projectnew.h \
     prototypefromsamples.h \
-    soilinferencefromsamples.h \
     solim-lib-forQt_global.h \
     solim-lib-forqt.h \
     third_party/tinystr.h \
     third_party/tinyxml.h
 
 FORMS += \
+    inference.ui \
     mainwindow.ui \
-    projectnew.ui \
-    prototypefromsamples.ui \
-    soilinferencefromsamples.ui
+    prototypefromsamples.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

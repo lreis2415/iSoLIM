@@ -7,6 +7,7 @@ prototypeFromSamples::prototypeFromSamples(SoLIMProject *proj,QWidget *parent) :
 {
     ui->setupUi(this);
     project = proj;
+    ui->progress_label->setVisible(false);
     ui->covariate_tableWidget->clear();
     ui->covariate_tableWidget->setColumnCount(3);
     ui->covariate_tableWidget->setHorizontalHeaderItem(0,new QTableWidgetItem("Filename"));
@@ -65,7 +66,6 @@ void prototypeFromSamples::on_browseSampleFile_btn_clicked()
     QStringList columnNames = tempOption.at(0).split(",");
     ui->xFiled_comboBox->addItems(columnNames);
     ui->yFiled_comboBox->addItems(columnNames);
-    ui->inferredFiled_comboBox->addItems(columnNames);
     for (int i = 0;i<columnNames.size();i++){
         QString name = columnNames.at(i);
         if(name.compare("x")==0||name.compare("X")==0){
@@ -77,17 +77,45 @@ void prototypeFromSamples::on_browseSampleFile_btn_clicked()
     }
 }
 
-void prototypeFromSamples::on_buttonBox_accepted()
-{
-
+void prototypeFromSamples::updateLabel(){
+    ui->progress_label->setVisible(true);
+    ui->progress_label->setText("Reading samples ...");
+    ui->ok_btn->setDisabled(true);
 }
-
 void prototypeFromSamples::on_ok_btn_clicked()
 {
-    ui->ok_btn->setEnabled(false);
+    updateLabel();
+
+    string sampleFile = ui->sampleFile_lineEdit->text().toStdString();
+    if(sampleFile.empty()||ui->covariate_tableWidget->rowCount()==0){
+        QMessageBox warning;
+        warning.setText("Please put in sample file and/or covariate layers!");
+        warning.setStandardButtons(QMessageBox::Ok);
+        warning.exec();
+        return;
+    }
+    std::size_t first = sampleFile.find_last_of('/');
+    if (first==std::string::npos){
+        first = sampleFile.find_last_of('\\');
+    }
+    std::size_t end = sampleFile.find_last_of('.');
+    string prototypeName = sampleFile.substr(first+1,end-first-1);
+    for(int i = 0; i< project->prototypeBaseNames.size();i++){
+        if(strcmp(prototypeName.c_str(),project->prototypeBaseNames[i].c_str())==0){
+            QMessageBox warning;
+            warning.setText("The sample file has been added, cannot add samples dupplicatedly!");
+            warning.setStandardButtons(QMessageBox::Ok);
+            warning.exec();
+            ui->sampleFile_lineEdit->clear();
+            ui->xFiled_comboBox->clear();
+            ui->yFiled_comboBox->clear();
+            return;
+        }
+    }
     vector<string> envFileNames;
     vector<string> layernames;
     vector<string> datatypes;
+
     for(int i = 0; i<ui->covariate_tableWidget->rowCount();i++){
         envFileNames.push_back(ui->covariate_tableWidget->item(i,0)->text().toStdString());
         layernames.push_back(ui->covariate_tableWidget->item(i,1)->text().toStdString());
@@ -98,19 +126,27 @@ void prototypeFromSamples::on_ok_btn_clicked()
             datatypes.push_back("CONTINUOUS");
         }
     }
-    string sampleFile = ui->sampleFile_lineEdit->text().toStdString();
-    std::size_t first = sampleFile.find_last_of('/');
-    if (first==std::string::npos){
-        first = sampleFile.find_last_of('\\');
-    }
-    std::size_t end = sampleFile.find_last_of('.');
-    string prototypeName = sampleFile.substr(first+1,end-first-1);
     solim::EnvDataset *eds = new solim::EnvDataset(envFileNames,datatypes,layernames);
     vector<Prototype>* prototypes = Prototype::getPrototypesFromSample(sampleFile,eds, prototypeName,
                                                                        ui->xFiled_comboBox->currentText().toStdString(),
                                                                        ui->yFiled_comboBox->currentText().toStdString());
+    project->prototypeBaseNames.push_back(prototypeName);
     project->prototypes.insert(project->prototypes.end(),prototypes->begin(),prototypes->end());
     project->filenames.insert(project->filenames.end(),envFileNames.begin(),envFileNames.end());
     project->layernames.insert(project->layernames.end(),layernames.begin(),layernames.end());
+    project->layertypes.insert(project->layertypes.end(),datatypes.begin(),datatypes.end());
+    QFile sampleQfile(sampleFile.c_str());
+    if(!sampleQfile.open(QIODevice::ReadOnly))
+         qDebug()<<"OPEN FILE FAILED";
+    QTextStream *out = new QTextStream(&sampleQfile);
+    QStringList tempOption = out->readAll().split("\n");
+    QStringList columnNames = tempOption.at(0).split(",");
+    for(QString column:columnNames){
+        if(column.compare(ui->xFiled_comboBox->currentText())==0
+                ||column.compare(ui->yFiled_comboBox->currentText())==0
+                ||column.compare("ID",Qt::CaseInsensitive)==0)
+            continue;
+        project->propertyNames.push_back(column.toStdString());
+    }
     close();
 }

@@ -1035,7 +1035,7 @@ namespace solim {
         vecDDY.clear();
         vecS.clear();
         int row, col;
-        int halfKnotNum = 3;
+        //int halfKnotNum = 3;
         layer->baseRef->geoToGlobalXY(x, y, col, row);
         typicalValue = layer->baseRef->getValue(col, row);
         if (dataType == CATEGORICAL) {
@@ -1066,20 +1066,24 @@ namespace solim {
         double SDSquare = squareSum / (double)cellNum - mean * mean;
         double SDjSquare = SDjSquareSum / (double)cellNum;
 
-        addKnot(dataMin, exp(-pow(dataMin - typicalValue, 2) / 2.0 / (SDSquare*SDSquare / SDjSquare)));
-        for (int i = 0; i < halfKnotNum; ++i) {
-            double knotX = dataMin + (typicalValue - dataMin) / (double)halfKnotNum*i;
-            double knotY = exp(-pow(knotX - typicalValue, 2) / 2.0 / pow(SDSquare*SDSquare / SDjSquare, 2));
+        /*for (int i = 0; i < halfKnotNum; ++i) {
+            double knotX = dataMin + (typicalValue - dataMin) / (double)halfKnotNum * i;
+            double knotY = exp(-pow(knotX - typicalValue, 2) * 0.5 / SDSquare*SDSquare * SDjSquare);
             addKnot(knotX, knotY);
         }
         addKnot(typicalValue, 1);
 
         for (int i = 0; i < halfKnotNum; ++i) {
-            double knotX = typicalValue + (dataMax - typicalValue) / (double)halfKnotNum * i;
-            double knotY = exp(-pow(knotX - typicalValue, 2) / 2.0 / (SDSquare*SDSquare / SDjSquare));
+            double knotX = typicalValue + (dataMax - typicalValue) / (double)halfKnotNum * (i+1);
+            double knotY = exp(-pow(knotX - typicalValue, 2) * 0.5 / SDSquare*SDSquare * SDjSquare);
             addKnot(knotX, knotY);
-        }
-        addKnot(dataMax, exp(-pow(dataMax - typicalValue, 2) / 2.0 / (SDSquare*SDSquare / SDjSquare)));
+        }*/
+        double halfPar = SDSquare/sqrt(SDjSquare)*1.17741002251547469101;    // 1.117=sqrt(-2*ln0.5);
+        addKnot(dataMax, exp(-pow(dataMax-typicalValue,2) * 0.5/SDSquare*SDSquare * SDjSquare));
+        addKnot(typicalValue - halfPar,0.5);
+        addKnot(typicalValue,1);
+        addKnot(typicalValue + halfPar, 0.5);
+        addKnot(dataMin, exp(-pow(dataMin-typicalValue,2) * 0.5/SDSquare*SDSquare * SDjSquare));
 
         bubbleSort();
         calcSpline();
@@ -1120,8 +1124,8 @@ namespace solim {
             //cout << "Optimality calculation error: environmental value exceeds the range of spline curves";
             return -1;
         }
-        int left = 0;
-        int right = iKnotNum - 1;
+        //int left = 0;
+        //int right = iKnotNum - 1;
         int pos = -1;
         int i = 0;
         while (envValue>vecKnotX[i + 1])
@@ -2088,6 +2092,7 @@ namespace solim {
 
         }
         delete envValues;
+        delete nodata;
         delete predictedValue;
         delete uncertaintyValue;
     }

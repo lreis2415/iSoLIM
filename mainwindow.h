@@ -3,7 +3,14 @@
 
 #include <QMainWindow>
 #include <QStandardItemModel>
-#include "soilinferencefromsamples.h"
+#include <QDockWidget>
+#include <QTreeView>
+#include <QMessageBox>
+#include <QDebug>
+#include <QFileDialog>
+#include <QStandardItem>
+#include <QStandardItemModel>
+#include "inference.h"
 #include "project.h"
 #include "prototypefromsamples.h"
 QT_BEGIN_NAMESPACE
@@ -21,9 +28,12 @@ public:
 
     QStandardItemModel* model;
     QMenu* prototypeMenu;
+    QAction *prototypesFromSamples;
     QAction *addPrototype;
     QAction *addExclusion;
     QAction *addOccurrence;
+    QMenu* viewDataMenu;
+    QAction* viewData;
     QStandardItem *resultChild;
     QStandardItem *prototypeChild;
     SoLIMProject *proj;
@@ -32,15 +42,24 @@ private slots:
     void onProjectNew();
     void onProjectSave();
     void onProjectOpen();
-    void onAddPrototype();
+    void onAddPrototypeFromSamples();
     void onCustomContextMenu(const QPoint &point);
     void onGetPrototype();
+    void onInferResults();
+    void onSelectionChanged(const QItemSelection&,const QItemSelection&);
 
 private:
     Ui::MainWindow *ui;
-    soilInferenceFromSamples *inferFromSamples;
+    QTreeView *projectView;
+    QDockWidget *projectDock;
+    //soilInference *inference;
     prototypeFromSamples *getPrototype;
     string projectFileName;
     void drawLayer(string filename);
+    void drawMembershipFunction(string basename, string idname, string covName);
+    void initialProjectView();
+    bool saveWarning();
+    bool projectViewInitialized;
+    bool projectSaved;
 };
 #endif // MAINWINDOW_H

@@ -5,6 +5,8 @@
 #include <QFileDialog>
 #include <QCheckBox>
 #include <QDebug>
+#include <QMessageBox>
+#include <QFile>
 #include "project.h"
 #include "solim-lib-forqt.h"
 using solim::Prototype;
@@ -28,13 +30,14 @@ private slots:
 
     void on_browseSampleFile_btn_clicked();
 
-    void on_buttonBox_accepted();
+    //void on_buttonBox_accepted();
 
     void on_ok_btn_clicked();
 
 private:
     Ui::prototypeFromSamples *ui;
     SoLIMProject *project;
+    void updateLabel();
 };
 
 #endif // PROTOTYPEFROMSAMPLES_H
