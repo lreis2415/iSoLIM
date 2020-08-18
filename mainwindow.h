@@ -10,6 +10,8 @@
 #include <QFileDialog>
 #include <QStandardItem>
 #include <QStandardItemModel>
+#include <QGraphicsPixmapItem>
+#include <QImage>
 #include "inference.h"
 #include "project.h"
 #include "prototypefromsamples.h"
@@ -46,6 +48,7 @@ private slots:
     void onCustomContextMenu(const QPoint &point);
     void onGetPrototype();
     void onInferResults();
+    void onViewData();
     void onSelectionChanged(const QItemSelection&,const QItemSelection&);
 
 private:

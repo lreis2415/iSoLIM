@@ -2091,8 +2091,8 @@ namespace solim {
             outUncerMap->write(Xstart, Ystart, ny, nx, uncertaintyValue);//
 
         }
-        delete envValues;
-        delete nodata;
+        delete []envValues;
+        delete []nodata;
         delete predictedValue;
         delete uncertaintyValue;
     }

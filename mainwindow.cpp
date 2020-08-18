@@ -9,13 +9,13 @@ MainWindow::MainWindow(QWidget *parent)
     ui->actionAdd_prototypes_from_samples->setDisabled(true);
     ui->menuCovariates->setDisabled(true);
     ui->menuSample_Design->setDisabled(true);
-    ui->menuUtilities->setDisabled(true);
     // setup main menu
     connect(ui->actionFrom_Samples, SIGNAL(triggered()), this, SLOT(onSoilInferenceFromSample()));
     connect(ui->actionNew,SIGNAL(triggered()),this,SLOT(onProjectNew()));
     connect(ui->actionSave,SIGNAL(triggered()),this,SLOT(onProjectSave()));
     connect(ui->actionOpen,SIGNAL(triggered()),this,SLOT(onProjectOpen()));
     connect(ui->actionAdd_prototypes_from_samples, SIGNAL(triggered()), this, SLOT(onAddPrototypeFromSamples()));
+    connect(ui->actionView_Data,SIGNAL(triggered()),this,SLOT(onViewData()));
 
     projectViewInitialized = false;
     projectSaved = true;
@@ -394,6 +394,14 @@ void MainWindow::onInferResults(){
     projectSaved = false;
 }
 
+void MainWindow::onViewData(){
+    string filename = QFileDialog::getOpenFileName(this,
+                                                   tr("Open Raster File"),
+                                                   "./",
+                                                   tr("Raster file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)")).toStdString();
+    drawLayer(filename);
+}
+
 void MainWindow::onCustomContextMenu(const QPoint & point){
     QModelIndex index = projectView->indexAt(point);
     if(index.isValid()&&index.data().toString().compare("Prototypes")==0){
@@ -408,55 +416,38 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
 }
 
 void MainWindow::drawLayer(string filename){
-    BaseIO *lyr = new BaseIO(filename);
-    double min = lyr->getDataMin();
-    double max = lyr->getDataMax();
-//    int viewWidth = ui->graphicsView->width();
-//    int viewHeight = ui->graphicsView->height();
-    int viewHeight = 100;
-    int viewWidth = 100;
-    int lyrWidth = lyr->getXSize();
-    int lyrHeight = lyr->getYSize();
-    double stretchRatio;    
-    QGraphicsScene *scene = new QGraphicsScene(0,0,viewWidth,viewHeight);
-    QBrush brush(Qt::white);
-    QPen outlinePen(Qt::white);
-    outlinePen.setStyle(Qt::NoPen);
-    if (lyrHeight * viewWidth > viewHeight * lyrWidth) {
-        stretchRatio = 1.0*lyrHeight/viewHeight;
-    } else {
-        stretchRatio = 1.0*lyrWidth/viewWidth;
-    }
-    int shrink = stretchRatio+1;
-    int lyrShrWidth = lyrWidth/shrink;
-    int lyrShrHeight = lyrHeight/shrink;
-    int origintop = viewHeight/2-lyrShrHeight/2;
-    int originleft = viewWidth/2-lyrShrWidth/2;
+    string imagename = filename+".png";
+    QImage *img = new QImage(imagename.c_str());
+    if(img->isNull()){
+        delete img;
+        BaseIO *lyr = new BaseIO(filename);
+        double min = lyr->getDataMin();
+        double max = lyr->getDataMax();
 
-    for(int i =0;i<lyrShrWidth;i++){
-        for (int j = 0;j<lyrShrHeight;j++){
-            if(i*shrink>lyrWidth)
-                continue;
-            if(j*shrink>lyrHeight)
-                continue;
-            float value = lyr->getValue(i*shrink,j*shrink);
-            if(value<min){
-                brush.setColor(QColor(0,0,0));
-                outlinePen.setColor(QColor(0,0,0));
+        float* pafScanline = new float[lyr->getXSize()*lyr->getYSize()];
+        unsigned char*imgData = new unsigned char[lyr->getXSize()*lyr->getYSize()];//(unsigned char*)CPLMalloc(sizeof(unsigned char)*lyr->getXSize()*lyr->getYSize());
+        lyr->read(0,0,lyr->getYSize(),lyr->getXSize(),pafScanline);
+        float range = 256.0/(max-min);
+        for(int i = 0; i<lyr->getXSize()*lyr->getYSize();i++){
+            float value = pafScanline[i];
+            if(fabs(value-NODATA)<VERY_SMALL||value<NODATA){
+                imgData[i]=0;
+            }else{
+                imgData[i] = (value-min)*range;
             }
-            else if(value>max){
-                brush.setColor(QColor(255,255,255));
-                outlinePen.setColor(QColor(255,255,255));
-            }
-            else {
-                int color = (value-min)/(max-min)*255;
-                brush.setColor(QColor(color,color,color));
-                outlinePen.setColor(QColor(color,color,color));
-            }
-            scene->addRect(origintop+i,originleft+j,1,1,outlinePen,brush);
         }
+        img = new QImage(imgData, lyr->getXSize(),lyr->getYSize(),lyr->getXSize(), QImage::Format_Grayscale8);
+        img->save(imagename.c_str());
+        //CPLFree(pafScanline);
+        if(pafScanline)
+            delete []pafScanline;
     }
-    delete lyr;
+    int viewHeight = ui->graphicsView->height();
+    int viewWidth = ui->graphicsView->width();
+    img->scaled(viewHeight,viewWidth,Qt::KeepAspectRatio);
+    QGraphicsScene *scene = new QGraphicsScene(0,0,viewHeight,viewWidth);
+    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(*img));
+    scene->addItem(item);
 
     ui->graphicsView->setScene(scene);
 }

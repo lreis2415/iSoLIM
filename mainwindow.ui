@@ -81,6 +81,7 @@
     <property name="title">
      <string>Utilities</string>
     </property>
+    <addaction name="actionView_Data"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -121,6 +122,11 @@
   <action name="actionAdd_prototypes_from_samples">
    <property name="text">
     <string>Add prototypes from samples</string>
+   </property>
+  </action>
+  <action name="actionView_Data">
+   <property name="text">
+    <string>View Data</string>
    </property>
   </action>
  </widget>
