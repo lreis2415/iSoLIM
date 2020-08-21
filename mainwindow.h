@@ -12,6 +12,7 @@
 #include <QStandardItemModel>
 #include <QGraphicsPixmapItem>
 #include <QImage>
+#include <QMouseEvent>
 #include "inference.h"
 #include "project.h"
 #include "prototypefromsamples.h"
@@ -50,19 +51,27 @@ private slots:
     void onInferResults();
     void onViewData();
     void onSelectionChanged(const QItemSelection&,const QItemSelection&);
+    void mouseMoveEvent(QMouseEvent *event);
+
+    void on_zoomin_btn_clicked();
+
+    void on_zoomout_btn_clicked();
+
+    void on_layerInfo_btn_clicked();
 
 private:
     Ui::MainWindow *ui;
     QTreeView *projectView;
     QDockWidget *projectDock;
-    //soilInference *inference;
     prototypeFromSamples *getPrototype;
     string projectFileName;
+    QImage *img;
     void drawLayer(string filename);
     void drawMembershipFunction(string basename, string idname, string covName);
     void initialProjectView();
     bool saveWarning();
     bool projectViewInitialized;
     bool projectSaved;
+    bool clickForInfo;
 };
 #endif // MAINWINDOW_H

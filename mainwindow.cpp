@@ -9,6 +9,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->actionAdd_prototypes_from_samples->setDisabled(true);
     ui->menuCovariates->setDisabled(true);
     ui->menuSample_Design->setDisabled(true);
+    ui->zoomin_btn->setVisible(false);
+    ui->zoomout_btn->setVisible(false);
+    ui->layerInfo_btn->setVisible(false);
     // setup main menu
     connect(ui->actionFrom_Samples, SIGNAL(triggered()), this, SLOT(onSoilInferenceFromSample()));
     connect(ui->actionNew,SIGNAL(triggered()),this,SLOT(onProjectNew()));
@@ -19,6 +22,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     projectViewInitialized = false;
     projectSaved = true;
+    img = nullptr;
+    clickForInfo = false;
 }
 
 MainWindow::~MainWindow()
@@ -27,6 +32,21 @@ MainWindow::~MainWindow()
         saveWarning();
     }
     delete ui;
+    delete img;
+    delete projectView;
+    delete projectDock;
+    delete getPrototype;
+    delete model;
+    delete prototypeMenu;
+    delete prototypesFromSamples;
+    delete addPrototype;
+    delete addExclusion;
+    delete addOccurrence;
+    delete viewDataMenu;
+    delete viewData;
+    delete resultChild;
+    delete prototypeChild;
+    delete proj;
 }
 
 void MainWindow::onProjectNew(){
@@ -416,8 +436,11 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
 }
 
 void MainWindow::drawLayer(string filename){
+    ui->zoomin_btn->setVisible(true);
+    ui->zoomout_btn->setVisible(true);
+    ui->layerInfo_btn->setVisible(true);
     string imagename = filename+".png";
-    QImage *img = new QImage(imagename.c_str());
+    img = new QImage(imagename.c_str());
     if(img->isNull()){
         delete img;
         BaseIO *lyr = new BaseIO(filename);
@@ -431,7 +454,7 @@ void MainWindow::drawLayer(string filename){
         for(int i = 0; i<lyr->getXSize()*lyr->getYSize();i++){
             float value = pafScanline[i];
             if(fabs(value-NODATA)<VERY_SMALL||value<NODATA){
-                imgData[i]=0;
+                imgData[i]=255;
             }else{
                 imgData[i] = (value-min)*range;
             }
@@ -441,12 +464,13 @@ void MainWindow::drawLayer(string filename){
         //CPLFree(pafScanline);
         if(pafScanline)
             delete []pafScanline;
+        delete lyr;
     }
     int viewHeight = ui->graphicsView->height();
     int viewWidth = ui->graphicsView->width();
-    img->scaled(viewHeight,viewWidth,Qt::KeepAspectRatio);
+    //img->scaled(viewHeight,viewWidth,Qt::KeepAspectRatio);
     QGraphicsScene *scene = new QGraphicsScene(0,0,viewHeight,viewWidth);
-    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(*img));
+    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(*img).scaled(viewWidth,viewHeight,Qt::KeepAspectRatio,Qt::SmoothTransformation));
     scene->addItem(item);
 
     ui->graphicsView->setScene(scene);
@@ -510,4 +534,66 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
     }
     scene->addLine((previousx-x1)/(x2-x1)*150+25,175-previousy*150,25+150,175-y2*150,curvePen);
     ui->graphicsView->setScene(scene);
+}
+
+void MainWindow::on_zoomin_btn_clicked()
+{
+    if(!img)
+        return;
+    int viewWidth = ui->graphicsView->scene()->width();
+    int viewHeight = ui->graphicsView->scene()->height();
+    if(!(viewWidth<2*img->width()||viewHeight<2*img->height()))
+        return;
+    int height = viewHeight;
+    int width = viewWidth;
+    if(viewWidth<2*img->width()){
+        width+=0.25*ui->graphicsView->width();
+    }
+    if(viewHeight<2*img->height()){
+        height+=0.25*ui->graphicsView->height();
+    }
+    QGraphicsScene *scene = new QGraphicsScene(0,0,height,width);
+    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(*img).scaled(height,width,Qt::KeepAspectRatio,Qt::SmoothTransformation));
+    scene->addItem(item);
+
+    ui->graphicsView->setScene(scene);
+}
+
+void MainWindow::on_zoomout_btn_clicked()
+{
+    if(!img||!ui->graphicsView->scene())
+        return;
+    int viewWidth = ui->graphicsView->scene()->width();
+    int viewHeight = ui->graphicsView->scene()->height();
+    if(!(viewWidth>ui->graphicsView->width()/4||viewHeight>ui->graphicsView->height()/4))
+        return;
+    int height = viewHeight;
+    int width = viewWidth;
+    if(viewWidth>ui->graphicsView->width()/4){
+        width-=0.25*ui->graphicsView->width();
+    }
+    if(viewHeight>ui->graphicsView->width()/4){
+        height-=0.25*ui->graphicsView->height();
+    }
+    QGraphicsScene *scene = new QGraphicsScene(0,0,height,width);
+    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(*img).scaled(height,width,Qt::KeepAspectRatio,Qt::SmoothTransformation));
+    scene->addItem(item);
+
+    ui->graphicsView->setScene(scene);
+}
+
+void MainWindow::on_layerInfo_btn_clicked()
+{
+    clickForInfo = true;
+}
+
+void MainWindow::mouseMoveEvent(QMouseEvent *e){
+    QPointF pt;
+    QString x_coords;
+    QString y_coords;
+    pt = ui->graphicsView->mapFrom(ui->graphicsView ,e->pos());
+    x_coords = (QString::number (pt.x ()));
+    y_coords = (QString::number (pt.y ()));
+    if(clickForInfo)
+        qInfo()<<x_coords<<y_coords;
 }
