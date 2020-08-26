@@ -101,7 +101,7 @@ void prototypeFromSamples::on_ok_btn_clicked()
     std::size_t end = sampleFile.find_last_of('.');
     string prototypeName = sampleFile.substr(first+1,end-first-1);
     for(int i = 0; i< project->prototypeBaseNames.size();i++){
-        if(strcmp(prototypeName.c_str(),project->prototypeBaseNames[i].c_str())==0){
+        if(prototypeName==project->prototypeBaseNames[i]){
             QMessageBox warning;
             warning.setText("The sample file has been added, cannot add samples dupplicatedly!");
             warning.setStandardButtons(QMessageBox::Ok);
@@ -127,6 +127,27 @@ void prototypeFromSamples::on_ok_btn_clicked()
         }
     }
     solim::EnvDataset *eds = new solim::EnvDataset(envFileNames,datatypes,layernames);
+    if(eds->Layers.size()<envFileNames.size()){
+        QMessageBox inconsistentWarn;
+        inconsistentWarn.setText("File size does not match. Not all layers added.");
+        inconsistentWarn.exec();
+        vector<string> newEnvFileNames;
+        vector<string> newLayernames;
+        vector<string> newDatatypes;
+        for(int i = 0; i<eds->Layers.size();i++){
+            for(int j = 0; j< envFileNames.size();j++){
+                if(layernames[j]==eds->Layers[i]->LayerName){
+                    newEnvFileNames.push_back(envFileNames[j]);
+                    newLayernames.push_back(layernames[j]);
+                    newDatatypes.push_back(datatypes[j]);
+                }
+            }
+        }
+        envFileNames = newEnvFileNames;
+        layernames = newLayernames;
+        datatypes = newDatatypes;
+    }
+
     vector<Prototype>* prototypes = Prototype::getPrototypesFromSample(sampleFile,eds, prototypeName,
                                                                        ui->xFiled_comboBox->currentText().toStdString(),
                                                                        ui->yFiled_comboBox->currentText().toStdString());

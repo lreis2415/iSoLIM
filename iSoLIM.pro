@@ -19,6 +19,7 @@ SOURCES += \
     inference.cpp \
     main.cpp \
     mainwindow.cpp \
+    mygraphicsview.cpp \
     prototypefromsamples.cpp \
     solim-lib-forqt.cpp \
     third_party/tinystr.cpp \
@@ -29,6 +30,7 @@ SOURCES += \
 HEADERS += \
     inference.h \
     mainwindow.h \
+    mygraphicsview.h \
     project.h \
     prototypefromsamples.h \
     solim-lib-forQt_global.h \

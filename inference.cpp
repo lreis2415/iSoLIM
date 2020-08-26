@@ -77,6 +77,7 @@ void inference::on_SoilFileCreate_btn_clicked()
                                                     tr("Save output soil file"),
                                                     "./",
                                                     tr("Output soil file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
+    if(soilFile.isEmpty()) return;
     ui->OutputSoilFile_lineEdit->setText(soilFile);
     string uncerFile = soilFile.toStdString();
     std::size_t end = uncerFile.find_last_of('.');
@@ -129,8 +130,7 @@ void inference::on_Inference_OK_btn_clicked()
     solim::EnvDataset *eds = new solim::EnvDataset(envFileNames,datatypes,layernames,ramEfficient);
     vector<solim::Prototype> *prototypes = new vector<solim::Prototype>;
     for(int i = 0;i<project->prototypes.size();i++){
-        if(strcmp(project->prototypes[i].prototypeBaseName.c_str(),
-                  ui->prototypeBaseName_lineEdit->text().toStdString().c_str())==0)
+        if(project->prototypes[i].prototypeBaseName == ui->prototypeBaseName_lineEdit->text().toStdString())
             prototypes->push_back(project->prototypes[i]);
     }
     solim::Inference::inferMap(eds, &(project->prototypes), targetName, threshold, outSoil, outUncer,ui->progressBar);

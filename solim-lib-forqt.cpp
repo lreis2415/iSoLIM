@@ -1276,12 +1276,12 @@ namespace solim {
         bool id_found = false;
         ParseStr(line, ',', names);
         for (int i = 0; i < names.size(); ++i) {
-            if (names[i] == "X" || names[i] == "x"||strcmp(names[i].c_str(),xfield.c_str())==0) {
+            if (names[i] == "X" || names[i] == "x"||names[i] == xfield) {
                 pos_X = i;
                 break;
             }
         }
-        for (int i = 0; i < names.size(); ++i||strcmp(names[i].c_str(),yfield.c_str())==0) {
+        for (int i = 0; i < names.size(); ++i||names[i] == yfield) {
             if (names[i] == "Y" || names[i] == "y") {
                 pos_Y = i;
                 break;
@@ -1578,33 +1578,43 @@ namespace solim {
 
 
     void Prototype::sortEnvCons(vector<string> layernames) {
-        if (layernames.size() != envConditionSize)
-            throw invalid_argument("Error: inconsistant rule number and layer number");
-        envConsIsSorted = true;
-        for (int i = 0; i < envConditionSize; ++i) {
-            if (envConditions[i].covariateName != layernames[i]) {
-                envConsIsSorted = false;
-                break;
-            }
-        }
-        int sumi = 0;
-        int sumj = 0;
-        if (!envConsIsSorted) {
+        if (layernames.size() > envConditionSize)
+            return;
+        else {
             vector<Curve> tempCurves = envConditions;
-            for (int i = 0; i < envConditionSize; ++i) {
-                for (int j = 0; j < envConditionSize; ++j) {
-                    if (tempCurves[i].covariateName == layernames[j]) {
-                        envConditions[j] = tempCurves[i];
-                        sumi += i;
-                        sumj += j;
+            bool hasLayer;
+            for(int i = 0; i<layernames.size();i++){
+                hasLayer = false;
+                for(int j =0; j<envConditionSize;j++){
+                    if(tempCurves[j].covariateName==layernames[i]){
+                        hasLayer = true;
+                        envConditions[i] = tempCurves[j];
+                    }
+                }
+                if(!hasLayer){
+                    envConsIsSorted = false;
+                    envConditions = tempCurves;
+                    return;
+                }
+            }
+            envConsIsSorted = true;
+            if(layernames.size()<envConditionSize){
+                int k = layernames.size();
+                for(int i=0; i<envConditionSize;i++){
+                    hasLayer = false;
+                    for(int j = 0; j<layernames.size();j++){
+                        if(tempCurves[i].covariateName==envConditions[j].covariateName){
+                            hasLayer = true;
+                            break;
+                        }
+                    }
+                    if(!hasLayer){
+                        envConditions[k] = tempCurves[i];
+                        k++;
                     }
                 }
             }
         }
-        if (sumi == sumj)
-            envConsIsSorted = true;
-        else
-            throw invalid_argument("Error: inconsistant rule names and layer names");
     }
 
     double Prototype::calcSimi(EnvUnit *e) {
@@ -2060,7 +2070,7 @@ namespace solim {
                     // calculate similarity to prototype
                     double tmpOptimity;
                     double minOptimity = (*it).envConditions[0].getOptimality(envValues[0]);
-                    for (int i = 1; i < (*it).envConditionSize; ++i) {
+                    for (int i = 1; i < eds->Layers.size(); ++i) {
                         tmpOptimity = (*it).envConditions[i].getOptimality(envValues[i]);
                         if (tmpOptimity < minOptimity) minOptimity = tmpOptimity;
                     }

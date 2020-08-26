@@ -454,7 +454,7 @@ namespace solim {
     public:
         double uncertainty;
         int envConditionSize;
-    private:
+    //private:
         bool envConsIsSorted;
 
     public:

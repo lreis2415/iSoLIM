@@ -12,10 +12,14 @@
 #include <QStandardItemModel>
 #include <QGraphicsPixmapItem>
 #include <QImage>
-#include <QMouseEvent>
+#include <QTableView>
+#include <QHeaderView>
+#include <QToolBar>
 #include "inference.h"
 #include "project.h"
 #include "prototypefromsamples.h"
+#include "mygraphicsview.h"
+#include <iostream>
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -41,7 +45,7 @@ public:
     QStandardItem *prototypeChild;
     SoLIMProject *proj;
 private slots:
-    void onSoilInferenceFromSample();
+    void onSoilInferenceFromPrototypes();
     void onProjectNew();
     void onProjectSave();
     void onProjectOpen();
@@ -50,28 +54,32 @@ private slots:
     void onGetPrototype();
     void onInferResults();
     void onViewData();
+    void test();
     void onSelectionChanged(const QItemSelection&,const QItemSelection&);
-    void mouseMoveEvent(QMouseEvent *event);
+    void onZoomin();
+    void onZoomout();
 
-    void on_zoomin_btn_clicked();
-
-    void on_zoomout_btn_clicked();
-
-    void on_layerInfo_btn_clicked();
+    //void on_layerInfo_btn_clicked();
 
 private:
     Ui::MainWindow *ui;
     QTreeView *projectView;
     QDockWidget *projectDock;
+    QDockWidget *dataDetailsDock;
+    QTableView *dataDetailsView;
     prototypeFromSamples *getPrototype;
+    MyGraphicsView *myGraphicsView;
     string projectFileName;
     QImage *img;
+    bool projectViewInitialized;
+    bool projectSaved;
+    string imgFilename;
+    double imgMax,imgMin;
+    QToolBar *zoomToolBar;
     void drawLayer(string filename);
     void drawMembershipFunction(string basename, string idname, string covName);
     void initialProjectView();
     bool saveWarning();
-    bool projectViewInitialized;
-    bool projectSaved;
-    bool clickForInfo;
+    void initDataDetailsView();
 };
 #endif // MAINWINDOW_H

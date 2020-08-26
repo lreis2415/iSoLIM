@@ -17,86 +17,7 @@
    <bool>true</bool>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
-    <item>
-     <layout class="QHBoxLayout" name="layerBtns_layout">
-      <item>
-       <widget class="QPushButton" name="zoomin_btn">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset>
-          <normaloff>C:/Users/zfhsandra/Pictures/zoomin.svg</normaloff>C:/Users/zfhsandra/Pictures/zoomin.svg</iconset>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="zoomout_btn">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset>
-          <normaloff>C:/Users/zfhsandra/Pictures/zoomout.svg</normaloff>C:/Users/zfhsandra/Pictures/zoomout.svg</iconset>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="layerInfo_btn">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset>
-          <normaloff>C:/Users/zfhsandra/Pictures/info1.png</normaloff>C:/Users/zfhsandra/Pictures/info1.png</iconset>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <spacer name="horizontalSpacer">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <widget class="QGraphicsView" name="graphicsView">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-     </widget>
-    </item>
-   </layout>
+   <layout class="QVBoxLayout" name="verticalLayout"/>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -131,7 +52,7 @@
     <property name="title">
      <string>Soil Inference</string>
     </property>
-    <addaction name="actionFrom_Samples"/>
+    <addaction name="actionFrom_Prototypes"/>
    </widget>
    <widget class="QMenu" name="menuUtilities">
     <property name="title">
@@ -143,6 +64,7 @@
     <property name="title">
      <string>Help</string>
     </property>
+    <addaction name="actiontest"/>
    </widget>
    <addaction name="menuProjects"/>
    <addaction name="menuCovariates"/>
@@ -152,9 +74,9 @@
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionFrom_Samples">
+  <action name="actionFrom_Prototypes">
    <property name="text">
-    <string>From Samples</string>
+    <string>From Prototypes</string>
    </property>
    <property name="toolTip">
     <string>Soil Inference From Samples</string>
@@ -183,6 +105,11 @@
   <action name="actionView_Data">
    <property name="text">
     <string>View Data</string>
+   </property>
+  </action>
+  <action name="actiontest">
+   <property name="text">
+    <string>test</string>
    </property>
   </action>
  </widget>
