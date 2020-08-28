@@ -6,6 +6,10 @@ inference::inference(SoLIMProject *proj, QWidget *parent) :
     ui(new Ui::inference),
     project(proj)
 {
+    setWindowFlags(Qt::Window
+        | Qt::WindowMinimizeButtonHint
+        | Qt::WindowMaximizeButtonHint);
+    show();
     if(!proj){
         QMessageBox alertMsg;
         alertMsg.setText("Please create a project first!");
@@ -87,6 +91,7 @@ void inference::on_SoilFileCreate_btn_clicked()
 
 void inference::on_Inference_OK_btn_clicked()
 {
+    ui->cancel_btn->setEnabled(false);
     if(ui->OutputSoilFile_lineEdit->text().isEmpty()||ui->OutputUncerFile_lineEdit->text().isEmpty()){
         QMessageBox warning;
         warning.setText("Please fill in the output filename!");
@@ -94,10 +99,6 @@ void inference::on_Inference_OK_btn_clicked()
         warning.exec();
         return;
     }
-    setWindowFlags(Qt::Window
-        | Qt::WindowMinimizeButtonHint
-        | Qt::WindowMaximizeButtonHint);
-    show();
     vector<string> envFileNames;
     vector<string> datatypes;
     vector<string> layernames;
@@ -135,12 +136,12 @@ void inference::on_Inference_OK_btn_clicked()
     }
     solim::Inference::inferMap(eds, &(project->prototypes), targetName, threshold, outSoil, outUncer,ui->progressBar);
 
-//    setWindowFlags(Qt::Window
-//        | Qt::WindowMinimizeButtonHint
-//        | Qt::WindowMaximizeButtonHint
-//        | Qt::WindowCloseButtonHint);
-//    show();
     project->results.push_back(outSoil);
     project->results.push_back(outUncer);
+    this->close();
+}
+
+void inference::on_cancel_btn_clicked()
+{
     this->close();
 }

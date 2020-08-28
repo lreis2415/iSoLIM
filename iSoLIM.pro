@@ -65,6 +65,6 @@ INCLUDEPATH += C:/gdal304/include
 DEPENDPATH += C:/gdal304/include
 
 # enable openmp
-QMAKE_CXXFLAGS+= -fopenmp
-QMAKE_LFLAGS +=  -fopenmp
-LIBS += -fopenmp
+QMAKE_CXXFLAGS+= -openmp
+#QMAKE_LFLAGS +=  -fopenmp
+#LIBS += -fopenmp

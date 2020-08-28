@@ -3,6 +3,7 @@
 
 #include "QProgressBar"
 #include "QApplication"
+#include "QException"
 #include "solim-lib-forQt_global.h"
 #include <algorithm>
 #include <gdal.h>

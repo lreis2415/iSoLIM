@@ -77,14 +77,11 @@ MainWindow::~MainWindow()
 void MainWindow::initDataDetailsView(){
     dataDetailsDock = new QDockWidget(tr("Data details"), this);
     dataDetailsView = new QTableView(dataDetailsDock);
-    QStandardItemModel *dataDetailsModel = new QStandardItemModel(dataDetailsView);
     dataDetailsView->verticalHeader()->hide();
     dataDetailsView->horizontalHeader()->hide();
-    dataDetailsModel->setRowCount(3);
-    dataDetailsModel->setColumnCount(3);
-    for(int i = 0; i<3;i++)
-        dataDetailsView->setColumnWidth(i,50);
-    dataDetailsView->setModel(dataDetailsModel);
+//    for(int i = 0; i<3;i++)
+//        dataDetailsView->setColumnWidth(i,50);
+    dataDetailsView->setShowGrid(false);
     dataDetailsDock->setFeatures(dataDetailsDock->features() & ~QDockWidget::DockWidgetClosable);
     dataDetailsDock->setWidget(dataDetailsView);
     dataDetailsDock->setAllowedAreas(Qt::LeftDockWidgetArea|Qt::BottomDockWidgetArea);
@@ -693,14 +690,10 @@ void MainWindow::onZoomout()
 //}
 
 void MainWindow::test(){
-    vector<string> layernames;
-    layernames.push_back("plan");
-    layernames.push_back("slope");
-    for(int i = 0; i<proj->prototypes[0].envConditionSize;i++)
-        qInfo()<<proj->prototypes[0].envConditions[i].covariateName.c_str();
-    proj->prototypes[0].sortEnvCons(layernames);
-    qInfo()<<proj->prototypes[0].envConsIsSorted;
-    for(int i = 0; i<proj->prototypes[0].envConditionSize;i++)
-        qInfo()<<proj->prototypes[0].envConditions[i].covariateName.c_str();
+    qInfo()<<omp_get_max_threads();
+#pragma omp parallel for num_threads(4)
+    for(int i = 0; i<4;i++){
+        qInfo()<<omp_get_thread_num();
+    }
 }
 

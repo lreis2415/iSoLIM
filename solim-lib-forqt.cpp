@@ -2030,7 +2030,7 @@ namespace solim {
                 ny = eds->TotalY - i * eds->BlockSizeY;
             }
 
-            progressBar->setValue(i);
+            progressBar->setValue(i*100);
             // read the data into all the env layers
             for (int k = 0; k < eds->Layers.size(); ++k) {
                 eds->Layers.at(k)->ReadByBlock(i);
@@ -2040,10 +2040,13 @@ namespace solim {
                 // for each unit in the block, calculate their predicted value and uncertainty
                 bool validEnvUnitFlag = TRUE;
 
-                if (n % int(nx*ny*0.01)==0 && n > 0) {
-                    progressBar->setValue(progressBar->value()+1);
-                    QApplication::processEvents();
-                    cout <<n<<" "<<nx*ny<<" "<<endl;
+                long long int pixelCount = nx*ny;
+                double progressPara = 100.0/pixelCount;
+                if (n % int(pixelCount*0.01)==0 && n > 0) {
+                    if(omp_get_thread_num()==0)
+                        progressBar->setValue(n*progressPara);
+
+                    cout <<n<<" "<<nx*ny<<" "<<omp_get_thread_num()<<endl;
                 }
                 //e = new EnvUnit();
                 for (int k = 0; k < eds->Layers.size(); ++k) {
@@ -2092,9 +2095,6 @@ namespace solim {
                     uncertaintyValue[n] = 1 - maxSimi;
                 }
             }
-            int localx = 0;
-            int localy = 0;
-            int globalx, globaly;
 
             eds->LayerRef->localToGlobal(i, 0, 0, Xstart, Ystart);
             outSoilMap->write(Xstart, Ystart, ny, nx, predictedValue);

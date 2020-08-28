@@ -73,7 +73,7 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent * e){
                 }
             }
             dataDetailsView->setModel(model);
-
+            dataDetailsView->resizeColumnsToContents();
         }
     }
 }

@@ -25,6 +25,8 @@ private slots:
 
     void on_Inference_OK_btn_clicked();
 
+    void on_cancel_btn_clicked();
+
 private:
     Ui::inference *ui;
     SoLIMProject *project;
