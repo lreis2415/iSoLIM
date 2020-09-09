@@ -21,6 +21,7 @@ public:
     double imgMax;
     double imgMin;
     double range;
+    bool showImage;
     QTableView *dataDetailsView;
     QStandardItemModel *dataDetailsModel;
     QGraphicsScene *getScene(){ return scene; }

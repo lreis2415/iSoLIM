@@ -13,9 +13,11 @@ MyGraphicsView::MyGraphicsView(QWidget *parent):
     dataDetailsView = nullptr;
     imgMax = 0;
     imgMin = 0;
+    showImage = false;
 }
 void MyGraphicsView::mousePressEvent(QMouseEvent * e)
 {
+
     if(clickForInfo){
         QPointF pt = mapToScene(e->pos());
 
@@ -50,6 +52,8 @@ void MyGraphicsView::mousePressEvent(QMouseEvent * e)
 }
 
 void MyGraphicsView::mouseMoveEvent(QMouseEvent * e){
+    if(!showImage)
+        return;
     if(img&&dataDetailsView){
         QPointF pt = mapToScene(e->pos());
         QImage tempimg = img->scaled(scene->width()-30,scene->height(),Qt::KeepAspectRatio);

@@ -77,15 +77,8 @@ void prototypeFromSamples::on_browseSampleFile_btn_clicked()
     }
 }
 
-void prototypeFromSamples::updateLabel(){
-    ui->progress_label->setVisible(true);
-    ui->progress_label->setText("Reading samples ...");
-    ui->ok_btn->setDisabled(true);
-}
 void prototypeFromSamples::on_ok_btn_clicked()
 {
-    updateLabel();
-
     string sampleFile = ui->sampleFile_lineEdit->text().toStdString();
     if(sampleFile.empty()||ui->covariate_tableWidget->rowCount()==0){
         QMessageBox warning;
@@ -161,7 +154,7 @@ void prototypeFromSamples::on_ok_btn_clicked()
          qDebug()<<"OPEN FILE FAILED";
     QTextStream *out = new QTextStream(&sampleQfile);
     QStringList tempOption = out->readAll().split("\n");
-    QStringList columnNames = tempOption.at(0).split(",");
+    QStringList columnNames = tempOption.at(0).split('\r').at(0).split(",");
     for(QString column:columnNames){
         if(column.compare(ui->xFiled_comboBox->currentText())==0
                 ||column.compare(ui->yFiled_comboBox->currentText())==0

@@ -54,7 +54,6 @@ private slots:
     void onGetPrototype();
     void onInferResults();
     void onViewData();
-    void test();
     void onSelectionChanged(const QItemSelection&,const QItemSelection&);
     void onZoomin();
     void onZoomout();

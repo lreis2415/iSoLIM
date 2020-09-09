@@ -4,6 +4,7 @@
 #include "QProgressBar"
 #include "QApplication"
 #include "QException"
+#include "QDebug"
 #include "solim-lib-forQt_global.h"
 #include <algorithm>
 #include <gdal.h>

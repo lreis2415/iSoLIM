@@ -5,8 +5,6 @@ BaseIO::BaseIO(string filename, FileDataType newFileDataType) {
         is3dr = TRUE;
         fileName = filename;
         char utilityString[50];
-        float utilityFloat = 0;
-        int utilityInt = 0;
         inCurLoc = 0;
         if ((threeDRfp = fopen(filename.c_str(), "r")) == NULL) {
             cout << "Cannot open inputFile for reading header." << endl;
@@ -1271,7 +1269,6 @@ namespace solim {
         vector<string> names;
         int pos_X = 0;
         int pos_Y = 1;
-        int pos_targetVName = -1;
         int pos_idName = 0;
         bool id_found = false;
         ParseStr(line, ',', names);
@@ -1406,6 +1403,7 @@ namespace solim {
                 return (*it).propertyValue;
             }
         }
+        return NODATA;
     }
     void Prototype::writeRules(string fileName) {
         char *cFileName = new char[fileName.length() + 1];
@@ -1701,11 +1699,13 @@ namespace solim {
 
 
     double Exception::getProperty(string propName) {
+        double value = NODATA;
         for (auto it = properties.begin(); it != properties.end(); ++it) {
             if ((*it).propertyName == propName) {
-                return (*it).propertyValue;
+                value = (*it).propertyValue;
             }
         }
+        return value;
     }
     void Exception::writeRules(string fileName) {
         char *cFileName = new char[fileName.length() + 1];
@@ -1969,7 +1969,7 @@ namespace solim {
         float w2 = pow(dBoundDist, -dDistDecayFactor);
         if (exceptionType == OCCURRENCE)
             return (dSim * w1 + dBoundSim * w2) / (w1 + w2);
-        else if (exceptionType == EXCLUSION)
+        else //if (exceptionType == EXCLUSION)
             return ((1 - dSim) * w1 + dBoundSim * w2) / (w1 + w2);
     }
 
@@ -1998,6 +1998,7 @@ namespace solim {
                 throw invalid_argument("Prototype inconsistent with layers");
                 return;
             }
+            qInfo()<<(*it).getProperty(targetVName);
         }
         int Xstart, Ystart;
         int nx, ny;
@@ -2029,7 +2030,6 @@ namespace solim {
             if (i == (block_size - 1)) {
                 ny = eds->TotalY - i * eds->BlockSizeY;
             }
-
             progressBar->setValue(i*100);
             // read the data into all the env layers
             for (int k = 0; k < eds->Layers.size(); ++k) {
@@ -2043,10 +2043,10 @@ namespace solim {
                 long long int pixelCount = nx*ny;
                 double progressPara = 100.0/pixelCount;
                 if (n % int(pixelCount*0.01)==0 && n > 0) {
+                    qInfo()<<n<<predictedValue[n-1] << uncertaintyValue[n-1] << n*progressPara+i*100;
                     if(omp_get_thread_num()==0)
-                        progressBar->setValue(n*progressPara);
-
-                    cout <<n<<" "<<nx*ny<<" "<<omp_get_thread_num()<<endl;
+                        progressBar->setValue(n*progressPara+i*100);
+                    //cout <<n<<" "<<nx*ny<<" "<<omp_get_thread_num()<<endl;
                 }
                 //e = new EnvUnit();
                 for (int k = 0; k < eds->Layers.size(); ++k) {

@@ -64,7 +64,6 @@
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actiontest"/>
    </widget>
    <addaction name="menuProjects"/>
    <addaction name="menuCovariates"/>

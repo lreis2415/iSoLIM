@@ -10,7 +10,8 @@ inference::inference(SoLIMProject *proj, QWidget *parent) :
         | Qt::WindowMinimizeButtonHint
         | Qt::WindowMaximizeButtonHint);
     show();
-    if(!proj){
+    setWindowIcon(QIcon("./imgs/solim.jpg"));
+    if(proj==nullptr){
         QMessageBox alertMsg;
         alertMsg.setText("Please create a project first!");
         alertMsg.exec();

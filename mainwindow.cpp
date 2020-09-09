@@ -9,9 +9,14 @@ MainWindow::MainWindow(QWidget *parent)
     ui->actionAdd_prototypes_from_samples->setDisabled(true);
     ui->menuCovariates->setDisabled(true);
     ui->menuSample_Design->setDisabled(true);
+    setWindowIcon(QIcon("./imgs/solim.jpg"));
+    // setup dock view
+    initialProjectView();
+    addDockWidget(Qt::LeftDockWidgetArea,projectDock);
+
     // setup data details dock
     initDataDetailsView();
-    addDockWidget(Qt::BottomDockWidgetArea,dataDetailsDock);
+    addDockWidget(Qt::LeftDockWidgetArea,dataDetailsDock);
     // setup main menu
     connect(ui->actionFrom_Prototypes, SIGNAL(triggered()), this, SLOT(onSoilInferenceFromPrototypes()));
     connect(ui->actionNew,SIGNAL(triggered()),this,SLOT(onProjectNew()));
@@ -19,7 +24,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionOpen,SIGNAL(triggered()),this,SLOT(onProjectOpen()));
     connect(ui->actionAdd_prototypes_from_samples, SIGNAL(triggered()), this, SLOT(onAddPrototypeFromSamples()));
     connect(ui->actionView_Data,SIGNAL(triggered()),this,SLOT(onViewData()));
-    connect(ui->actiontest,SIGNAL(triggered()),this,SLOT(test()));
     projectViewInitialized = false;
     projectSaved = true;
     img = nullptr;
@@ -28,19 +32,17 @@ MainWindow::MainWindow(QWidget *parent)
     ui->centralwidget->layout()->addWidget(myGraphicsView);
     myGraphicsView->dataDetailsView = dataDetailsView;
     zoomToolBar = addToolBar(tr("Zoom In"));
-    const QIcon zoomInIcon = QIcon("../iSoLIM/imgs/zoomin.svg");//QIcon::fromTheme("document-new", QIcon(":/images/new.png"));
+    const QIcon zoomInIcon = QIcon("./imgs/zoomin.svg");//QIcon::fromTheme("document-new", QIcon(":/images/new.png"));
     QAction *zoomInAct = new QAction(zoomInIcon, tr("&Zoom In"), this);
     zoomInAct->setStatusTip(tr("Zoom In"));
     connect(zoomInAct, SIGNAL(triggered()), this, SLOT(onZoomin()));
     zoomToolBar->addAction(zoomInAct);
-    const QIcon zoomOutIcon = QIcon("../iSoLIM/imgs/zoomout.svg");//QIcon::fromTheme("document-open", QIcon(":/images/open.png"));
+    const QIcon zoomOutIcon = QIcon("./imgs/zoomout.svg");//QIcon::fromTheme("document-open", QIcon(":/images/open.png"));
     QAction *zoomOutAct = new QAction(zoomOutIcon, tr("&Zoom Out"), this);
     zoomOutAct->setStatusTip(tr("Zoom Out"));
     connect(zoomOutAct, SIGNAL(triggered()), this, SLOT(onZoomout()));
     zoomToolBar->addAction(zoomOutAct);
     zoomToolBar->setVisible(false);
-    projectDock = nullptr;
-    projectView = nullptr;
     getPrototype = nullptr;
     prototypesFromSamples = nullptr;
     addPrototype = nullptr;
@@ -58,21 +60,21 @@ MainWindow::~MainWindow()
         saveWarning();
     }
     delete ui;
-    if(img) delete img;
-    if(projectView) delete projectView;
-    if(projectDock) delete projectDock;
-    if(getPrototype)    delete getPrototype;
-    if(model)    delete model;
-    if(prototypeMenu)   delete prototypeMenu;
-    if(prototypesFromSamples)   delete prototypesFromSamples;
-    if(addPrototype)    delete addPrototype;
-    if(addExclusion)    delete addExclusion;
-    if(addOccurrence)   delete addOccurrence;
-    if(viewDataMenu)    delete viewDataMenu;
-    if(viewData)    delete viewData;
-    if(resultChild) delete resultChild;
-    if(prototypeChild)  delete prototypeChild;
-    if(proj)    delete proj;
+    if(img!=nullptr) delete img;
+    if(projectView!=nullptr) delete projectView;
+    if(projectDock!=nullptr) delete projectDock;
+    if(getPrototype!=nullptr)    delete getPrototype;
+    if(model!=nullptr)    delete model;
+    if(prototypeMenu!=nullptr)   delete prototypeMenu;
+    if(prototypesFromSamples!=nullptr)   delete prototypesFromSamples;
+    if(addPrototype!=nullptr)    delete addPrototype;
+    if(addExclusion!=nullptr)    delete addExclusion;
+    if(addOccurrence!=nullptr)   delete addOccurrence;
+    if(viewDataMenu!=nullptr)    delete viewDataMenu;
+    if(viewData!=nullptr)    delete viewData;
+    if(resultChild!=nullptr) delete resultChild;
+    if(prototypeChild!=nullptr)  delete prototypeChild;
+    if(proj!=nullptr)    delete proj;
 }
 void MainWindow::initDataDetailsView(){
     dataDetailsDock = new QDockWidget(tr("Data details"), this);
@@ -115,7 +117,7 @@ void MainWindow::onProjectNew(){
     model->item(0,0)->setChild(1,0,resultChild);
     model->setHorizontalHeaderItem( 0, new QStandardItem("Projects") );
     //
-    initialProjectView();
+    //initialProjectView();
     projectView->setModel(model);
     projectView->expand(model->item(0,0)->index());
 
@@ -155,17 +157,14 @@ void MainWindow::initialProjectView(){
     if(projectViewInitialized){
         return;
     }
-    if(!projectDock)
-        projectDock = new QDockWidget(tr("Project"), this);
-    if(!projectView)
-        projectView = new QTreeView(projectDock);
-    removeDockWidget(dataDetailsDock);
+    projectDock = new QDockWidget(tr("Project"), this);
+    projectView = new QTreeView(projectDock);
+    //removeDockWidget(dataDetailsDock);
     projectDock->setFeatures(projectDock->features() & ~QDockWidget::DockWidgetClosable);
     projectDock->setWidget(projectView);
-    addDockWidget(Qt::LeftDockWidgetArea,projectDock);
-    initDataDetailsView();
-    addDockWidget(Qt::LeftDockWidgetArea,dataDetailsDock);
-    myGraphicsView->dataDetailsView = dataDetailsView;
+    //initDataDetailsView();
+    //addDockWidget(Qt::LeftDockWidgetArea,dataDetailsDock);
+    //myGraphicsView->dataDetailsView = dataDetailsView;
     projectView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(projectView,SIGNAL(customContextMenuRequested(const QPoint &)),this,SLOT(onCustomContextMenu(const QPoint &)));
     prototypeMenu = new QMenu(projectView);
@@ -293,7 +292,7 @@ void MainWindow::onProjectOpen(){
 
     model->setHorizontalHeaderItem( 0, new QStandardItem("Projects") );
 
-    initialProjectView();
+    //initialProjectView();
     projectView->setModel(model);
     projectView->expand(model->item(0,0)->index());
 //    ui->dataTreeView->setModel( model );
@@ -477,6 +476,7 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
 }
 
 void MainWindow::drawLayer(string filename){
+    myGraphicsView->showImage = true;
     zoomToolBar->setVisible(true);
     imgFilename = filename;
     myGraphicsView->getScene()->clear();
@@ -528,9 +528,11 @@ void MainWindow::drawLayer(string filename){
 
 }
 void MainWindow::drawMembershipFunction(string basename, string idname, string covName){
+    myGraphicsView->showImage = false;
+    myGraphicsView->dataDetailsView->setModel(new QStandardItemModel(myGraphicsView->dataDetailsView));
     myGraphicsView->getScene()->clear();
-    int protoPos = 0;
-    int covPos = 0;
+    int protoPos = -1;
+    int covPos = -1;
     for(int i = 0;i<proj->prototypes.size();i++){
         if(proj->prototypes[i].prototypeBaseName==basename
                 && proj->prototypes[i].prototypeID==idname){
@@ -543,6 +545,9 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
             }
             break;
         }
+    }
+    if(protoPos==-1||covPos==-1){
+        return;
     }
     myGraphicsView->getScene()->setSceneRect(0,0,myGraphicsView->width()*0.9,myGraphicsView->height()*0.9);
     QPen curvePen(Qt::black);
@@ -570,22 +575,51 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
     if(scale<10) scale = int(scale)+1;
     else scale = (int(scale/10)+1)*10*2;
     int margin = 0.5*scale;
-    myGraphicsView->getScene()->addLine(0.15*sceneWidth,0.85*sceneHeight,0.85*sceneWidth,0.85*sceneHeight,axisPen);
-    myGraphicsView->getScene()->addLine(0.85*sceneWidth,0.85*sceneHeight,0.85*sceneWidth-3,0.85*sceneHeight+3,axisPen);
-    myGraphicsView->getScene()->addLine(0.85*sceneWidth,0.85*sceneHeight,0.85*sceneWidth-3,0.85*sceneHeight-3,axisPen);
-    myGraphicsView->getScene()->addLine(0.5*sceneWidth,0.85*sceneHeight,0.5*sceneWidth,0.15*sceneHeight,axisPen);
-    myGraphicsView->getScene()->addLine(0.5*sceneWidth,0.15*sceneHeight,0.5*sceneWidth-3,0.15*sceneHeight+3,axisPen);
-    myGraphicsView->getScene()->addLine(0.5*sceneWidth,0.15*sceneHeight,0.5*sceneWidth+3,0.15*sceneHeight+3,axisPen);
+    // add info
+    QGraphicsTextItem *covNameText = myGraphicsView->getScene()->addText(string("Covariate: "+covName).c_str());
+    covNameText->setFont(QFont("Times", 10));
+    covNameText->setPos(0.02*sceneWidth, 0.02*sceneHeight);
+    string source = solim::PrototypeSource_str[proj->prototypes[protoPos].envConditions[covPos].source];
+    QGraphicsTextItem *covSourceText = myGraphicsView->getScene()->addText(string("Source: "+source).c_str());
+    covSourceText->setFont(QFont("Times", 10));
+    covSourceText->setPos(0.02*sceneWidth, 0.02*sceneHeight+20);
+    string typicalValue = to_string(proj->prototypes[protoPos].envConditions[covPos].typicalValue);
+    QGraphicsTextItem *typicalValueText=myGraphicsView->getScene()->addText(string("Typical value: "+typicalValue).c_str());
+    typicalValueText->setFont(QFont("Times", 10));
+    typicalValueText->setPos(0.02*sceneWidth, 0.02*sceneHeight+40);
 
+    // set axis
+    myGraphicsView->getScene()->addLine(0.05*sceneWidth,0.85*sceneHeight,0.85*sceneWidth,0.85*sceneHeight,axisPen);
+    myGraphicsView->getScene()->addLine(0.85*sceneWidth,0.85*sceneHeight+1,0.85*sceneWidth-3,0.85*sceneHeight+4,axisPen);
+    myGraphicsView->getScene()->addLine(0.85*sceneWidth,0.85*sceneHeight,0.85*sceneWidth-3,0.85*sceneHeight-3,axisPen);
+    myGraphicsView->getScene()->addLine(0.45*sceneWidth,0.85*sceneHeight,0.45*sceneWidth,0.1*sceneHeight,axisPen);
+    myGraphicsView->getScene()->addLine(0.45*sceneWidth,0.1*sceneHeight,0.45*sceneWidth-3,0.1*sceneHeight+3,axisPen);
+    myGraphicsView->getScene()->addLine(0.45*sceneWidth,0.1*sceneHeight,0.45*sceneWidth+3,0.1*sceneHeight+3,axisPen);
+    // set label
+    myGraphicsView->getScene()->addLine(0.80*sceneWidth,0.85*sceneHeight,0.80*sceneWidth,0.85*sceneHeight-3,axisPen);
+    myGraphicsView->getScene()->addLine(0.10*sceneWidth,0.85*sceneHeight,0.10*sceneWidth,0.85*sceneHeight-3,axisPen);
+    myGraphicsView->getScene()->addLine(0.45*sceneWidth,0.15*sceneHeight,0.45*sceneWidth+3,0.15*sceneHeight,axisPen);
+
+    // set axis names
+    QGraphicsTextItem *yaxisName = myGraphicsView->getScene()->addText("Optimality value");
+    yaxisName->setFont(QFont("Times", 10, QFont::Bold));
+    yaxisName->setPos(0.45*sceneWidth, 0.1*sceneHeight-20);
+    QGraphicsTextItem *xaxisName = myGraphicsView->getScene()->addText("Covariate value");
+    xaxisName->setFont(QFont("Times", 10, QFont::Bold));
+    xaxisName->setPos(0.85*sceneWidth, 0.85*sceneHeight-10);
 
     QGraphicsTextItem *yaxis1 = myGraphicsView->getScene()->addText("1");
-    yaxis1->setPos(0.5*sceneWidth-5,0.15*sceneHeight-20);
+    yaxis1->setFont(QFont("Times", 10, QFont::Bold));
+    yaxis1->setPos(0.45*sceneWidth-15,0.15*sceneHeight-10);
     QGraphicsTextItem *yaxis0 = myGraphicsView->getScene()->addText("0");
-    yaxis0->setPos(0.5*sceneWidth-5,0.85*sceneHeight);
+    yaxis0->setFont(QFont("Times", 10, QFont::Bold));
+    yaxis0->setPos(0.45*sceneWidth-5,0.85*sceneHeight);
     QGraphicsTextItem *xaxis1 = myGraphicsView->getScene()->addText(QString::number(margin));
-    xaxis1->setPos(0.85*sceneWidth-2*xaxis1->toPlainText().size(),0.85*sceneHeight);
+    xaxis1->setFont(QFont("Times", 10, QFont::Bold));
+    xaxis1->setPos(0.80*sceneWidth-4*xaxis1->toPlainText().size(),0.85*sceneHeight);
     QGraphicsTextItem *xaxis0 = myGraphicsView->getScene()->addText(QString::number(-margin));
-    xaxis0->setPos(0.15*sceneWidth-2*xaxis0->toPlainText().size(),0.85*sceneHeight);
+    xaxis0->setFont(QFont("Times", 10, QFont::Bold));
+    xaxis0->setPos(0.10*sceneWidth-4*xaxis0->toPlainText().size(),0.85*sceneHeight);
     double previousx,previousy;
     if(-margin>x1){
         previousy = proj->prototypes[protoPos].envConditions[covPos].getOptimality(0-margin);
@@ -597,7 +631,7 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
     double x,y;
     int graphWidth = 0.7*sceneWidth;
     int graphHeight = 0.7*sceneHeight;
-    int xStart = 0.15*sceneWidth;
+    int xStart = 0.10*sceneWidth;
     int yEnd = 0.85*sceneHeight;
     for(int i =0;i<100;i++){
         x =i*(max-min)/101.0+min;
@@ -676,24 +710,3 @@ void MainWindow::onZoomout()
     QGraphicsTextItem *maxLabel = myGraphicsView->getScene()->addText(QString::number(imgMax));
     maxLabel->setPos(15,0);
 }
-
-//void MainWindow::on_layerInfo_btn_clicked()
-//{
-//    myGraphicsView->clickForInfo = true;
-//    if(myGraphicsView->filename!=imgFilename){
-//        myGraphicsView->filename = imgFilename;
-//        myGraphicsView->img = img;
-//        if(myGraphicsView->lyr)
-//            delete myGraphicsView->lyr;
-//        myGraphicsView->lyr = new BaseIO(imgFilename);
-//    }
-//}
-
-void MainWindow::test(){
-    qInfo()<<omp_get_max_threads();
-#pragma omp parallel for num_threads(4)
-    for(int i = 0; i<4;i++){
-        qInfo()<<omp_get_thread_num();
-    }
-}
-

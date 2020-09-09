@@ -48,14 +48,6 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-# include solim-lib
-#win32:CONFIG(release, debug|release): LIBS += -LD:/study/group/solim/lib/ -lsolim-lib-test
-#else:win32:CONFIG(debug, debug|release): LIBS += -LD:/study/group/solim/lib/ -lsolim-lib-test
-#else:unix: LIBS += -LD:/study/group/solim/lib/ -lsolim-lib-test
-
-#INCLUDEPATH += D:/study/group/solim/lib
-#DEPENDPATH += D:/study/group/solim/lib
-
 # include GDAL
 win32:CONFIG(release, debug|release): LIBS += -LC:/gdal304/lib/ -lgdal_i
 else:win32:CONFIG(debug, debug|release): LIBS += -LC:/gdal304/lib/ -lgdal_i
@@ -66,5 +58,5 @@ DEPENDPATH += C:/gdal304/include
 
 # enable openmp
 QMAKE_CXXFLAGS+= -openmp
-#QMAKE_LFLAGS +=  -fopenmp
-#LIBS += -fopenmp
+
+RC_ICONS = solim.ico
