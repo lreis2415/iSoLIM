@@ -765,20 +765,26 @@ namespace solim {
     }
 
     EnvUnit* EnvDataset::GetEnvUnit(const double x, const double y) {
-        EnvUnit *e = new EnvUnit();
-        e->Loc->X = x;
-        e->Loc->Y = y;
-        e->Loc->Row = int((YMax - y) / CellSize);
-        e->Loc->Col = int((x - XMin) / CellSize);
-        int numRows = 1;
-        int numCols = 1;
-        for (int i = 0; i < Layers.size(); ++i) {
-            float *value = new float;
-            *value = (float)this->NoDataValue;
-            Layers.at(i)->baseRef->read(e->Loc->Col, e->Loc->Row, numRows, numCols, value);
-            e->AddEnvValue(Layers.at(i)->LayerName, *value, Layers.at(i)->DataType);
+        int row = int((YMax - y) / CellSize);
+        int col = int((x - XMin) / CellSize);
+        if(row>0 && row<LayerRef->getYSize() && col>0 && col<LayerRef->getXSize()){
+            EnvUnit *e = new EnvUnit();
+            e->Loc->X = x;
+            e->Loc->Y = y;
+            e->Loc->Row = int((YMax - y) / CellSize);
+            e->Loc->Col = int((x - XMin) / CellSize);
+            int numRows = 1;
+            int numCols = 1;
+            for (int i = 0; i < Layers.size(); ++i) {
+                float *value = new float;
+                *value = (float)this->NoDataValue;
+                Layers.at(i)->baseRef->read(e->Loc->Col, e->Loc->Row, numRows, numCols, value);
+                e->AddEnvValue(Layers.at(i)->LayerName, *value, Layers.at(i)->DataType);
+            }
+            return e;
+        } else {
+            return nullptr;
         }
-        return e;
     }
 
     EnvDataset& EnvDataset::operator=(const EnvDataset&) {
@@ -1264,22 +1270,23 @@ namespace solim {
     vector<Prototype> *Prototype::getPrototypesFromSample(string filename, EnvDataset* eds, string prototypeName, string xfield, string yfield) {
         vector<Prototype> *prototypes = new vector<Prototype>;
         ifstream file(filename); // declare file stream:
+        if(!file.is_open()) return nullptr;
         string line;
         getline(file, line);
         vector<string> names;
-        int pos_X = 0;
-        int pos_Y = 1;
-        int pos_idName = 0;
+        int pos_X = -1;
+        int pos_Y = -1;
+        int pos_idName = -1;
         bool id_found = false;
         ParseStr(line, ',', names);
         for (int i = 0; i < names.size(); ++i) {
-            if (names[i] == "X" || names[i] == "x"||names[i] == xfield) {
+            if (names[i] == xfield||names[i] == "X" || names[i] == "x") {
                 pos_X = i;
                 break;
             }
         }
-        for (int i = 0; i < names.size(); ++i||names[i] == yfield) {
-            if (names[i] == "Y" || names[i] == "y") {
+        for (int i = 0; i < names.size(); ++i) {
+            if (names[i] == yfield||names[i] == "Y" || names[i] == "y") {
                 pos_Y = i;
                 break;
             }
@@ -1292,7 +1299,6 @@ namespace solim {
                 break;
             }
         }
-        if (!id_found)	pos_idName = -1;
 
         while (getline(file, line)) {
             vector<string> values;
@@ -1304,6 +1310,7 @@ namespace solim {
             bool nullSample = false;
 
             EnvUnit* e = eds->GetEnvUnit(x, y);
+            if(e==nullptr) continue;
             for (int i = 0; i < e->EnvValues.size(); ++i) {
                 if (fabs(e->EnvValues.at(i) - eds->Layers.at(i)->NoDataValue) < VERY_SMALL) {
                     nullSample = true;
@@ -1998,7 +2005,6 @@ namespace solim {
                 throw invalid_argument("Prototype inconsistent with layers");
                 return;
             }
-            qInfo()<<(*it).getProperty(targetVName);
         }
         int Xstart, Ystart;
         int nx, ny;
@@ -2043,7 +2049,7 @@ namespace solim {
                 long long int pixelCount = nx*ny;
                 double progressPara = 100.0/pixelCount;
                 if (n % int(pixelCount*0.01)==0 && n > 0) {
-                    qInfo()<<n<<predictedValue[n-1] << uncertaintyValue[n-1] << n*progressPara+i*100;
+                    qInfo()<<predictedValue[n-1] << uncertaintyValue[n-1];
                     if(omp_get_thread_num()==0)
                         progressBar->setValue(n*progressPara+i*100);
                     //cout <<n<<" "<<nx*ny<<" "<<omp_get_thread_num()<<endl;

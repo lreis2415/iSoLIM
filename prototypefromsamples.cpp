@@ -7,7 +7,9 @@ prototypeFromSamples::prototypeFromSamples(SoLIMProject *proj,QWidget *parent) :
 {
     ui->setupUi(this);
     project = proj;
-    ui->progress_label->setVisible(false);
+    ui->progressBar->setVisible(false);
+    ui->progressBar->setMinimum(0);
+    ui->progressBar->setMaximum(2);
     ui->covariate_tableWidget->clear();
     ui->covariate_tableWidget->setColumnCount(3);
     ui->covariate_tableWidget->setHorizontalHeaderItem(0,new QTableWidgetItem("Filename"));
@@ -23,9 +25,10 @@ prototypeFromSamples::~prototypeFromSamples()
 void prototypeFromSamples::on_addCovariate_btn_clicked()
 {
     QString filename = QFileDialog::getOpenFileName(this,
-                                                           tr("Open environmental covariate file"),
-                                                           "./",
-                                                           tr("Covariate file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
+                                                   tr("Open environmental covariate file"),
+                                                   "./",
+                                                   tr("Covariate file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
+    if(filename.isEmpty()) return;
     ui->covariate_tableWidget->insertRow(ui->covariate_tableWidget->rowCount());
     ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1,
                                             0,
@@ -81,6 +84,7 @@ void prototypeFromSamples::on_ok_btn_clicked()
 {
     string sampleFile = ui->sampleFile_lineEdit->text().toStdString();
     if(sampleFile.empty()||ui->covariate_tableWidget->rowCount()==0){
+        ui->progressBar->setVisible(false);
         QMessageBox warning;
         warning.setText("Please put in sample file and/or covariate layers!");
         warning.setStandardButtons(QMessageBox::Ok);
@@ -102,9 +106,13 @@ void prototypeFromSamples::on_ok_btn_clicked()
             ui->sampleFile_lineEdit->clear();
             ui->xFiled_comboBox->clear();
             ui->yFiled_comboBox->clear();
+            ui->progressBar->setVisible(false);
             return;
         }
     }
+    ui->ok_btn->setEnabled(false);
+    ui->progressBar->setVisible(true);
+    ui->progressBar->setValue(0);
     vector<string> envFileNames;
     vector<string> layernames;
     vector<string> datatypes;
@@ -140,7 +148,8 @@ void prototypeFromSamples::on_ok_btn_clicked()
         layernames = newLayernames;
         datatypes = newDatatypes;
     }
-
+    ui->progressBar->setValue(1);
+    //ui->progressBar->setRange(0,0);
     vector<Prototype>* prototypes = Prototype::getPrototypesFromSample(sampleFile,eds, prototypeName,
                                                                        ui->xFiled_comboBox->currentText().toStdString(),
                                                                        ui->yFiled_comboBox->currentText().toStdString());
@@ -149,6 +158,7 @@ void prototypeFromSamples::on_ok_btn_clicked()
     project->filenames.insert(project->filenames.end(),envFileNames.begin(),envFileNames.end());
     project->layernames.insert(project->layernames.end(),layernames.begin(),layernames.end());
     project->layertypes.insert(project->layertypes.end(),datatypes.begin(),datatypes.end());
+    ui->progressBar->setValue(2);
     QFile sampleQfile(sampleFile.c_str());
     if(!sampleQfile.open(QIODevice::ReadOnly))
          qDebug()<<"OPEN FILE FAILED";

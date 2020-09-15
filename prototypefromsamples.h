@@ -7,10 +7,11 @@
 #include <QDebug>
 #include <QMessageBox>
 #include <QFile>
+#include <QThread>
+#include <QtConcurrent/QtConcurrent>
 #include "project.h"
 #include "solim-lib-forqt.h"
 using solim::Prototype;
-
 namespace Ui {
 class prototypeFromSamples;
 }
@@ -37,7 +38,7 @@ private slots:
 private:
     Ui::prototypeFromSamples *ui;
     SoLIMProject *project;
-    void updateLabel();
+    //QThread thread;
 };
 
 #endif // PROTOTYPEFROMSAMPLES_H

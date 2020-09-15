@@ -15,6 +15,7 @@ inference::inference(SoLIMProject *proj, QWidget *parent) :
         QMessageBox alertMsg;
         alertMsg.setText("Please create a project first!");
         alertMsg.exec();
+        alertMsg.show();
         QTimer::singleShot(0, this, SLOT(close()));;
     } else {
         ui->setupUi(this);
@@ -119,6 +120,10 @@ void inference::on_Inference_OK_btn_clicked()
         ramEfficient=0.25;
     } else if(ui->RAMEfficient_high_rbtn->isChecked()){
         ramEfficient=0.75;
+        QMessageBox highMsg;
+        highMsg.setText("High RAM Efficiency is checked. Please do not open large software while inference is running if input layers are large!");
+        highMsg.exec();
+        highMsg.show();
     } else
         ramEfficient=0.5;
     double threshold=atof(ui->Threshold_lineEdit->text().toStdString().c_str());

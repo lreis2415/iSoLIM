@@ -10,6 +10,7 @@
 #include <gdal.h>
 #include <ogr_spatialref.h>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <stdlib.h>
 #include <Windows.h>

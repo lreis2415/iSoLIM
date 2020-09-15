@@ -19,6 +19,7 @@
 #include "project.h"
 #include "prototypefromsamples.h"
 #include "mygraphicsview.h"
+#include "newprojectdialog.h"
 #include <iostream>
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }

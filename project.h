@@ -5,6 +5,7 @@ class SoLIMProject{
 public:
     string projName;
     string projFilename;
+    string studyArea;
     vector<string> filenames;
     vector<string> layernames;
     vector<string> layertypes;

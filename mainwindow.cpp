@@ -91,39 +91,47 @@ void MainWindow::initDataDetailsView(){
 void MainWindow::onProjectNew(){
     if(!saveWarning())
         return;
-    string projFilename = QFileDialog::getSaveFileName(this,
-                                                  tr("Create SoLIM Project"),
-                                                  "./",
-                                                  tr("Project file(*.slp)")).toStdString();
-    if(projFilename.empty()){
-        return;
-    }
-    string projName;
-    size_t start = projFilename.find_last_of("/");
-    if(start==std::string::npos)
-        start = projFilename.find_last_of("\\");
-    size_t end = projFilename.find_last_of(".");
-    projName = projFilename.substr(start+1,end-start-1);
+    NewProjectDialog newProject;
+    newProject.exec();
+    //newProject.show();
+//    string projFilename = QFileDialog::getSaveFileName(this,
+//                                                  tr("Create SoLIM Project"),
+//                                                  "./",
+//                                                  tr("Project file(*.slp)")).toStdString();
+//    if(projFilename.empty()){
+//        return;
+//    }
+    QString projName = newProject.projectName;
+    QString studyArea = newProject.studyArea;
+    if(projName.isEmpty()) return;
+    proj = new SoLIMProject();
+    proj->projFilename = newProject.projectFilename.toStdString();
+    proj->projName = projName.toStdString();
+    proj->studyArea=studyArea.toStdString();
+//    size_t start = projFilename.find_last_of("/");
+//    if(start==std::string::npos)
+//        start = projFilename.find_last_of("\\");
+//    size_t end = projFilename.find_last_of(".");
+//    projName = projFilename.substr(start+1,end-start-1);
 
 
     model = new QStandardItemModel(this);
     model->setColumnCount(1);
     model->setRowCount(1);
-    model->setData(model->index(0,0), projName.c_str());
+    model->setData(model->index(0,0), projName);
 
+    if(!studyArea.isEmpty()){
+        model->item(0,0)->setChild(0,0, new QStandardItem("Study area: "+studyArea));
+    }
     prototypeChild = new QStandardItem("Prototypes");
-    model->item(0,0)->setChild(0,0,prototypeChild);
+    model->item(0,0)->setChild(model->item(0,0)->rowCount(),0,prototypeChild);
     resultChild = new QStandardItem("Results");
-    model->item(0,0)->setChild(1,0,resultChild);
+    model->item(0,0)->setChild(model->item(0,0)->rowCount(),0,resultChild);
     model->setHorizontalHeaderItem( 0, new QStandardItem("Projects") );
     //
-    //initialProjectView();
     projectView->setModel(model);
     projectView->expand(model->item(0,0)->index());
 
-    proj = new SoLIMProject();
-    proj->projFilename = projFilename;
-    proj->projName = projName;
     projectSaved = false;
     connect(projectView->selectionModel(),SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
             this, SLOT(onSelectionChanged(const QItemSelection&,const QItemSelection&)));

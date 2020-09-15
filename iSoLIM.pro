@@ -20,6 +20,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     mygraphicsview.cpp \
+    newprojectdialog.cpp \
     prototypefromsamples.cpp \
     solim-lib-forqt.cpp \
     third_party/tinystr.cpp \
@@ -31,6 +32,7 @@ HEADERS += \
     inference.h \
     mainwindow.h \
     mygraphicsview.h \
+    newprojectdialog.h \
     project.h \
     prototypefromsamples.h \
     solim-lib-forQt_global.h \
@@ -41,6 +43,7 @@ HEADERS += \
 FORMS += \
     inference.ui \
     mainwindow.ui \
+    newprojectdialog.ui \
     prototypefromsamples.ui
 
 # Default rules for deployment.
