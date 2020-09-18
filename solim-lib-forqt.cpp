@@ -8,10 +8,12 @@ BaseIO::BaseIO(string filename, FileDataType newFileDataType) {
         inCurLoc = 0;
         if ((threeDRfp = fopen(filename.c_str(), "r")) == NULL) {
             cout << "Cannot open inputFile for reading header." << endl;
+            openSuccess = false;
             return;	//Cannot open inputFile for reading header.
         }
         fscanf(threeDRfp, "%s", utilityString);
         if (strcmp(utilityString, "NumberOfRecords:") != 0) {
+            openSuccess = false;
             return;	//File format of inputFile has error(s).
         }
         else fscanf(threeDRfp, "%d", &NumberOfRecords);
@@ -199,6 +201,7 @@ BaseIO::BaseIO(string filename, FileDataType newFileDataType) {
     }
     blockIsInitialized = false;
     isFileInititialized = false;
+    openSuccess = true;
 }
 
 BaseIO::~BaseIO() {
@@ -914,6 +917,7 @@ namespace solim {
         iKnotNum = vecKnotX.size();
         source = UNKNOWN;
         typicalValue = NODATA;
+        range=0;
         if (iKnotNum != vecKnotY.size()) {
             throw invalid_argument("Error in knot coordinates");
         }
@@ -926,6 +930,7 @@ namespace solim {
         if (dataType == CONTINUOUS) {
             bubbleSort();
             calcSpline();
+            range=fabs(vecKnotX[0])>fabs(vecKnotX[iKnotNum-1])?fabs(vecKnotX[0]):fabs(vecKnotX[iKnotNum-1]);
         }
     }
 
@@ -940,10 +945,11 @@ namespace solim {
         iKnotNum = 0;
         typicalValue = NODATA;
         source = UNKNOWN;
+        range=0;
 
     }
 
-    Curve::Curve(string covName, DataTypeEnum type, int knotNum, string coords, string source_str) {
+    Curve::Curve(string covName, DataTypeEnum type, int knotNum, string coords, string source_str,double valueRange) {
         // knowledge from experts: word rule
         covariateName = covName;
         dataType = type;
@@ -953,6 +959,7 @@ namespace solim {
         vecDDY.clear();
         vecS.clear();
         iKnotNum = knotNum;
+        range = valueRange;
         if(source_str=="SAMPLE")
             source = SAMPLE;
         else if(source_str=="EXPERT")
@@ -981,7 +988,7 @@ namespace solim {
         calcSpline();
     }
 
-    Curve::Curve(string covName, double lowUnity, double highUnity, double lowCross, double highCross, double lowRange, double highRange, CurveTypeEnum curveType) {
+    Curve::Curve(string covName, double lowUnity, double highUnity, double lowCross, double highCross, CurveTypeEnum curveType) {
         // knowledge from experts: range rule
         covariateName = covName;
         source = EXPERT;
@@ -992,21 +999,26 @@ namespace solim {
         vecDDY.clear();
         vecS.clear();
         iKnotNum = 0;
+        double rangePar=5.1551357653410932047;
+        double lowRange=lowUnity-(lowUnity - lowCross)*rangePar;
+        double highRange=highUnity+(highCross-highUnity)*rangePar;
+        range=fabs(lowRange)>fabs(highRange)?fabs(lowRange):fabs(highRange);
 
         // add 6 points to generate the spline curve
         // two unity points, two range points, and two cross points
         if (curveType == BELL_SHAPED) {
-            addKnot(lowRange, exp(pow(fabs(lowRange - lowUnity) / (lowUnity - lowCross), 2)*log(0.5)));
+            addKnot(lowRange, 0);
             addKnot(lowCross, 0.5);
             addKnot(lowUnity, 1);
             addKnot(highUnity, 1);
             addKnot(highCross, 0.5);
-            addKnot(highRange, exp(pow(fabs(highRange - highUnity) / (highUnity - highCross), 2)*log(0.5)));
+            addKnot(highRange, 0);
             typicalValue = (highUnity+lowUnity)*0.5;
         }
         else if (curveType == S_SHAPED) {
+            range=fabs(lowRange)>fabs(highUnity)?fabs(lowRange):fabs(highUnity);
             highUnity = (lowUnity + highRange) / 2;
-            addKnot(lowRange, exp(pow(fabs(lowRange - lowUnity) / (lowUnity - lowCross), 2)*log(0.5)));
+            addKnot(lowRange, 0);
             addKnot(lowCross, 0.5);
             addKnot(lowUnity, 1);
             addKnot(highUnity, 1);
@@ -1014,12 +1026,13 @@ namespace solim {
             typicalValue = highUnity;
         }
         else if (curveType == Z_SHAPED) {
+            range=fabs(lowUnity)>fabs(highRange)?fabs(lowUnity):fabs(highRange);
             lowUnity = (highUnity + lowRange) / 2;
             addKnot(lowRange, 1);
             addKnot(lowUnity, 1);
             addKnot(highUnity, 1);
             addKnot(highCross, 0.5);
-            addKnot(highRange, exp(pow(fabs(highRange - highUnity) / (highUnity - highCross), 2)*log(0.5)));
+            addKnot(highRange, 0);
             typicalValue = lowUnity;
         }
         bubbleSort();
@@ -1039,17 +1052,15 @@ namespace solim {
         vecDDY.clear();
         vecS.clear();
         int row, col;
-        //int halfKnotNum = 3;
+        double max = layer->Data_Max;
+        double min = layer->Data_Min;
+        range = (fabs(max)>fabs(min))?fabs(max):fabs(min);
         layer->baseRef->geoToGlobalXY(x, y, col, row);
         typicalValue = layer->baseRef->getValue(col, row);
         if (dataType == CATEGORICAL) {
             addKnot(typicalValue, 1);
             return;
         }
-        double dataMin = layer->Data_Min;
-        double dataMax = layer->Data_Max;
-        dataMin -= 0.2*(dataMax - dataMin);
-        dataMax += 0.2*(dataMax - dataMin);
         int cellNum = 0;
         double sum = 0;
         double squareSum = 0;
@@ -1070,24 +1081,15 @@ namespace solim {
         double SDSquare = squareSum / (double)cellNum - mean * mean;
         double SDjSquare = SDjSquareSum / (double)cellNum;
 
-        /*for (int i = 0; i < halfKnotNum; ++i) {
-            double knotX = dataMin + (typicalValue - dataMin) / (double)halfKnotNum * i;
-            double knotY = exp(-pow(knotX - typicalValue, 2) * 0.5 / SDSquare*SDSquare * SDjSquare);
-            addKnot(knotX, knotY);
-        }
-        addKnot(typicalValue, 1);
-
-        for (int i = 0; i < halfKnotNum; ++i) {
-            double knotX = typicalValue + (dataMax - typicalValue) / (double)halfKnotNum * (i+1);
-            double knotY = exp(-pow(knotX - typicalValue, 2) * 0.5 / SDSquare*SDSquare * SDjSquare);
-            addKnot(knotX, knotY);
-        }*/
         double halfPar = SDSquare/sqrt(SDjSquare)*1.17741002251547469101;    // 1.117=sqrt(-2*ln0.5);
-        addKnot(dataMax, exp(-pow(dataMax-typicalValue,2) * 0.5/SDSquare*SDSquare * SDjSquare));
+        double zeroPar = SDSquare/sqrt(SDjSquare)*6.06970851754058540345;    // 6.069=sqrt(-2*ln0.00000001);
+        //addKnot(dataMax, exp(-pow(dataMax-typicalValue,2) * 0.5/SDSquare*SDSquare * SDjSquare));
+        addKnot(typicalValue - zeroPar,0);
         addKnot(typicalValue - halfPar,0.5);
         addKnot(typicalValue,1);
         addKnot(typicalValue + halfPar, 0.5);
-        addKnot(dataMin, exp(-pow(dataMin-typicalValue,2) * 0.5/SDSquare*SDSquare * SDjSquare));
+        addKnot(typicalValue + zeroPar, 0);
+        //addKnot(dataMin, exp(-pow(dataMin-typicalValue,2) * 0.5/SDSquare*SDSquare * SDjSquare));
 
         bubbleSort();
         calcSpline();
@@ -1124,10 +1126,8 @@ namespace solim {
             return 0;
         }
         // for continuous value
-        if (envValue < vecKnotX[0] || envValue > vecKnotX[iKnotNum - 1]) {
-            //cout << "Optimality calculation error: environmental value exceeds the range of spline curves";
-            return -1;
-        }
+        if (envValue < vecKnotX[0]) return vecKnotY[0];
+        if (envValue > vecKnotX[iKnotNum - 1])   return vecKnotY[iKnotNum-1];
         //int left = 0;
         //int right = iKnotNum - 1;
         int pos = -1;
@@ -1556,6 +1556,11 @@ namespace solim {
             TiXmlText *datatype_text = new TiXmlText(getDatatypeInString((*it).dataType).c_str());
             datatype_node->LinkEndChild(datatype_text);
 
+            // add range to curve
+            TiXmlElement *range_node = new TiXmlElement("Range");
+            curve_node->LinkEndChild(range_node);
+            TiXmlText *range_text = new TiXmlText(to_string((*it).range).c_str());
+            range_node->LinkEndChild(range_text);
 
             // add coordinates to curve
             TiXmlElement *coords_node = new TiXmlElement("Coordinates");

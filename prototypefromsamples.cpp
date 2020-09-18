@@ -24,29 +24,31 @@ prototypeFromSamples::~prototypeFromSamples()
 
 void prototypeFromSamples::on_addCovariate_btn_clicked()
 {
-    QString filename = QFileDialog::getOpenFileName(this,
+    QStringList filenames = QFileDialog::getOpenFileNames(this,
                                                    tr("Open environmental covariate file"),
                                                    "./",
                                                    tr("Covariate file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
-    if(filename.isEmpty()) return;
-    ui->covariate_tableWidget->insertRow(ui->covariate_tableWidget->rowCount());
-    ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1,
-                                            0,
-                                            new QTableWidgetItem(filename));
-    std::size_t first = filename.toStdString().find_last_of('/');
-    if (first==std::string::npos){
-        first = filename.toStdString().find_last_of('\\');
+    if(filenames.size()==0) return;
+    for(QString filename : filenames){
+        ui->covariate_tableWidget->insertRow(ui->covariate_tableWidget->rowCount());
+        ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1,
+                                                0,
+                                                new QTableWidgetItem(filename));
+        std::size_t first = filename.toStdString().find_last_of('/');
+        if (first==std::string::npos){
+            first = filename.toStdString().find_last_of('\\');
+        }
+        std::size_t end = filename.toStdString().find_last_of('.');
+        QString covariate = filename.toStdString().substr(first+1,end-first-1).c_str();
+        ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1,
+                                                1,
+                                                new QTableWidgetItem(covariate));
+        QCheckBox *categoriacl_cb = new QCheckBox();
+        categoriacl_cb->setChecked(false);
+        ui->covariate_tableWidget->setCellWidget(ui->covariate_tableWidget->rowCount()-1,
+                                                2,
+                                                categoriacl_cb);
     }
-    std::size_t end = filename.toStdString().find_last_of('.');
-    QString covariate = filename.toStdString().substr(first+1,end-first-1).c_str();
-    ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1,
-                                            1,
-                                            new QTableWidgetItem(covariate));
-    QCheckBox *categoriacl_cb = new QCheckBox();
-    categoriacl_cb->setChecked(false);
-    ui->covariate_tableWidget->setCellWidget(ui->covariate_tableWidget->rowCount()-1,
-                                            2,
-                                            categoriacl_cb);
 }
 
 void prototypeFromSamples::on_deleteCovariate_btn_clicked()

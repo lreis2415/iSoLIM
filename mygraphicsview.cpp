@@ -64,16 +64,21 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent * e){
         if(row<tempimg.height()-1&&col<tempimg.width()-1&&row>0&&col>0){
             QStandardItemModel*model = new QStandardItemModel(dataDetailsView);
 
-            for(int i = -1; i<2;i++){
-                for(int j = -1;j<2;j++){
+            for(int i = -4; i<5;i++){
+                for(int j = -4;j<5;j++){
                     int pixel = tempimg.pixelColor(col+i,row+j).red();
                     if(pixel == 255){
                                     //dataDetailsModel->setItem(i,j, new QStandardItem(""));
-                        model->setItem(i+1,j+1, new QStandardItem("NoData"));
+                        model->setItem(i+4,j+4, new QStandardItem("NoData"));
                     } else {
-                        model->setItem(i+1,j+1,new QStandardItem(QString::number(int(pixel*range+imgMin))));
+                        if(range>100)
+                            model->setItem(i+4,j+4,new QStandardItem(QString::number(int(pixel*range+imgMin))));
+                        else
+                            model->setItem(i+4,j+4,new QStandardItem(QString::number(pixel*range+imgMin,'g',4)));
                         //((QStandardItemModel*)dataDetailsView->model())->item(i+1,j+1)->setData(QString::number(int(pixel*range+imgMin)));
                     }
+                    if(i==0&&j==0)
+                        model->item(i+4,j+4)->setForeground(QBrush(QColor(255, 0, 0)));
                 }
             }
             dataDetailsView->setModel(model);

@@ -138,6 +138,7 @@ public:
 
     void setFileName(string name) { fileName = name; }
     void setNodataValue(double nodata) { noDataValue = nodata; }
+    bool openSuccess;
 };
 
 namespace solim {
@@ -170,6 +171,7 @@ namespace solim {
         CONTINUOUS,
         OTHER
     };
+    static const char* DataTypeEnum_str[]={"CATEGORICAL","CONTINUOUS","OTHER"};
     enum CurveTypeEnum {
         BELL_SHAPED,
         S_SHAPED,
@@ -420,6 +422,7 @@ namespace solim {
         string covariateName;
         DataTypeEnum dataType;
         double typicalValue;
+        double range;
         PrototypeSource source;
     private:
         vector <double> vecKnotX;
@@ -431,9 +434,9 @@ namespace solim {
     public:
         Curve();
         Curve(string covName, DataTypeEnum type);
-        Curve(string covName, DataTypeEnum type, int knotNum, string coords,string source="UNKNOWN");
+        Curve(string covName, DataTypeEnum type, int knotNum, string coords,string source="UNKNOWN",double valueRange =0);
         Curve(string covName, DataTypeEnum type, vector<double> *x, vector<double> *y);	// freehand rule
-        Curve(string covName, double lowUnity, double highUnity, double lowCross, double highCross, double lowRange, double highRange, CurveTypeEnum curveType);	// range rule
+        Curve(string covName, double lowUnity, double highUnity, double lowCross, double highCross, CurveTypeEnum curveType);	// range rule
         Curve(string covName, double xcoord, double ycoord, EnvLayer *layer);	// point rule
         void addKnot(double x, double y);
         double getOptimality(double x);

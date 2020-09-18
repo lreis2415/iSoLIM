@@ -20,6 +20,7 @@
 #include "prototypefromsamples.h"
 #include "mygraphicsview.h"
 #include "newprojectdialog.h"
+#include "addgisdatadialog.h"
 #include <iostream>
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -40,10 +41,11 @@ public:
     QAction *addPrototype;
     QAction *addExclusion;
     QAction *addOccurrence;
-    QMenu* viewDataMenu;
-    QAction* viewData;
+    QMenu* gisDataMenu;
+    QAction* addGisData;
     QStandardItem *resultChild;
     QStandardItem *prototypeChild;
+    QStandardItem *gisDataChild;
     SoLIMProject *proj;
 private slots:
     void onSoilInferenceFromPrototypes();
@@ -58,6 +60,8 @@ private slots:
     void onSelectionChanged(const QItemSelection&,const QItemSelection&);
     void onZoomin();
     void onZoomout();
+    void onAddGisData();
+    void onGetGisData();
 
     //void on_layerInfo_btn_clicked();
 
@@ -81,5 +85,6 @@ private:
     void initialProjectView();
     bool saveWarning();
     void initDataDetailsView();
+    void initModel();
 };
 #endif // MAINWINDOW_H

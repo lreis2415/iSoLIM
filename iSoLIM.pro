@@ -16,6 +16,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    addgisdatadialog.cpp \
     inference.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -29,6 +30,7 @@ SOURCES += \
     third_party/tinyxmlparser.cpp
 
 HEADERS += \
+    addgisdatadialog.h \
     inference.h \
     mainwindow.h \
     mygraphicsview.h \
@@ -41,6 +43,7 @@ HEADERS += \
     third_party/tinyxml.h
 
 FORMS += \
+    addgisdatadialog.ui \
     inference.ui \
     mainwindow.ui \
     newprojectdialog.ui \

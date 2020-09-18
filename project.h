@@ -18,6 +18,7 @@ public:
     SoLIMProject(){
         projName = "";
         projFilename = "";
+        studyArea="";
         filenames.clear();
         layernames.clear();
         layertypes.clear();

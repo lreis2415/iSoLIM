@@ -1,77 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>NewProjectDialog</class>
- <widget class="QDialog" name="NewProjectDialog">
+ <class>AddGisDataDialog</class>
+ <widget class="QDialog" name="AddGisDataDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>152</height>
+    <height>124</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>New Project</string>
+   <string>Add GIS Data</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>Project name:</string>
+        <string>Filename:</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="projName_lineEdit"/>
+      <widget class="QLineEdit" name="filename_lineEdit"/>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QLabel" name="label_3">
+      <widget class="QPushButton" name="browse_btn">
        <property name="text">
-        <string>Path:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="projPath_lineEdit"/>
-     </item>
-     <item>
-      <widget class="QPushButton" name="pushButton">
-       <property name="text">
-        <string>browse</string>
+        <string>Browse</string>
        </property>
       </widget>
      </item>
     </layout>
    </item>
    <item>
-    <widget class="QRadioButton" name="studyArea_radioButton">
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Covariate:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="covariate_lineEdit"/>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkBox">
      <property name="text">
-      <string>Specify study area</string>
+      <string>This is a catogorical covariate.</string>
      </property>
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="studyArea_layout">
-     <item>
-      <widget class="QLabel" name="studyArea_label">
-       <property name="text">
-        <string>Study area:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="studyArea_lineEdit"/>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_4">
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">

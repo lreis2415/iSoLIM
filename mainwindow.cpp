@@ -48,10 +48,10 @@ MainWindow::MainWindow(QWidget *parent)
     addPrototype = nullptr;
     addExclusion = nullptr;
     addOccurrence = nullptr;
-    viewDataMenu = nullptr;
-    viewData = nullptr;
+    addGisData = nullptr;
     resultChild = nullptr;
     prototypeChild = nullptr;
+    gisDataChild = nullptr;
 }
 
 MainWindow::~MainWindow()
@@ -70,8 +70,8 @@ MainWindow::~MainWindow()
     if(addPrototype!=nullptr)    delete addPrototype;
     if(addExclusion!=nullptr)    delete addExclusion;
     if(addOccurrence!=nullptr)   delete addOccurrence;
-    if(viewDataMenu!=nullptr)    delete viewDataMenu;
-    if(viewData!=nullptr)    delete viewData;
+    if(gisDataMenu!=nullptr)    delete gisDataMenu;
+    if(addGisData!=nullptr)    delete addGisData;
     if(resultChild!=nullptr) delete resultChild;
     if(prototypeChild!=nullptr)  delete prototypeChild;
     if(proj!=nullptr)    delete proj;
@@ -81,8 +81,6 @@ void MainWindow::initDataDetailsView(){
     dataDetailsView = new QTableView(dataDetailsDock);
     dataDetailsView->verticalHeader()->hide();
     dataDetailsView->horizontalHeader()->hide();
-//    for(int i = 0; i<3;i++)
-//        dataDetailsView->setColumnWidth(i,50);
     dataDetailsView->setShowGrid(false);
     dataDetailsDock->setFeatures(dataDetailsDock->features() & ~QDockWidget::DockWidgetClosable);
     dataDetailsDock->setWidget(dataDetailsView);
@@ -93,14 +91,6 @@ void MainWindow::onProjectNew(){
         return;
     NewProjectDialog newProject;
     newProject.exec();
-    //newProject.show();
-//    string projFilename = QFileDialog::getSaveFileName(this,
-//                                                  tr("Create SoLIM Project"),
-//                                                  "./",
-//                                                  tr("Project file(*.slp)")).toStdString();
-//    if(projFilename.empty()){
-//        return;
-//    }
     QString projName = newProject.projectName;
     QString studyArea = newProject.studyArea;
     if(projName.isEmpty()) return;
@@ -108,27 +98,26 @@ void MainWindow::onProjectNew(){
     proj->projFilename = newProject.projectFilename.toStdString();
     proj->projName = projName.toStdString();
     proj->studyArea=studyArea.toStdString();
-//    size_t start = projFilename.find_last_of("/");
-//    if(start==std::string::npos)
-//        start = projFilename.find_last_of("\\");
-//    size_t end = projFilename.find_last_of(".");
-//    projName = projFilename.substr(start+1,end-start-1);
+    initModel();
 
+}
 
+void MainWindow::initModel(){
     model = new QStandardItemModel(this);
     model->setColumnCount(1);
     model->setRowCount(1);
-    model->setData(model->index(0,0), projName);
-
-    if(!studyArea.isEmpty()){
-        model->item(0,0)->setChild(0,0, new QStandardItem("Study area: "+studyArea));
+    model->setData(model->index(0,0), proj->projName.c_str());
+    if(!proj->studyArea.empty()){
+        model->item(0,0)->setChild(0,0, new QStandardItem(("Study area: "+proj->studyArea).c_str()));
     }
+    gisDataChild = new QStandardItem("GIS Data");
+    model->item(0,0)->setChild(model->item(0,0)->rowCount(),0,gisDataChild);
     prototypeChild = new QStandardItem("Prototypes");
     model->item(0,0)->setChild(model->item(0,0)->rowCount(),0,prototypeChild);
     resultChild = new QStandardItem("Results");
     model->item(0,0)->setChild(model->item(0,0)->rowCount(),0,resultChild);
     model->setHorizontalHeaderItem( 0, new QStandardItem("Projects") );
-    //
+
     projectView->setModel(model);
     projectView->expand(model->item(0,0)->index());
 
@@ -179,12 +168,13 @@ void MainWindow::initialProjectView(){
     prototypesFromSamples = new QAction("Create new prototype base",prototypeMenu);
     prototypeMenu->addAction(prototypesFromSamples);
     projectView->addAction(prototypesFromSamples);
-    viewDataMenu = new QMenu(projectView);
-    viewData = new QAction("View Data", viewDataMenu);
-    viewDataMenu->addAction(viewData);
-    projectView->addAction(viewData);
+    gisDataMenu = new QMenu(projectView);
+    addGisData = new QAction("Add GIS Data", gisDataMenu);
+    gisDataMenu->addAction(addGisData);
+    projectView->addAction(addGisData);
     connect(prototypesFromSamples,SIGNAL(triggered()),this,SLOT(onAddPrototypeFromSamples()));
-    projectView->addAction(viewData);
+    connect(addGisData,SIGNAL(triggered()),this,SLOT(onAddGisData()));
+    //projectView->addAction(viewData);
     projectViewInitialized = true;
 }
 void MainWindow::onSelectionChanged(const QItemSelection& current,const QItemSelection& previous){
@@ -194,8 +184,19 @@ void MainWindow::onSelectionChanged(const QItemSelection& current,const QItemSel
         drawLayer(filename);
     }
     else if(index.isValid()&&index.parent().data().toString().compare("Covariates")==0){
+        string layername=index.data().toString().midRef(11).toString().toStdString();
+        qInfo()<<layername.c_str();
         string filename = index.child(1,0).data().toString().toStdString();
-        filename = filename.substr(11);
+        for(int k = 0;k < proj->layernames.size();k++){
+            if(layername==proj->layernames[k].c_str()){
+                filename=proj->filenames[k];
+                break;
+            }
+        }
+        drawLayer(filename);
+    }
+    else if(index.isValid()&&index.parent().data().toString().compare("GIS Data")==0){
+        string filename = index.child(0,0).data().toString().midRef(10).toString().toStdString();
         drawLayer(filename);
     }
     else if(index.isValid()&&index.data().toString().compare("Membership Function")==0){
@@ -230,6 +231,10 @@ void MainWindow::onProjectSave(){
     root_node->LinkEndChild(workingDirec_node);
     TiXmlText *workingDirec_text = new TiXmlText(proj->projFilename.c_str());
     workingDirec_node->LinkEndChild(workingDirec_text);
+    TiXmlElement *studyArea_node = new TiXmlElement("StudyArea");
+    root_node->LinkEndChild(studyArea_node);
+    TiXmlText *studyarea_text = new TiXmlText(proj->studyArea.c_str());
+    studyArea_node->LinkEndChild(studyarea_text);
     TiXmlElement *gisData_node = new TiXmlElement("GISData");
     root_node->LinkEndChild(gisData_node);
     TiXmlElement *prototypes_node = new TiXmlElement("Prototypes");
@@ -287,25 +292,13 @@ void MainWindow::onProjectOpen(){
     proj = new SoLIMProject();
     proj->projName = projectHandle.ToElement()->Attribute("Name");
     proj->projFilename = projectHandle.FirstChildElement("ProjectFilename").ToElement()->GetText();
+    if(projectHandle.FirstChildElement("StudyArea").ToElement()->GetText())
+        proj->studyArea = projectHandle.FirstChildElement("StudyArea").ToElement()->GetText();
+    else
+        proj->studyArea = "";
 
-    model = new QStandardItemModel(this);
-    model->setColumnCount(1);
-    model->setRowCount(1);
-    model->setData(model->index(0,0), proj->projName.c_str());
-
-    prototypeChild = new QStandardItem("Prototypes");
-    model->item(0,0)->setChild(0,0,prototypeChild);
-    resultChild = new QStandardItem("Results");
-    model->item(0,0)->setChild(1,0,resultChild);
-
-    model->setHorizontalHeaderItem( 0, new QStandardItem("Projects") );
-
-    //initialProjectView();
-    projectView->setModel(model);
-    projectView->expand(model->item(0,0)->index());
-//    ui->dataTreeView->setModel( model );
-//    ui->dataTreeView->expand(model->item(0,0)->index());
-
+    initModel();
+    // read gis data
     TiXmlHandle gisDataHandle = projectHandle.FirstChildElement("GISData");
     for(TiXmlElement* layer = gisDataHandle.FirstChildElement("Layer").ToElement();
         layer; layer = layer->NextSiblingElement("Layer")){
@@ -313,6 +306,7 @@ void MainWindow::onProjectOpen(){
         proj->layertypes.push_back(layer->Attribute("Type"));
         proj->filenames.push_back(layer->GetText());
     }
+    onGetGisData();
     // add prototypes
     string tmpBaseName;
     TiXmlHandle prototypesHandle = projectHandle.FirstChildElement("Prototypes");
@@ -334,7 +328,8 @@ void MainWindow::onProjectOpen(){
             solim::DataTypeEnum datatype = solim::getDatatypeFromString(curveElement->FirstChildElement("DataType")->GetText());
             int nodeNum = atoi(curveElement->FirstChildElement("NodeNum")->GetText());
             string coords = curveElement->FirstChildElement("Coordinates")->GetText();
-            solim::Curve *c = new solim::Curve(covName, datatype, nodeNum, coords, source);
+            double range = atof(curveElement->FirstChildElement("Range")->GetText());
+            solim::Curve *c = new solim::Curve(covName, datatype, nodeNum, coords, source, range);
             c->typicalValue = atof(envAttri->FirstChildElement("TypicalValue")->GetText());
             proto.envConditions.push_back(*c);
             ++(proto.envConditionSize);
@@ -365,9 +360,7 @@ void MainWindow::onProjectOpen(){
     }
     onGetPrototype();
     projectSaved = true;
-    connect(projectView->selectionModel(),SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
-            this, SLOT(onSelectionChanged(const QItemSelection&,const QItemSelection&)));
-    ui->actionAdd_prototypes_from_samples->setEnabled(true);
+
 }
 void MainWindow::onSoilInferenceFromPrototypes(){
     if(proj){
@@ -385,64 +378,77 @@ void MainWindow::onAddPrototypeFromSamples(){
     projectSaved = false;
 }
 
+void MainWindow::onAddGisData(){
+    AddGisDataDialog addGisData(this);
+    addGisData.exec();
+    if(!addGisData.filename.isEmpty()){
+        proj->filenames.push_back(addGisData.filename.toStdString());
+        proj->layernames.push_back(addGisData.covariate.toStdString());
+        proj->layertypes.push_back(addGisData.datatype);
+        onGetGisData();
+    }
+}
+void MainWindow::onGetGisData(){
+    gisDataChild->setColumnCount(1);
+    if(proj->filenames.size()>gisDataChild->rowCount()){
+        for(int i = 0;i<proj->filenames.size();i++){
+            gisDataChild->setChild(i,0,new QStandardItem(proj->layernames[i].c_str()));
+            gisDataChild->child(i)->setChild(0,0,new QStandardItem(("Filename: "+proj->filenames[i]).c_str()));
+            gisDataChild->child(i)->setChild(1,0,new QStandardItem(("Type: "+proj->layertypes[i]).c_str()));
+        }
+    }
+}
+
 void MainWindow::onGetPrototype(){
     prototypeChild->setColumnCount(1);
     if(proj->prototypes.size()>0){
-        for(vector<Prototype>::iterator it = proj->prototypes.begin(); it!=proj->prototypes.end();it++){
-            prototypeChild->setRowCount(prototypeChild->rowCount()+1);
-            string prototypename = "Prototype: "+(*it).prototypeBaseName +" (ID: "+(*it).prototypeID + ")";
-            QStandardItem* prototype = new QStandardItem(prototypename.c_str());
-            prototypeChild->setChild(prototypeChild->rowCount()-1,0,prototype);
-            prototype->setColumnCount(1);
-            prototype->setRowCount(2);
-            QStandardItem* properties = new QStandardItem("Properties");
-            prototype->setChild(0,0,properties);
-            properties->setColumnCount(1);
-            for(int i = 0;i<(*it).properties.size();i++) {
-                string property = (*it).properties[i].propertyName;
-                if((*it).properties[i].soilPropertyType==solim::CATEGORICAL){
-                    property += " (category): " + to_string(int((*it).properties[i].propertyValue));
-                } else
-                    property += " (property): " + to_string((*it).properties[i].propertyValue);
-                properties->setRowCount(properties->rowCount()+1);
-                properties->setChild(properties->rowCount()-1,0,new QStandardItem(property.c_str()));
-            }
-            QStandardItem* covariates = new QStandardItem("Covariates");
-            prototype->setChild(1,0,covariates);
-            covariates->setColumnCount(1);
-            for(int j = 0; j<(*it).envConditionSize;j++){
-                string cov = "Covariate: " + (*it).envConditions[j].covariateName;
-                covariates->setRowCount(covariates->rowCount()+1);
-                QStandardItem *covItem = new QStandardItem(cov.c_str());
-                covariates->setChild(covariates->rowCount()-1,0,covItem);
-                covItem->setRowCount(4);
-                covItem->setColumnCount(1);
-                // set source child
-                string source = "Source: ";
-                source.append(solim::PrototypeSource_str[(*it).envConditions[j].source]);
-                covItem->setChild(0,0,new QStandardItem(source.c_str()));
-                // set data file child
-                string datafile = "Data file: ";
-                for(int k = 0;k < proj->layernames.size();k++){
-                    if((*it).envConditions[j].covariateName==proj->layernames[k].c_str()){
-                        datafile += proj->filenames[k];
-                        break;
+        for(int i =0;i<proj->prototypeBaseNames.size();i++){
+            string prototypebase = proj->prototypeBaseNames[i];
+            QStandardItem *prototypeBase = new QStandardItem(("Prototype Base: "+prototypebase).c_str());
+            prototypeChild->setChild(i,0,prototypeBase);
+            for(vector<Prototype>::iterator it = proj->prototypes.begin(); it!=proj->prototypes.end();it++){
+                if((*it).prototypeBaseName==prototypebase){
+                    QStandardItem* prototype = new QStandardItem(("Prototype ID: "+(*it).prototypeID).c_str());
+                    prototypeBase->setChild(prototypeBase->rowCount(),0,prototype);
+                    prototype->setColumnCount(1);
+                    QStandardItem* properties = new QStandardItem("Properties");
+                    prototype->setChild(0,0,properties);
+                    properties->setColumnCount(1);
+                    for(int i = 0;i<(*it).properties.size();i++) {
+                        string property = (*it).properties[i].propertyName;
+                        if((*it).properties[i].soilPropertyType==solim::CATEGORICAL){
+                            property += " (category): " + to_string(int((*it).properties[i].propertyValue));
+                        } else
+                            property += " (property): " + to_string((*it).properties[i].propertyValue);
+                        properties->setRowCount(properties->rowCount()+1);
+                        properties->setChild(properties->rowCount()-1,0,new QStandardItem(property.c_str()));
+                    }
+                    QStandardItem* covariates = new QStandardItem("Covariates");
+                    prototype->setChild(1,0,covariates);
+                    covariates->setColumnCount(1);
+                    for(int j = 0; j<(*it).envConditionSize;j++){
+                        string cov = "Covariate: " + (*it).envConditions[j].covariateName;
+                        covariates->setRowCount(covariates->rowCount()+1);
+                        QStandardItem *covItem = new QStandardItem(cov.c_str());
+                        covariates->setChild(covariates->rowCount()-1,0,covItem);
+                        covItem->setColumnCount(1);
+                        // set source child
+                        string source = "Source: ";
+                        source.append(solim::PrototypeSource_str[(*it).envConditions[j].source]);
+                        covItem->setChild(0,0,new QStandardItem(source.c_str()));
+                        double typicalValue = (*it).envConditions[j].typicalValue;
+                        if(fabs(typicalValue-NODATA)>VERY_SMALL){
+                            string typicalV = "Typical value: "+to_string(typicalValue);
+                            covItem->setChild(1,0,new QStandardItem(typicalV.c_str()));
+                        }
+                        // set membership function
+                        covItem->setChild(covItem->rowCount(),0,new QStandardItem("Membership Function"));
                     }
                 }
-                covItem->setChild(1,0,new QStandardItem(datafile.c_str()));
-                // set typical value
-                double typicalValue = (*it).envConditions[j].typicalValue;
-                if(fabs(typicalValue-NODATA)>VERY_SMALL){
-                    string typicalV = "Typical value: "+to_string(typicalValue);
-                    covItem->setChild(2,0,new QStandardItem(typicalV.c_str()));
-                } else {
-                    covItem->setRowCount(3);
-                }
-                // set membership function
-                covItem->setChild(covItem->rowCount()-1,0,new QStandardItem("Membership Function"));
             }
         }
     }
+    onGetGisData();
 }
 
 void MainWindow::onInferResults(){
@@ -475,15 +481,16 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
     if(index.isValid()&&index.data().toString().compare("Prototypes")==0){
         prototypeMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
-    if(index.isValid()&&index.parent().data().toString().compare("Covariates")==0){
-        viewDataMenu->exec(projectView->viewport()->mapToGlobal(point));
+    else if(index.isValid()&&index.data().toString().compare("GIS Data")==0){
+        gisDataMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
-    if(index.isValid()&&index.parent().data().toString().compare("Results")==0){
-        viewDataMenu->exec(projectView->viewport()->mapToGlobal(point));
-    }
+//    if(index.isValid()&&index.parent().data().toString().compare("Results")==0){
+//        viewDataMenu->exec(projectView->viewport()->mapToGlobal(point));
+//    }
 }
 
 void MainWindow::drawLayer(string filename){
+    if(filename.empty()) return;
     myGraphicsView->showImage = true;
     zoomToolBar->setVisible(true);
     imgFilename = filename;
@@ -491,6 +498,7 @@ void MainWindow::drawLayer(string filename){
     string imagename = filename+".png";
     img = new QImage(imagename.c_str());
     BaseIO *lyr = new BaseIO(filename);
+    if(!lyr->openSuccess) return;
     imgMax = lyr->getDataMax();
     imgMin = lyr->getDataMin();
     if(img->isNull()){
@@ -577,9 +585,7 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
     y2 = atof(endCoord[1].c_str());
     int sceneWidth = myGraphicsView->getScene()->width();
     int sceneHeight = myGraphicsView->getScene()->height();
-    double max = (6*x2+x1)/7.0;
-    double min = (6*x1+x2)/7.0;
-    double scale = (fabs(max)>fabs(min))?fabs(max):fabs(min);
+    double scale = proj->prototypes[protoPos].envConditions[covPos].range;
     if(scale<10) scale = int(scale)+1;
     else scale = (int(scale/10)+1)*10*2;
     int margin = 0.5*scale;
@@ -629,20 +635,16 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
     xaxis0->setFont(QFont("Times", 10, QFont::Bold));
     xaxis0->setPos(0.10*sceneWidth-4*xaxis0->toPlainText().size(),0.85*sceneHeight);
     double previousx,previousy;
-    if(-margin>x1){
-        previousy = proj->prototypes[protoPos].envConditions[covPos].getOptimality(0-margin);
-        previousx = -margin;
-    } else {
-        previousy = proj->prototypes[protoPos].envConditions[covPos].getOptimality(min);
-        previousx = min;
-    }
+    previousy = proj->prototypes[protoPos].envConditions[covPos].getOptimality(0-margin);
+    previousx = -margin;
+
     double x,y;
     int graphWidth = 0.7*sceneWidth;
     int graphHeight = 0.7*sceneHeight;
     int xStart = 0.10*sceneWidth;
     int yEnd = 0.85*sceneHeight;
     for(int i =0;i<100;i++){
-        x =i*(max-min)/101.0+min;
+        x =i*2*margin/101.0-margin;
         y = proj->prototypes[protoPos].envConditions[covPos].getOptimality(x);
         if(fabs(y+1)<VERY_SMALL ||fabs(previousy+1)<VERY_SMALL)
             continue;
