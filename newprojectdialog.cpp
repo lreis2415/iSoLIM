@@ -36,11 +36,17 @@ void NewProjectDialog::on_ok_btn_clicked()
 {
     projectName=ui->projName_lineEdit->text();
     projectFilename=QDir(ui->projPath_lineEdit->text()).filePath(projectName)+".slp";
+    if(QFile(projectFilename).exists()){
+        QMessageBox fileExistWarning;
+        fileExistWarning.setText("Project file already exists. Do you want to replace it?");
+        fileExistWarning.setStandardButtons(QMessageBox::Yes|QMessageBox::No);
+        int res = fileExistWarning.exec();
+        if(res==QMessageBox::No)
+            return;
+    }
     studyArea=ui->studyArea_lineEdit->text();
     close();
 }
-
-
 
 void NewProjectDialog::on_projName_lineEdit_textChanged(const QString &arg1)
 {

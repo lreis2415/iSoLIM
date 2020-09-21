@@ -35,6 +35,7 @@
     <addaction name="actionNew"/>
     <addaction name="actionOpen"/>
     <addaction name="actionSave"/>
+    <addaction name="actionSave_as"/>
     <addaction name="separator"/>
     <addaction name="actionAdd_prototypes_from_samples"/>
    </widget>
@@ -109,6 +110,11 @@
   <action name="actiontest">
    <property name="text">
     <string>test</string>
+   </property>
+  </action>
+  <action name="actionSave_as">
+   <property name="text">
+    <string>Save as</string>
    </property>
   </action>
  </widget>

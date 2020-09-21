@@ -43,27 +43,31 @@ public:
     QAction *addOccurrence;
     QMenu* gisDataMenu;
     QAction* addGisData;
+    QMenu* prototypeBaseMenu;
+    QAction* changeCovName;
+    QAction* savePrototypeBase;
     QStandardItem *resultChild;
     QStandardItem *prototypeChild;
     QStandardItem *gisDataChild;
     SoLIMProject *proj;
 private slots:
-    void onSoilInferenceFromPrototypes();
+    // main menu
     void onProjectNew();
     void onProjectSave();
     void onProjectOpen();
-    void onAddPrototypeFromSamples();
-    void onCustomContextMenu(const QPoint &point);
-    void onGetPrototype();
-    void onInferResults();
+    void onProjectSaveAs();
     void onViewData();
+    void onSoilInferenceFromPrototypes();
+    // project tree slots
     void onSelectionChanged(const QItemSelection&,const QItemSelection&);
+    void onCustomContextMenu(const QPoint &point);
+    void onAddPrototypeFromSamples();
+    void onAddGisData();
+    void onChangeCovName();
+    void onSavePrototypeBase();
+    //graphics view
     void onZoomin();
     void onZoomout();
-    void onAddGisData();
-    void onGetGisData();
-
-    //void on_layerInfo_btn_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -71,20 +75,22 @@ private:
     QDockWidget *projectDock;
     QDockWidget *dataDetailsDock;
     QTableView *dataDetailsView;
-    prototypeFromSamples *getPrototype;
-    MyGraphicsView *myGraphicsView;
-    string projectFileName;
-    QImage *img;
     bool projectViewInitialized;
     bool projectSaved;
-    string imgFilename;
-    double imgMax,imgMin;
+    prototypeFromSamples *getPrototype; // pointer to get prototype window
+    MyGraphicsView *myGraphicsView;
+    QImage *img;    // store pointer for current showing image
+    string imgFilename; // store current showing image filename
     QToolBar *zoomToolBar;
-    void drawLayer(string filename);
-    void drawMembershipFunction(string basename, string idname, string covName);
     void initialProjectView();
-    bool saveWarning();
     void initDataDetailsView();
     void initModel();
+    bool saveWarning();
+    void updateGisDataFromTree();
+    void onGetGisData();
+    void onInferResults();
+    void onGetPrototype();
+    void drawLayer(string filename);
+    void drawMembershipFunction(string basename, string idname, string covName);
 };
 #endif // MAINWINDOW_H

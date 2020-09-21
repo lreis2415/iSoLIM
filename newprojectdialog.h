@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QMessageBox>
 
 namespace Ui {
 class NewProjectDialog;
