@@ -21,6 +21,7 @@
 #include "mygraphicsview.h"
 #include "newprojectdialog.h"
 #include "addgisdatadialog.h"
+#include "changecovname.h"
 #include <iostream>
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -37,15 +38,8 @@ public:
 
     QStandardItemModel* model;
     QMenu* prototypeMenu;
-    QAction *prototypesFromSamples;
-    QAction *addPrototype;
-    QAction *addExclusion;
-    QAction *addOccurrence;
     QMenu* gisDataMenu;
-    QAction* addGisData;
     QMenu* prototypeBaseMenu;
-    QAction* changeCovName;
-    QAction* savePrototypeBase;
     QStandardItem *resultChild;
     QStandardItem *prototypeChild;
     QStandardItem *gisDataChild;
@@ -62,9 +56,11 @@ private slots:
     void onSelectionChanged(const QItemSelection&,const QItemSelection&);
     void onCustomContextMenu(const QPoint &point);
     void onAddPrototypeFromSamples();
+    void onImportPrototypeBase();
     void onAddGisData();
     void onChangeCovName();
     void onSavePrototypeBase();
+    void onExportPrototypeBase();
     //graphics view
     void onZoomin();
     void onZoomout();
@@ -82,10 +78,12 @@ private:
     QImage *img;    // store pointer for current showing image
     string imgFilename; // store current showing image filename
     QToolBar *zoomToolBar;
+    string currentBaseName;
     void initialProjectView();
     void initDataDetailsView();
     void initModel();
     bool saveWarning();
+    void wrongFormatWarning();
     void updateGisDataFromTree();
     void onGetGisData();
     void onInferResults();

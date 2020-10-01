@@ -201,6 +201,19 @@ namespace solim {
         UNKNOWN
     };
     static const char* PrototypeSource_str[] = {"SAMPLE","EXPERT","MAP","UNKNOW"};
+    static PrototypeSource getSourceFromString(string source_str) {
+        for (int i = 0; i<source_str.length(); i++)
+            source_str[i] = toupper(source_str[i]);
+
+        if (source_str == "SAMPLE")
+            return SAMPLE;
+        else if(source_str=="EXPERT")
+            return EXPERT;
+        else if(source_str=="MAP")
+            return MAP;
+        else
+            return UNKNOWN;
+    }
     enum ExceptionType {
         OCCURRENCE,
         EXCLUSION
@@ -423,7 +436,6 @@ namespace solim {
         DataTypeEnum dataType;
         double typicalValue;
         double range;
-        PrototypeSource source;
     private:
         vector <double> vecKnotX;
         vector <double> vecKnotY;
@@ -434,7 +446,7 @@ namespace solim {
     public:
         Curve();
         Curve(string covName, DataTypeEnum type);
-        Curve(string covName, DataTypeEnum type, int knotNum, string coords,string source="UNKNOWN",double valueRange =0);
+        Curve(string covName, DataTypeEnum type, int knotNum, string coords,double valueRange =0);
         Curve(string covName, DataTypeEnum type, vector<double> *x, vector<double> *y);	// freehand rule
         Curve(string covName, double lowUnity, double highUnity, double lowCross, double highCross, CurveTypeEnum curveType);	// range rule
         Curve(string covName, double xcoord, double ycoord, EnvLayer *layer);	// point rule
@@ -457,6 +469,7 @@ namespace solim {
         string prototypeID;
         vector<Curve> envConditions;
         vector<SoilProperty> properties;
+        PrototypeSource source;
     public:
         double uncertainty;
         int envConditionSize;

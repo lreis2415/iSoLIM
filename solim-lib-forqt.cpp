@@ -905,7 +905,6 @@ namespace solim {
         vecS.clear();
         iKnotNum = 0;
         typicalValue = NODATA;
-        source = UNKNOWN;
     }
 
     Curve::Curve(string covName, DataTypeEnum type, vector<double> *x, vector<double> *y) {
@@ -915,7 +914,6 @@ namespace solim {
         vecKnotX = *x;
         vecKnotY = *y;
         iKnotNum = vecKnotX.size();
-        source = UNKNOWN;
         typicalValue = NODATA;
         range=0;
         if (iKnotNum != vecKnotY.size()) {
@@ -944,12 +942,11 @@ namespace solim {
         vecS.clear();
         iKnotNum = 0;
         typicalValue = NODATA;
-        source = UNKNOWN;
         range=0;
 
     }
 
-    Curve::Curve(string covName, DataTypeEnum type, int knotNum, string coords, string source_str,double valueRange) {
+    Curve::Curve(string covName, DataTypeEnum type, int knotNum, string coords, double valueRange) {
         // knowledge from experts: word rule
         covariateName = covName;
         dataType = type;
@@ -960,12 +957,6 @@ namespace solim {
         vecS.clear();
         iKnotNum = knotNum;
         range = valueRange;
-        if(source_str=="SAMPLE")
-            source = SAMPLE;
-        else if(source_str=="EXPERT")
-            source = EXPERT;
-        else if(source_str=="MAP")
-            source = MAP;
 
         vector<string> xycoord;
         ParseStr(coords, ',', xycoord);
@@ -991,7 +982,6 @@ namespace solim {
     Curve::Curve(string covName, double lowUnity, double highUnity, double lowCross, double highCross, CurveTypeEnum curveType) {
         // knowledge from experts: range rule
         covariateName = covName;
-        source = EXPERT;
         dataType = CONTINUOUS;
         vecKnotX.clear();
         vecKnotY.clear();
@@ -1042,7 +1032,6 @@ namespace solim {
     Curve::Curve(string covName, double x, double y, EnvLayer *layer) {
         // knowledge from sample
         // knowledge from experts: point rule
-        source = SAMPLE;
         covariateName = covName;
         dataType = layer->DataType;
         iKnotNum = 0;
@@ -1264,7 +1253,8 @@ namespace solim {
         properties.clear();
         envConsIsSorted = false;
         envConditionSize = 0;
-        uncertainty = 0;        
+        uncertainty = 0;
+        source = UNKNOWN;
     }
 
     vector<Prototype> *Prototype::getPrototypesFromSample(string filename, EnvDataset* eds, string prototypeName, string xfield, string yfield) {
@@ -1319,6 +1309,7 @@ namespace solim {
             }
             if (e != NULL && (!nullSample)) {
                 Prototype pt;
+                pt.source = SAMPLE;
                 for (int i = 0; i < eds->Layers.size(); ++i) {
                     EnvLayer *layer = eds->Layers[i];
                     Curve *condition = new Curve(layer->LayerName, x, y, layer);
@@ -1526,6 +1517,7 @@ namespace solim {
         TiXmlElement *root_node = new TiXmlElement("Prototype");
         root_node->SetAttribute("BaseName", prototypeBaseName.c_str());
         root_node->SetAttribute("ID",prototypeID.c_str());
+        root_node->SetAttribute("Source",PrototypeSource_str[source]);
         TiXmlElement *curves_node = new TiXmlElement("CurveLib");
         root_node->LinkEndChild(curves_node);
 
@@ -1542,7 +1534,6 @@ namespace solim {
 
             // add curve to envAttri
             TiXmlElement *curve_node = new TiXmlElement("Curve");
-            curve_node->SetAttribute("Source",PrototypeSource_str[(*it).source]);
             envAttri_node->LinkEndChild(curve_node);
 
             // add nodenum to curve

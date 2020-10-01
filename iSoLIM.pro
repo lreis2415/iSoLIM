@@ -17,6 +17,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     addgisdatadialog.cpp \
+    changecovname.cpp \
     inference.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -31,6 +32,7 @@ SOURCES += \
 
 HEADERS += \
     addgisdatadialog.h \
+    changecovname.h \
     inference.h \
     mainwindow.h \
     mygraphicsview.h \
@@ -44,6 +46,7 @@ HEADERS += \
 
 FORMS += \
     addgisdatadialog.ui \
+    changecovname.ui \
     inference.ui \
     mainwindow.ui \
     newprojectdialog.ui \

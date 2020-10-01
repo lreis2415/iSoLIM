@@ -45,11 +45,6 @@ MainWindow::MainWindow(QWidget *parent)
     zoomToolBar->addAction(zoomOutAct);
     zoomToolBar->setVisible(false);
     getPrototype = nullptr;
-    prototypesFromSamples = nullptr;
-    addPrototype = nullptr;
-    addExclusion = nullptr;
-    addOccurrence = nullptr;
-    addGisData = nullptr;
     resultChild = nullptr;
     prototypeChild = nullptr;
     gisDataChild = nullptr;
@@ -65,14 +60,7 @@ MainWindow::~MainWindow()
     if(projectView!=nullptr) delete projectView;
     if(projectDock!=nullptr) delete projectDock;
     if(getPrototype!=nullptr)    delete getPrototype;
-    if(model!=nullptr)    delete model;
-    if(prototypeMenu!=nullptr)   delete prototypeMenu;
-    if(prototypesFromSamples!=nullptr)   delete prototypesFromSamples;
-    if(addPrototype!=nullptr)    delete addPrototype;
-    if(addExclusion!=nullptr)    delete addExclusion;
-    if(addOccurrence!=nullptr)   delete addOccurrence;
     if(gisDataMenu!=nullptr)    delete gisDataMenu;
-    if(addGisData!=nullptr)    delete addGisData;
     if(resultChild!=nullptr) delete resultChild;
     if(prototypeChild!=nullptr)  delete prototypeChild;
     if(proj!=nullptr)    delete proj;
@@ -205,7 +193,9 @@ void MainWindow::onProjectOpen(){
         prototype; prototype = prototype->NextSiblingElement()){
         Prototype proto;
         string basename = prototype->Attribute("BaseName");
+        string source = prototype->Attribute("Source");
         proto.prototypeBaseName = basename;
+        proto.source=solim::getSourceFromString(source);
         if(tmpBaseName!=basename)
             proj->prototypeBaseNames.push_back(basename);
         tmpBaseName=basename;
@@ -214,13 +204,12 @@ void MainWindow::onProjectOpen(){
         for(TiXmlElement *envAttri = envConditons_node->FirstChildElement("EnvAttri");
             envAttri; envAttri = envAttri->NextSiblingElement()){
             TiXmlElement *curveElement = envAttri->FirstChildElement("Curve");
-            string source = curveElement->Attribute("Source");
             string covName = envAttri->Attribute("Name");
             solim::DataTypeEnum datatype = solim::getDatatypeFromString(curveElement->FirstChildElement("DataType")->GetText());
             int nodeNum = atoi(curveElement->FirstChildElement("NodeNum")->GetText());
             string coords = curveElement->FirstChildElement("Coordinates")->GetText();
             double range = atof(curveElement->FirstChildElement("Range")->GetText());
-            solim::Curve *c = new solim::Curve(covName, datatype, nodeNum, coords, source, range);
+            solim::Curve *c = new solim::Curve(covName, datatype, nodeNum, coords, range);
             c->typicalValue = atof(envAttri->FirstChildElement("TypicalValue")->GetText());
             proto.envConditions.push_back(*c);
             ++(proto.envConditionSize);
@@ -279,17 +268,17 @@ void MainWindow::onSelectionChanged(const QItemSelection& current,const QItemSel
         string filename = index.data().toString().toStdString();
         drawLayer(filename);
     }
-    else if(index.isValid()&&index.parent().data().toString().compare("Covariates")==0){
-        string layername=index.data().toString().midRef(11).toString().toStdString();
-        string filename = index.child(1,0).data().toString().toStdString();
-        for(int k = 0;k < proj->layernames.size();k++){
-            if(layername==proj->layernames[k].c_str()){
-                filename=proj->filenames[k];
-                break;
-            }
-        }
-        drawLayer(filename);
-    }
+//    else if(index.isValid()&&index.parent().data().toString().compare("Covariates")==0){
+//        string layername=index.data().toString().midRef(11).toString().toStdString();
+//        string filename = index.child(1,0).data().toString().toStdString();
+//        for(int k = 0;k < proj->layernames.size();k++){
+//            if(layername==proj->layernames[k].c_str()){
+//                filename=proj->filenames[k];
+//                break;
+//            }
+//        }
+//        drawLayer(filename);
+//    }
     else if(index.isValid()&&index.parent().data().toString().compare("GIS Data")==0){
         string filename = index.child(0,0).data().toString().midRef(10).toString().toStdString();
         drawLayer(filename);
@@ -315,6 +304,7 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
         gisDataMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
     if(index.isValid()&&index.parent().data().toString().compare("Prototypes")==0){
+        currentBaseName=index.data().toString().mid(16).toStdString();
         prototypeBaseMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
 }
@@ -322,27 +312,212 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
 void MainWindow::onAddGisData(){
     AddGisDataDialog addGisData(this);
     addGisData.exec();
-    if(!addGisData.filename.isEmpty()){
-        proj->filenames.push_back(addGisData.filename.toStdString());
-        proj->layernames.push_back(addGisData.covariate.toStdString());
-        proj->layertypes.push_back(addGisData.datatype);
-        onGetGisData();
+    if(addGisData.filename.isEmpty()){
+        return;
     }
+    for(int i = 0;i<proj->filenames.size();i++){
+        if(proj->filenames[i]==addGisData.filename.toStdString()){
+            QMessageBox warning;
+            warning.setText("This file already exists in GIS data.");
+            warning.exec();
+            return;
+        }
+        if(proj->layernames[i]==addGisData.covariate.toStdString()){
+            QMessageBox warning;
+            warning.setText("This covariate already exists in GIS data. Please rename the covariate.");
+            warning.exec();
+            return;
+        }
+    }
+    proj->filenames.push_back(addGisData.filename.toStdString());
+    proj->layernames.push_back(addGisData.covariate.toStdString());
+    proj->layertypes.push_back(addGisData.datatype);
+    onGetGisData();
 }
 
 void MainWindow::onAddPrototypeFromSamples(){
     getPrototype = new prototypeFromSamples(proj,this);
-    getPrototype->show();
+    getPrototype->exec();
     // show prototypes
-    connect(getPrototype,SIGNAL(finished(int)),this,SLOT(onGetPrototype()));
+    //connect(getPrototype,SIGNAL(finished(int)),this,SLOT(onGetPrototype()));
+    onGetPrototype();
     projectSaved = false;
 }
 
-void MainWindow::onChangeCovName(){
+void MainWindow::onImportPrototypeBase(){
+    QString basefilename=QFileDialog::getOpenFileName(this,tr("Open prototype base file"),"./",tr("(*.csv *.xml)"));
+    if(basefilename.isEmpty())  return;
+    if(basefilename.endsWith(".csv",Qt::CaseInsensitive)){
+        QFile basefile(basefilename);
+        if(!basefile.open(QFile::ReadOnly)){
+            QMessageBox warning;
+            warning.setText("File open failed!");
+            warning.exec();
+            return;
+        }
+        QTextStream *out = new QTextStream(&basefile);
+        QStringList lines = out->readAll().split("\n");
+        if(lines.size()<1)  return;
+        QStringList basenames = lines[0].split(",");
+        if(basenames[0]!="basename"){ wrongFormatWarning(); return; }
+        string basename = basenames[1].toStdString();
+        for(int i = 0; i< proj->prototypeBaseNames.size();i++){
+            if(basename==proj->prototypeBaseNames[i]){
+                QMessageBox warning;
+                warning.setText("Prototype base with the same base name already exists.");
+                warning.exec();
+                return;
+            }
+        }
+        proj->prototypeBaseNames.push_back(basename);
+        if(basenames[2]!="source"){ wrongFormatWarning(); return; }
+        string source = basenames[3].toStdString();
+        solim::PrototypeSource protoSource = solim::getSourceFromString(source);
 
+        for(int i =1;i<lines.size();i++){
+            if(lines[i].isEmpty()) break;
+            QStringList properties = lines[i].split(",");
+            if(properties[0]!="prototype"){ wrongFormatWarning(); return; }
+            Prototype proto;
+            proto.prototypeBaseName=basename;
+            proto.prototypeID = properties[1].toStdString();
+            proto.source = protoSource;
+            if(properties[2]!="properties_num"){ wrongFormatWarning(); return; }
+            int properties_num = properties[3].toInt();
+            int loc = 4;
+            for(int k=0;k<properties_num;k++){
+                proto.addProperties(properties[loc].toStdString(),properties[loc+1].toDouble());
+                loc += 2;
+                if(i==1)
+                    proj->propertyNames.push_back(properties[loc].toStdString());
+            }
+            if(properties[loc]!="covariates_num"){ wrongFormatWarning(); return; }
+            int cov_num = properties[loc+1].toInt();
+            loc+=2;
+            for(int k = 0;k<cov_num;k++){
+                if(properties[loc]!="covariate_name"){ wrongFormatWarning(); return; }
+                string covname = properties[loc+1].toStdString();
+                if(properties[loc+2]!="datatype"){ wrongFormatWarning(); return; }
+                solim::DataTypeEnum datatype = solim::getDatatypeFromString(properties[loc+3].toStdString());
+                if(properties[loc+6]!="range"){ wrongFormatWarning(); return; }
+                int range = properties[loc+7].toInt();
+                if(properties[loc+8]!="Node_num"){ wrongFormatWarning(); return; }
+                int node_num = properties[loc+9].toDouble();
+                if(properties[loc+10]!="Membership_function"){ wrongFormatWarning(); return; }
+                loc+=11;
+                QStringList coords;
+                for(int n = 0;n<node_num;n++){
+                    coords.push_back(properties[loc]);
+                    ++loc;
+                }
+                string coords_str = coords.join(",").toStdString();
+                solim::Curve *c = new solim::Curve(covname, datatype, node_num, coords_str, range);
+                proto.envConditions.push_back(*c);
+                proto.envConditionSize++;
+            }
+            proj->prototypes.push_back(proto);
+        }
+        onGetPrototype();
+        projectSaved=false;
+    }
 }
 
-void MainWindow::onSavePrototypeBase(){}
+void MainWindow::onChangeCovName(){
+    int i = 0;
+    while(i < proj->prototypes.size()){
+        if(proj->prototypes[i].prototypeBaseName==currentBaseName)
+            break;
+        i++;
+    }
+    class changeCovName changeName(&(proj->prototypes[i]),this);
+    changeName.exec();
+    if(changeName.isChanged){
+        for(int i =0;i<proj->prototypes.size();i++){
+            if(proj->prototypes[i].prototypeBaseName==currentBaseName){
+                for(int j = 0;j<proj->prototypes[i].envConditionSize;j++){
+                    proj->prototypes[i].envConditions[j].covariateName=changeName.proto->envConditions[j].covariateName;
+                }
+            }
+        }
+        onGetPrototype();
+        projectSaved=false;
+    }
+}
+
+void MainWindow::onSavePrototypeBase(){
+    QString filename = QFileDialog::getSaveFileName(this,
+                                                    tr("Save prototype base as"),
+                                                    ".",
+                                                    tr("(*.xml)"));
+
+    TiXmlDocument *doc = new TiXmlDocument();
+    TiXmlDeclaration *pDeclaration = new TiXmlDeclaration("1.0", "UTF-8", "");
+    doc->LinkEndChild(pDeclaration);
+    TiXmlElement *prototypes_node = new TiXmlElement("Prototypes");
+    doc->LinkEndChild(prototypes_node);
+    for(vector<solim::Prototype>::iterator it = proj->prototypes.begin();it!=proj->prototypes.end();it++){
+        prototypes_node->LinkEndChild((*it).writePrototypeXmlElement());
+    }
+    doc->SaveFile(filename.toStdString().c_str());
+}
+
+void MainWindow::onExportPrototypeBase(){
+    QString filename = QFileDialog::getSaveFileName(this,
+                                                    tr("Export prototype base as"),
+                                                    ".",
+                                                    tr("(*.csv)"));
+    if(filename.isEmpty()){
+        QMessageBox warning;
+        warning.setText("Please input file name!");
+        warning.exec();
+        return;
+    }
+    QFile basefile(filename);
+    if(!basefile.open(QFile::WriteOnly)){
+        QMessageBox warning;
+        warning.setText("File open failed!");
+        warning.exec();
+        return;
+    }
+    if(currentBaseName.find(',')!=std::string::npos){
+        QMessageBox warning;
+        warning.setText("Please do not use ',' in prototype base name");
+        warning.exec();
+        return;
+    }
+    QTextStream stream(&basefile);
+    stream<<"basename,"<<currentBaseName.c_str()<<",source,"<<solim::PrototypeSource_str[proj->prototypes[0].source]<<"\n";
+    for(int i = 0;i<proj->prototypes.size();i++){
+        if(proj->prototypes[i].prototypeBaseName==currentBaseName){
+            solim::Prototype *proto = &(proj->prototypes[i]);
+            stream<<"prototype,"<<proto->prototypeID.c_str()<<",properties_num,"<<QString::number(proto->properties.size())<<",";
+            for(int j=0;j<proto->properties.size();j++){
+                if(proto->properties[j].propertyName.find(',')!=std::string::npos){
+                    QMessageBox warning;
+                    warning.setText("Please do not use ',' in prototype property name");
+                    warning.exec();
+                    return;
+                }
+                stream<<proto->properties[j].propertyName.c_str()<<","<<QString::number(proto->properties[j].propertyValue)<<",";
+            }
+            stream<<"covariates_num,"<<QString::number(proto->envConditionSize)<<",";
+            for(int j = 0;j<proto->envConditionSize;j++){
+                stream<<"covariate_name,"<<proto->envConditions[j].covariateName.c_str()<<",";
+                stream<<"datatype,"<<solim::DataTypeEnum_str[proto->envConditions[j].dataType]<<",";
+                stream<<"typical_value,"<<QString::number(proto->envConditions[j].typicalValue)<<",";
+                stream<<"range,"<<QString::number(proto->envConditions[j].range)<<",";
+                stream<<"Node_num,"<<QString::number(proto->envConditions[j].getKnotNum())<<",";
+                stream<<"Membership_function,"<<proto->envConditions[j].getCoords().c_str()<<",";
+            }
+            stream<<"\n";
+        }
+    }
+    basefile.close();
+    QMessageBox success;
+    success.setText("Prototype base file saved!");
+    success.exec();
+    return;
+}
 
 //=================================== upadte project tree view ==================================
 void MainWindow::onGetGisData(){
@@ -368,8 +543,9 @@ void MainWindow::onGetPrototype(){
                     QStandardItem* prototype = new QStandardItem(("Prototype ID: "+(*it).prototypeID).c_str());
                     prototypeBase->setChild(prototypeBase->rowCount(),0,prototype);
                     prototype->setColumnCount(1);
+                    prototype->setChild(0,0,new QStandardItem(("Source: "+string(solim::PrototypeSource_str[(*it).source])).c_str()));
                     QStandardItem* properties = new QStandardItem("Properties");
-                    prototype->setChild(0,0,properties);
+                    prototype->setChild(1,0,properties);
                     properties->setColumnCount(1);
                     for(int i = 0;i<(*it).properties.size();i++) {
                         string property = (*it).properties[i].propertyName;
@@ -381,7 +557,7 @@ void MainWindow::onGetPrototype(){
                         properties->setChild(properties->rowCount()-1,0,new QStandardItem(property.c_str()));
                     }
                     QStandardItem* covariates = new QStandardItem("Covariates");
-                    prototype->setChild(1,0,covariates);
+                    prototype->setChild(2,0,covariates);
                     covariates->setColumnCount(1);
                     for(int j = 0; j<(*it).envConditionSize;j++){
                         string cov = "Covariate: " + (*it).envConditions[j].covariateName;
@@ -389,14 +565,10 @@ void MainWindow::onGetPrototype(){
                         QStandardItem *covItem = new QStandardItem(cov.c_str());
                         covariates->setChild(covariates->rowCount()-1,0,covItem);
                         covItem->setColumnCount(1);
-                        // set source child
-                        string source = "Source: ";
-                        source.append(solim::PrototypeSource_str[(*it).envConditions[j].source]);
-                        covItem->setChild(0,0,new QStandardItem(source.c_str()));
                         double typicalValue = (*it).envConditions[j].typicalValue;
                         if(fabs(typicalValue-NODATA)>VERY_SMALL){
                             string typicalV = "Typical value: "+to_string(typicalValue);
-                            covItem->setChild(1,0,new QStandardItem(typicalV.c_str()));
+                            covItem->setChild(covItem->rowCount(),0,new QStandardItem(typicalV.c_str()));
                         }
                         // set membership function
                         covItem->setChild(covItem->rowCount(),0,new QStandardItem("Membership Function"));
@@ -423,8 +595,6 @@ void MainWindow::onInferResults(){
     projectView->expand(resultChild->index());
     projectSaved = false;
 }
-
-
 
 //=========================== Main Graphics View function===============================
 void MainWindow::drawLayer(string filename){
@@ -532,7 +702,7 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
     QGraphicsTextItem *covNameText = myGraphicsView->getScene()->addText(string("Covariate: "+covName).c_str());
     covNameText->setFont(QFont("Times", 10));
     covNameText->setPos(0.02*sceneWidth, 0.02*sceneHeight);
-    string source = solim::PrototypeSource_str[proj->prototypes[protoPos].envConditions[covPos].source];
+    string source = solim::PrototypeSource_str[proj->prototypes[protoPos].source];
     QGraphicsTextItem *covSourceText = myGraphicsView->getScene()->addText(string("Source: "+source).c_str());
     covSourceText->setFont(QFont("Times", 10));
     covSourceText->setPos(0.02*sceneWidth, 0.02*sceneHeight+20);
@@ -591,7 +761,6 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
         previousx = x;
         previousy = y;
     }
-    //myGraphicsView->getScene()->addLine((previousx-min)/scale*graphWidth+xStart,yEnd-previousy*graphHeight,xStart+graphWidth,yEnd-y2*graphHeight,curvePen);
 }
 
 void MainWindow::onZoomin()
@@ -661,7 +830,6 @@ void MainWindow::onZoomout()
 }
 
 //=========================== non-slot functions ============================================
-
 void MainWindow::updateGisDataFromTree(){
     proj->filenames.clear();
     proj->layernames.clear();
@@ -683,7 +851,6 @@ void MainWindow::initDataDetailsView(){
     dataDetailsDock->setWidget(dataDetailsView);
     dataDetailsDock->setAllowedAreas(Qt::LeftDockWidgetArea|Qt::BottomDockWidgetArea);
 }
-
 
 void MainWindow::initModel(){
     model = new QStandardItemModel(this);
@@ -710,6 +877,57 @@ void MainWindow::initModel(){
     ui->actionAdd_prototypes_from_samples->setEnabled(true);
 }
 
+void MainWindow::initialProjectView(){
+    if(projectViewInitialized){
+        return;
+    }
+    projectDock = new QDockWidget(tr("Project"), this);
+    projectView = new QTreeView(projectDock);
+    //removeDockWidget(dataDetailsDock);
+    projectDock->setFeatures(projectDock->features() & ~QDockWidget::DockWidgetClosable);
+    projectDock->setWidget(projectView);
+    //initDataDetailsView();
+    //addDockWidget(Qt::LeftDockWidgetArea,dataDetailsDock);
+    //myGraphicsView->dataDetailsView = dataDetailsView;
+    projectView->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(projectView,SIGNAL(customContextMenuRequested(const QPoint &)),this,SLOT(onCustomContextMenu(const QPoint &)));
+    prototypeMenu = new QMenu(projectView);
+    QAction *prototypesFromSamples = new QAction("Create new prototype base from samples",prototypeMenu);
+    prototypeMenu->addAction(prototypesFromSamples);
+    projectView->addAction(prototypesFromSamples);
+    QAction *prototypesFromExpert = new QAction("Create new prototype base from expert",prototypeMenu);
+    prototypeMenu->addAction(prototypesFromExpert);
+    projectView->addAction(prototypesFromExpert);
+    QAction *prototypesFromMining = new QAction("Create new prototype base from data mining",prototypeMenu);
+    prototypeMenu->addAction(prototypesFromMining);
+    projectView->addAction(prototypesFromMining);
+    QAction *importPrototypeBase = new QAction("Import prototype base from file",prototypeMenu);
+    prototypeMenu->addAction(importPrototypeBase);
+    projectView->addAction(importPrototypeBase);
+    connect(prototypesFromSamples,SIGNAL(triggered()),this,SLOT(onAddPrototypeFromSamples()));
+    connect(importPrototypeBase,SIGNAL(triggered()),this,SLOT(onImportPrototypeBase()));
+    gisDataMenu = new QMenu(projectView);
+    QAction *addGisData = new QAction("Add GIS Data", gisDataMenu);
+    gisDataMenu->addAction(addGisData);
+    projectView->addAction(addGisData);
+    connect(addGisData,SIGNAL(triggered()),this,SLOT(onAddGisData()));
+    prototypeBaseMenu = new QMenu(projectView);
+    QAction *changeCovName = new QAction("Change covariate name",prototypeBaseMenu);
+    prototypeBaseMenu->addAction(changeCovName);
+    projectView->addAction(changeCovName);
+    QAction *savePrototypeBase_xml = new QAction("Save as external .xml file",prototypeBaseMenu);
+    prototypeBaseMenu->addAction(savePrototypeBase_xml);
+    projectView->addAction(savePrototypeBase_xml);
+    QAction *exportPrototypeBase_csv = new QAction("Export to .csv file",prototypeBaseMenu);
+    prototypeBaseMenu->addAction(exportPrototypeBase_csv);
+    projectView->addAction(exportPrototypeBase_csv);
+    connect(changeCovName,SIGNAL(triggered()),this,SLOT(onChangeCovName()));
+    connect(exportPrototypeBase_csv,SIGNAL(triggered()),this,SLOT(onExportPrototypeBase()));
+    connect(savePrototypeBase_xml, SIGNAL(triggered()),this,SLOT(onSavePrototypeBase()));
+    //projectView->addAction(viewData);
+    projectViewInitialized = true;
+}
+
 bool MainWindow::saveWarning(){
     if(!projectSaved){
         QMessageBox saveBox;
@@ -733,39 +951,9 @@ bool MainWindow::saveWarning(){
     return true;
 }
 
-void MainWindow::initialProjectView(){
-    if(projectViewInitialized){
-        return;
-    }
-    projectDock = new QDockWidget(tr("Project"), this);
-    projectView = new QTreeView(projectDock);
-    //removeDockWidget(dataDetailsDock);
-    projectDock->setFeatures(projectDock->features() & ~QDockWidget::DockWidgetClosable);
-    projectDock->setWidget(projectView);
-    //initDataDetailsView();
-    //addDockWidget(Qt::LeftDockWidgetArea,dataDetailsDock);
-    //myGraphicsView->dataDetailsView = dataDetailsView;
-    projectView->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(projectView,SIGNAL(customContextMenuRequested(const QPoint &)),this,SLOT(onCustomContextMenu(const QPoint &)));
-    prototypeMenu = new QMenu(projectView);
-    prototypesFromSamples = new QAction("Create new prototype base",prototypeMenu);
-    prototypeMenu->addAction(prototypesFromSamples);
-    projectView->addAction(prototypesFromSamples);
-    connect(prototypesFromSamples,SIGNAL(triggered()),this,SLOT(onAddPrototypeFromSamples()));
-    gisDataMenu = new QMenu(projectView);
-    addGisData = new QAction("Add GIS Data", gisDataMenu);
-    gisDataMenu->addAction(addGisData);
-    projectView->addAction(addGisData);
-    connect(addGisData,SIGNAL(triggered()),this,SLOT(onAddGisData()));
-    prototypeBaseMenu = new QMenu(projectView);
-    changeCovName = new QAction("Change covariate name",prototypeBaseMenu);
-    prototypeBaseMenu->addAction(changeCovName);
-    projectView->addAction(changeCovName);
-    savePrototypeBase = new QAction("Save prototype base",prototypeBaseMenu);
-    prototypeBaseMenu->addAction(savePrototypeBase);
-    projectView->addAction(savePrototypeBase);
-    connect(changeCovName,SIGNAL(triggered()),this,SLOT(onChangeCovName()));
-    connect(savePrototypeBase,SIGNAL(triggered()),this,SLOT(onSavePrototypeBase()));
-    //projectView->addAction(viewData);
-    projectViewInitialized = true;
+void MainWindow::wrongFormatWarning(){
+    QMessageBox warning;
+    warning.setText("Wrong file format");
+    warning.exec();
+    return;
 }
