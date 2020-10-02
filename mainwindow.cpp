@@ -60,7 +60,6 @@ MainWindow::~MainWindow()
     if(projectView!=nullptr) delete projectView;
     if(projectDock!=nullptr) delete projectDock;
     if(getPrototype!=nullptr)    delete getPrototype;
-    if(gisDataMenu!=nullptr)    delete gisDataMenu;
     if(resultChild!=nullptr) delete resultChild;
     if(prototypeChild!=nullptr)  delete prototypeChild;
     if(proj!=nullptr)    delete proj;
@@ -118,8 +117,14 @@ void MainWindow::onProjectSave(){
         TiXmlText *layer_text = new TiXmlText(proj->filenames[i].c_str());
         layer_node->LinkEndChild(layer_text);
     }
-    for(vector<solim::Prototype>::iterator it = proj->prototypes.begin();it!=proj->prototypes.end();it++){
-        prototypes_node->LinkEndChild((*it).writePrototypeXmlElement());
+    for(int i =0; i<proj->prototypeBaseNames.size();i++){
+        TiXmlElement *prototypeBase_node = new TiXmlElement("PrototypeBase");
+            prototypeBase_node->SetAttribute("Basename",proj->prototypeBaseNames[i].c_str());
+        prototypes_node->LinkEndChild(prototypeBase_node);
+        for(vector<solim::Prototype>::iterator it = proj->prototypes.begin();it!=proj->prototypes.end();it++){
+            if((*it).prototypeBaseName==proj->prototypeBaseNames[i])
+                prototypeBase_node->LinkEndChild((*it).writePrototypeXmlElement());
+        }
     }
     TiXmlElement *results_node = new TiXmlElement("Results");
     root_node->LinkEndChild(results_node);
@@ -189,42 +194,11 @@ void MainWindow::onProjectOpen(){
     // add prototypes
     string tmpBaseName;
     TiXmlHandle prototypesHandle = projectHandle.FirstChildElement("Prototypes");
-    for(TiXmlElement* prototype = prototypesHandle.FirstChildElement("Prototype").ToElement();
-        prototype; prototype = prototype->NextSiblingElement()){
-        Prototype proto;
-        string basename = prototype->Attribute("BaseName");
-        string source = prototype->Attribute("Source");
-        proto.prototypeBaseName = basename;
-        proto.source=solim::getSourceFromString(source);
-        if(tmpBaseName!=basename)
-            proj->prototypeBaseNames.push_back(basename);
-        tmpBaseName=basename;
-        proto.prototypeID = prototype->Attribute("ID");
-        TiXmlElement* envConditons_node = prototype->FirstChildElement("CurveLib");
-        for(TiXmlElement *envAttri = envConditons_node->FirstChildElement("EnvAttri");
-            envAttri; envAttri = envAttri->NextSiblingElement()){
-            TiXmlElement *curveElement = envAttri->FirstChildElement("Curve");
-            string covName = envAttri->Attribute("Name");
-            solim::DataTypeEnum datatype = solim::getDatatypeFromString(curveElement->FirstChildElement("DataType")->GetText());
-            int nodeNum = atoi(curveElement->FirstChildElement("NodeNum")->GetText());
-            string coords = curveElement->FirstChildElement("Coordinates")->GetText();
-            double range = atof(curveElement->FirstChildElement("Range")->GetText());
-            solim::Curve *c = new solim::Curve(covName, datatype, nodeNum, coords, range);
-            c->typicalValue = atof(envAttri->FirstChildElement("TypicalValue")->GetText());
-            proto.envConditions.push_back(*c);
-            ++(proto.envConditionSize);
-        }
 
-        TiXmlElement *props = prototype->FirstChildElement("PropertyLib");
-        for (TiXmlElement* prop = props->FirstChildElement("Property");
-            prop; prop = prop->NextSiblingElement("Property")) {
-            solim::SoilProperty p;
-            p.propertyName = prop->Attribute("Name");
-            p.propertyValue = atof(prop->GetText());
-            p.soilPropertyType = solim::getDatatypeFromString(prop->Attribute("Type"));
-            proto.properties.push_back(p);
-        }
-        proj->prototypes.push_back(proto);
+    for(TiXmlElement* prototypeBase = prototypesHandle.FirstChildElement("PrototypeBase").ToElement();
+        prototypeBase; prototypeBase = prototypeBase->NextSiblingElement()){
+        proj->prototypeBaseNames.push_back(prototypeBase->Attribute("Basename"));
+        readPrototype(prototypeBase);
     }
     // set results
     TiXmlHandle resultHandle = projectHandle.FirstChildElement("Results");
@@ -268,17 +242,17 @@ void MainWindow::onSelectionChanged(const QItemSelection& current,const QItemSel
         string filename = index.data().toString().toStdString();
         drawLayer(filename);
     }
-//    else if(index.isValid()&&index.parent().data().toString().compare("Covariates")==0){
-//        string layername=index.data().toString().midRef(11).toString().toStdString();
-//        string filename = index.child(1,0).data().toString().toStdString();
-//        for(int k = 0;k < proj->layernames.size();k++){
-//            if(layername==proj->layernames[k].c_str()){
-//                filename=proj->filenames[k];
-//                break;
-//            }
-//        }
-//        drawLayer(filename);
-//    }
+    else if(index.isValid()&&index.parent().data().toString().compare("Covariates")==0){
+        string layername=index.data().toString().midRef(11).toString().toStdString();
+        string filename="";
+        for(int k = 0;k < proj->layernames.size();k++){
+            if(layername==proj->layernames[k].c_str()){
+                filename=proj->filenames[k];
+                break;
+            }
+        }
+        drawLayer(filename);
+    }
     else if(index.isValid()&&index.parent().data().toString().compare("GIS Data")==0){
         string filename = index.child(0,0).data().toString().midRef(10).toString().toStdString();
         drawLayer(filename);
@@ -344,6 +318,14 @@ void MainWindow::onAddPrototypeFromSamples(){
     projectSaved = false;
 }
 
+void MainWindow::onAddPrototypeFromExpert(){
+    qInfo()<<"add expert";
+}
+
+void MainWindow::onAddPrototypeFromMining(){
+    qInfo()<<"add maps";
+}
+
 void MainWindow::onImportPrototypeBase(){
     QString basefilename=QFileDialog::getOpenFileName(this,tr("Open prototype base file"),"./",tr("(*.csv *.xml)"));
     if(basefilename.isEmpty())  return;
@@ -361,14 +343,7 @@ void MainWindow::onImportPrototypeBase(){
         QStringList basenames = lines[0].split(",");
         if(basenames[0]!="basename"){ wrongFormatWarning(); return; }
         string basename = basenames[1].toStdString();
-        for(int i = 0; i< proj->prototypeBaseNames.size();i++){
-            if(basename==proj->prototypeBaseNames[i]){
-                QMessageBox warning;
-                warning.setText("Prototype base with the same base name already exists.");
-                warning.exec();
-                return;
-            }
-        }
+        if(baseExistsWarning(basename)) return;
         proj->prototypeBaseNames.push_back(basename);
         if(basenames[2]!="source"){ wrongFormatWarning(); return; }
         string source = basenames[3].toStdString();
@@ -419,6 +394,20 @@ void MainWindow::onImportPrototypeBase(){
         }
         onGetPrototype();
         projectSaved=false;
+    } if(basefilename.endsWith(".xml",Qt::CaseInsensitive)){
+        TiXmlDocument doc(basefilename.toStdString().c_str());
+        bool loadOK = doc.LoadFile();
+        if (!loadOK) {
+            throw invalid_argument("Failed to read xml file");
+        }
+        TiXmlHandle docHandle(&doc);
+        TiXmlHandle prototypeBaseHandle = docHandle.FirstChildElement("PrototypeBase");
+        string basename=prototypeBaseHandle.ToElement()->Attribute("Basename");
+        if(baseExistsWarning(basename)) return;
+        proj->prototypeBaseNames.push_back(basename);
+        readPrototype(prototypeBaseHandle.ToElement());
+        onGetPrototype();
+        projectSaved=false;
     }
 }
 
@@ -453,10 +442,12 @@ void MainWindow::onSavePrototypeBase(){
     TiXmlDocument *doc = new TiXmlDocument();
     TiXmlDeclaration *pDeclaration = new TiXmlDeclaration("1.0", "UTF-8", "");
     doc->LinkEndChild(pDeclaration);
-    TiXmlElement *prototypes_node = new TiXmlElement("Prototypes");
+    TiXmlElement *prototypes_node = new TiXmlElement("PrototypeBase");
+    prototypes_node->SetAttribute("Basename",currentBaseName.c_str());
     doc->LinkEndChild(prototypes_node);
     for(vector<solim::Prototype>::iterator it = proj->prototypes.begin();it!=proj->prototypes.end();it++){
-        prototypes_node->LinkEndChild((*it).writePrototypeXmlElement());
+        if((*it).prototypeBaseName==currentBaseName)
+            prototypes_node->LinkEndChild((*it).writePrototypeXmlElement());
     }
     doc->SaveFile(filename.toStdString().c_str());
 }
@@ -905,6 +896,8 @@ void MainWindow::initialProjectView(){
     prototypeMenu->addAction(importPrototypeBase);
     projectView->addAction(importPrototypeBase);
     connect(prototypesFromSamples,SIGNAL(triggered()),this,SLOT(onAddPrototypeFromSamples()));
+    connect(prototypesFromExpert,SIGNAL(triggered()),this,SLOT(onAddPrototypeFromExpert()));
+    connect(prototypesFromMining,SIGNAL(triggered()),this,SLOT(onAddPrototypeFromMining()));
     connect(importPrototypeBase,SIGNAL(triggered()),this,SLOT(onImportPrototypeBase()));
     gisDataMenu = new QMenu(projectView);
     QAction *addGisData = new QAction("Add GIS Data", gisDataMenu);
@@ -926,6 +919,42 @@ void MainWindow::initialProjectView(){
     connect(savePrototypeBase_xml, SIGNAL(triggered()),this,SLOT(onSavePrototypeBase()));
     //projectView->addAction(viewData);
     projectViewInitialized = true;
+}
+
+void MainWindow::readPrototype(TiXmlElement*prototypesElement){
+    for(TiXmlElement* prototype = prototypesElement->FirstChildElement("Prototype");
+        prototype; prototype = prototype->NextSiblingElement()){
+        Prototype proto;
+        string basename = prototype->Attribute("BaseName");
+        string source = prototype->Attribute("Source");
+        proto.prototypeBaseName = basename;
+        proto.source=solim::getSourceFromString(source);
+        proto.prototypeID = prototype->Attribute("ID");
+        TiXmlElement* envConditons_node = prototype->FirstChildElement("CurveLib");
+        for(TiXmlElement *envAttri = envConditons_node->FirstChildElement("EnvAttri");
+            envAttri; envAttri = envAttri->NextSiblingElement()){
+            TiXmlElement *curveElement = envAttri->FirstChildElement("Curve");
+            string covName = envAttri->Attribute("Name");
+            solim::DataTypeEnum datatype = solim::getDatatypeFromString(curveElement->FirstChildElement("DataType")->GetText());
+            int nodeNum = atoi(curveElement->FirstChildElement("NodeNum")->GetText());
+            string coords = curveElement->FirstChildElement("Coordinates")->GetText();
+            double range = atof(curveElement->FirstChildElement("Range")->GetText());
+            solim::Curve *c = new solim::Curve(covName, datatype, nodeNum, coords, range);
+            c->typicalValue = atof(envAttri->FirstChildElement("TypicalValue")->GetText());
+            proto.envConditions.push_back(*c);
+            ++(proto.envConditionSize);
+        }
+        TiXmlElement *props = prototype->FirstChildElement("PropertyLib");
+        for (TiXmlElement* prop = props->FirstChildElement("Property");
+            prop; prop = prop->NextSiblingElement("Property")) {
+            solim::SoilProperty p;
+            p.propertyName = prop->Attribute("Name");
+            p.propertyValue = atof(prop->GetText());
+            p.soilPropertyType = solim::getDatatypeFromString(prop->Attribute("Type"));
+            proto.properties.push_back(p);
+        }
+        proj->prototypes.push_back(proto);
+    }
 }
 
 bool MainWindow::saveWarning(){
@@ -956,4 +985,16 @@ void MainWindow::wrongFormatWarning(){
     warning.setText("Wrong file format");
     warning.exec();
     return;
+}
+
+bool MainWindow::baseExistsWarning(string basename){
+    for(int i = 0; i< proj->prototypeBaseNames.size();i++){
+        if(basename==proj->prototypeBaseNames[i]){
+            QMessageBox warning;
+            warning.setText("Prototype base with the same base name already exists.");
+            warning.exec();
+            return true;
+        }
+    }
+    return false;
 }

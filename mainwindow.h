@@ -56,6 +56,8 @@ private slots:
     void onSelectionChanged(const QItemSelection&,const QItemSelection&);
     void onCustomContextMenu(const QPoint &point);
     void onAddPrototypeFromSamples();
+    void onAddPrototypeFromExpert();
+    void onAddPrototypeFromMining();
     void onImportPrototypeBase();
     void onAddGisData();
     void onChangeCovName();
@@ -84,10 +86,12 @@ private:
     void initModel();
     bool saveWarning();
     void wrongFormatWarning();
+    bool baseExistsWarning(string basename);
     void updateGisDataFromTree();
     void onGetGisData();
     void onInferResults();
     void onGetPrototype();
+    void readPrototype(TiXmlElement*prototypesElement);
     void drawLayer(string filename);
     void drawMembershipFunction(string basename, string idname, string covName);
 };
