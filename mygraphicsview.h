@@ -22,13 +22,16 @@ public:
     double imgMin;
     double range;
     bool showImage;
+    bool editFreehandRule;
     QTableView *dataDetailsView;
     QStandardItemModel *dataDetailsModel;
     QGraphicsScene *getScene(){ return scene; }
 signals:
+    void addFreehandPoint(const double x, const double y);
 public slots:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 private:
     QGraphicsScene *scene;
 };

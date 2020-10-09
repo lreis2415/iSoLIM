@@ -14,6 +14,7 @@ MyGraphicsView::MyGraphicsView(QWidget *parent):
     imgMax = 0;
     imgMin = 0;
     showImage = false;
+    editFreehandRule=false;
 }
 void MyGraphicsView::mousePressEvent(QMouseEvent * e)
 {
@@ -84,5 +85,34 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent * e){
             dataDetailsView->setModel(model);
             dataDetailsView->resizeColumnsToContents();
         }
+    }
+}
+
+void MyGraphicsView::mouseDoubleClickEvent(QMouseEvent *e){
+    if(editFreehandRule){
+        QPointF pt = mapToScene(e->pos());
+        int sceneWidth = scene->width();
+        int sceneHeight = scene->height();
+        int graphWidth = 0.7*sceneWidth;
+        int graphHeight = 0.7*sceneHeight;
+        int xStart = 0.10*sceneWidth;
+        int yEnd = 0.85*sceneHeight;
+        if(pt.x()<xStart||pt.x()>xStart+graphWidth) return;
+        double x = 1.0*(pt.x()-xStart)/graphWidth;
+        double y = 1.0*(yEnd-pt.y())/graphHeight;
+        int py=pt.y();
+        if(y>1){
+            y=1;
+            py=yEnd;
+        }
+        if(y<0){
+            y=0;
+            py=yEnd-sceneHeight;
+        }
+        QPen pen(Qt::black);
+        pen.setWidth(1);
+        scene->addLine(pt.x()-2,py-2,pt.x()+2,py+2,pen);
+        scene->addLine(pt.x()-2,py+2,pt.x()+2,py-2,pen);
+        emit addFreehandPoint(x,y);
     }
 }

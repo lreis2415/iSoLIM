@@ -1,9 +1,9 @@
-#include "prototypefromsamples.h"
-#include "ui_prototypefromsamples.h"
+#include "addsamplebase.h"
+#include "ui_addsamplebase.h"
 
-prototypeFromSamples::prototypeFromSamples(SoLIMProject *proj,QWidget *parent) :
+AddSampleBase::AddSampleBase(SoLIMProject *proj,QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::prototypeFromSamples)
+    ui(new Ui::AddSampleBase)
 {
     ui->setupUi(this);
     project = proj;
@@ -17,12 +17,12 @@ prototypeFromSamples::prototypeFromSamples(SoLIMProject *proj,QWidget *parent) :
     ui->covariate_tableWidget->setHorizontalHeaderItem(2,new QTableWidgetItem("Categorical?"));
 }
 
-prototypeFromSamples::~prototypeFromSamples()
+AddSampleBase::~AddSampleBase()
 {
     delete ui;
 }
 
-void prototypeFromSamples::on_addCovariate_btn_clicked()
+void AddSampleBase::on_addCovariate_btn_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(this,
                                                    tr("Open environmental covariate file"),
@@ -51,12 +51,12 @@ void prototypeFromSamples::on_addCovariate_btn_clicked()
     }
 }
 
-void prototypeFromSamples::on_deleteCovariate_btn_clicked()
+void AddSampleBase::on_deleteCovariate_btn_clicked()
 {
     ui->covariate_tableWidget->removeRow(ui->covariate_tableWidget->currentRow());
 }
 
-void prototypeFromSamples::on_browseSampleFile_btn_clicked()
+void AddSampleBase::on_browseSampleFile_btn_clicked()
 {
     QString samplesFileName = QFileDialog::getOpenFileName(this,
                                                            tr("Open samples file"),
@@ -82,7 +82,7 @@ void prototypeFromSamples::on_browseSampleFile_btn_clicked()
     }
 }
 
-void prototypeFromSamples::on_ok_btn_clicked()
+void AddSampleBase::on_ok_btn_clicked()
 {
     string sampleFile = ui->sampleFile_lineEdit->text().toStdString();
     if(sampleFile.empty()||ui->covariate_tableWidget->rowCount()==0){

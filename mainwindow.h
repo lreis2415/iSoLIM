@@ -17,7 +17,8 @@
 #include <QToolBar>
 #include "inference.h"
 #include "project.h"
-#include "prototypefromsamples.h"
+#include "addsamplebase.h"
+#include "addexpertbase.h"
 #include "mygraphicsview.h"
 #include "newprojectdialog.h"
 #include "addgisdatadialog.h"
@@ -63,6 +64,12 @@ private slots:
     void onChangeCovName();
     void onSavePrototypeBase();
     void onExportPrototypeBase();
+    //prototype from expert
+    void onCreateBaseFromExpert(const QString basename);
+    void onCreatePrototypeFromExpert(const QString basename, const QString prototypeName);
+    void onGetGisData();
+    void onGetPrototype();
+    void onUpdatePrototypeFromExpert(const Prototype *prop);
     //graphics view
     void onZoomin();
     void onZoomout();
@@ -75,12 +82,12 @@ private:
     QTableView *dataDetailsView;
     bool projectViewInitialized;
     bool projectSaved;
-    prototypeFromSamples *getPrototype; // pointer to get prototype window
     MyGraphicsView *myGraphicsView;
     QImage *img;    // store pointer for current showing image
     string imgFilename; // store current showing image filename
     QToolBar *zoomToolBar;
     string currentBaseName;
+    QStandardItem *editExpertBase;
     void initialProjectView();
     void initDataDetailsView();
     void initModel();
@@ -88,9 +95,8 @@ private:
     void wrongFormatWarning();
     bool baseExistsWarning(string basename);
     void updateGisDataFromTree();
-    void onGetGisData();
+
     void onInferResults();
-    void onGetPrototype();
     void readPrototype(TiXmlElement*prototypesElement);
     void drawLayer(string filename);
     void drawMembershipFunction(string basename, string idname, string covName);

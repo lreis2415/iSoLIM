@@ -16,14 +16,15 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    addexpertbase.cpp \
     addgisdatadialog.cpp \
+    addsamplebase.cpp \
     changecovname.cpp \
     inference.cpp \
     main.cpp \
     mainwindow.cpp \
     mygraphicsview.cpp \
     newprojectdialog.cpp \
-    prototypefromsamples.cpp \
     solim-lib-forqt.cpp \
     third_party/tinystr.cpp \
     third_party/tinyxml.cpp \
@@ -31,26 +32,29 @@ SOURCES += \
     third_party/tinyxmlparser.cpp
 
 HEADERS += \
+    addexpertbase.h \
     addgisdatadialog.h \
+    addsamplebase.h \
     changecovname.h \
     inference.h \
     mainwindow.h \
     mygraphicsview.h \
     newprojectdialog.h \
     project.h \
-    prototypefromsamples.h \
     solim-lib-forQt_global.h \
     solim-lib-forqt.h \
     third_party/tinystr.h \
     third_party/tinyxml.h
 
 FORMS += \
+    addexpertbase.ui \
     addgisdatadialog.ui \
+    addsamplebase.ui \
     changecovname.ui \
     inference.ui \
     mainwindow.ui \
     newprojectdialog.ui \
-    prototypefromsamples.ui
+    third_party/simpleDialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

@@ -1,5 +1,5 @@
-#ifndef PROTOTYPEFROMSAMPLES_H
-#define PROTOTYPEFROMSAMPLES_H
+#ifndef ADDSAMPLEBASE_H
+#define ADDSAMPLEBASE_H
 
 #include <QDialog>
 #include <QFileDialog>
@@ -13,16 +13,16 @@
 #include "solim-lib-forqt.h"
 using solim::Prototype;
 namespace Ui {
-class prototypeFromSamples;
+class AddSampleBase;
 }
 
-class prototypeFromSamples : public QDialog
+class AddSampleBase : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit prototypeFromSamples(SoLIMProject *proj, QWidget *parent = nullptr);
-    ~prototypeFromSamples();
+    explicit AddSampleBase(SoLIMProject *proj, QWidget *parent = nullptr);
+    ~AddSampleBase();
 
 private slots:
     void on_addCovariate_btn_clicked();
@@ -36,9 +36,9 @@ private slots:
     void on_ok_btn_clicked();
 
 private:
-    Ui::prototypeFromSamples *ui;
+    Ui::AddSampleBase *ui;
     SoLIMProject *project;
     //QThread thread;
 };
 
-#endif // PROTOTYPEFROMSAMPLES_H
+#endif // ADDSAMPLEBASE_H

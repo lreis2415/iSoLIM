@@ -989,9 +989,12 @@ namespace solim {
         vecDDY.clear();
         vecS.clear();
         iKnotNum = 0;
-        double rangePar=5.1551357653410932047;
+        double rangePar=5.1551357653410932047;  //sqrt(ln(0.00000001)/ln(0.5))
+        double rangePar_75=0.64423404076379;    //sqrt(ln(0.75)/ln(0.5))
         double lowRange=lowUnity-(lowUnity - lowCross)*rangePar;
+        double low_75=lowUnity-(lowUnity - lowCross)*rangePar_75;
         double highRange=highUnity+(highCross-highUnity)*rangePar;
+        double high_75=highUnity+(highCross-highUnity)*rangePar_75;
         range=fabs(lowRange)>fabs(highRange)?fabs(lowRange):fabs(highRange);
 
         // add 6 points to generate the spline curve
@@ -999,28 +1002,26 @@ namespace solim {
         if (curveType == BELL_SHAPED) {
             addKnot(lowRange, 0);
             addKnot(lowCross, 0.5);
+            addKnot(low_75,0.75);
             addKnot(lowUnity, 1);
             addKnot(highUnity, 1);
+            addKnot(high_75,0.75);
             addKnot(highCross, 0.5);
             addKnot(highRange, 0);
             typicalValue = (highUnity+lowUnity)*0.5;
         }
         else if (curveType == S_SHAPED) {
-            range=fabs(lowRange)>fabs(highUnity)?fabs(lowRange):fabs(highUnity);
-            highUnity = (lowUnity + highRange) / 2;
+            range=fabs(range)>fabs(lowUnity+1)?fabs(range):fabs(lowUnity+1);
             addKnot(lowRange, 0);
             addKnot(lowCross, 0.5);
+            addKnot(low_75,0.75);
             addKnot(lowUnity, 1);
-            addKnot(highUnity, 1);
-            addKnot(highRange, 1);
-            typicalValue = highUnity;
+            typicalValue = lowUnity;
         }
         else if (curveType == Z_SHAPED) {
-            range=fabs(lowUnity)>fabs(highRange)?fabs(lowUnity):fabs(highRange);
-            lowUnity = (highUnity + lowRange) / 2;
-            addKnot(lowRange, 1);
-            addKnot(lowUnity, 1);
+            range=fabs(range)>fabs(highUnity-1)?fabs(range):fabs(highUnity-1);
             addKnot(highUnity, 1);
+            addKnot(high_75,0.75);
             addKnot(highCross, 0.5);
             addKnot(highRange, 0);
             typicalValue = lowUnity;
@@ -1085,16 +1086,13 @@ namespace solim {
     }
 
     void Curve::addKnot(double x, double y) {
-        bool notAddedFlag = TRUE;
-        for (int i = 0; i < iKnotNum; ++i) {
-            if (fabs(vecKnotX[i] - x) < VERY_SMALL)
-                notAddedFlag = FALSE;
+        for(int i = 0;i<iKnotNum;i++){
+            if(fabs(vecKnotX[i]-x)<VERY_SMALL)
+                return;
         }
-        if (notAddedFlag) {
-            vecKnotX.push_back(x);
-            vecKnotY.push_back(y);
-            ++iKnotNum;
-        }
+        vecKnotX.push_back(x);
+        vecKnotY.push_back(y);
+        ++iKnotNum;
     }
 
     void Curve::updateCurve() {
@@ -1110,20 +1108,30 @@ namespace solim {
         // for categorical value
         if (dataType == CATEGORICAL) {
             for (int i = 0; i < iKnotNum; ++i)
-                if (fabs(envValue - vecKnotX[i] < VERY_SMALL))
+                if (fabs(int(envValue) - int(vecKnotX[i])) < VERY_SMALL)
                     return vecKnotY[i];
             return 0;
         }
         // for continuous value
-        if (envValue < vecKnotX[0]) return vecKnotY[0];
-        if (envValue > vecKnotX[iKnotNum - 1])   return vecKnotY[iKnotNum-1];
-        //int left = 0;
-        //int right = iKnotNum - 1;
+        if((fabs(vecKnotY[0])<VERY_SMALL||fabs(vecKnotY[0]-1)<VERY_SMALL)
+                &&(fabs(vecKnotY[iKnotNum-1])<VERY_SMALL||fabs(vecKnotY[iKnotNum-1]-1)<VERY_SMALL)){
+            if (envValue < vecKnotX[0]) return vecKnotY[0];
+            if (envValue > vecKnotX[iKnotNum - 1])   return vecKnotY[iKnotNum-1];
+        }
         int pos = -1;
-        int i = 0;
-        while (envValue>vecKnotX[i + 1])
-            i = i + 1;
-        pos = i;
+        if(envValue>vecKnotX[0]&&envValue<vecKnotX[iKnotNum - 1]){
+            //int left = 0;
+            //int right = iKnotNum - 1;
+
+            int i = 0;
+            while (envValue>vecKnotX[i + 1])
+                i = i + 1;
+            pos = i;
+        }
+        else if (envValue < vecKnotX[0]) pos=0;
+        else if (envValue > vecKnotX[iKnotNum - 1])   pos=iKnotNum-2;
+        else if(fabs(envValue-vecKnotX[0])<VERY_SMALL)  return vecKnotY[0];
+        else if(fabs(envValue-vecKnotX[iKnotNum - 1])<VERY_SMALL)   return vecKnotY[iKnotNum - 1];
 
         double h0, h1, result;
         h1 = (vecKnotX[pos + 1] - envValue) / vecS[pos];
@@ -1387,6 +1395,13 @@ namespace solim {
     }
 
     void Prototype::addProperties(string propertyName, double propertyValue, DataTypeEnum type) {
+        for(int i=0;i<properties.size();i++){
+            if(properties[i].propertyName==propertyName){
+                properties[i].propertyValue=propertyValue;
+                properties[i].soilPropertyType=type;
+                return;
+            }
+        }
         SoilProperty sp;
         sp.propertyName = propertyName;
         sp.propertyValue = propertyValue;
