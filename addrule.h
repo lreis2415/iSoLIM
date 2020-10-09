@@ -7,20 +7,20 @@
 #include <vector>
 #include "mygraphicsview.h"
 #include "project.h"
-#include "addgisdatadialog.h"
+#include "simpledialog.h"
 #include "solim-lib-forqt.h"
 
 namespace Ui {
-class AddExpertBase;
+class AddRule;
 }
 
-class AddExpertBase : public QDialog
+class AddRule : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit AddExpertBase(SoLIMProject *proj, QWidget *parent = nullptr);
-    ~AddExpertBase();
+    explicit AddRule(SoLIMProject *proj, QWidget *parent = nullptr);
+    ~AddRule();
 signals:
     void createBase(const QString basename);
     void createPrototype(const QString basename, const QString prototypeName);
@@ -54,7 +54,7 @@ private slots:
     void onAddFreehandRule(const double x, const double y);
 
 private:
-    Ui::AddExpertBase *ui;
+    Ui::AddRule *ui;
     QStringList prototypeNames;
     QString basename;
     SoLIMProject *proj;

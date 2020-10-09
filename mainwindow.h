@@ -18,10 +18,10 @@
 #include "inference.h"
 #include "project.h"
 #include "addsamplebase.h"
-#include "addexpertbase.h"
+#include "addrule.h"
 #include "mygraphicsview.h"
 #include "newprojectdialog.h"
-#include "addgisdatadialog.h"
+#include "simpledialog.h"
 #include "changecovname.h"
 #include <iostream>
 QT_BEGIN_NAMESPACE
@@ -65,8 +65,7 @@ private slots:
     void onSavePrototypeBase();
     void onExportPrototypeBase();
     //prototype from expert
-    void onCreateBaseFromExpert(const QString basename);
-    void onCreatePrototypeFromExpert(const QString basename, const QString prototypeName);
+    void onCreatePrototypeFromExpert();
     void onGetGisData();
     void onGetPrototype();
     void onUpdatePrototypeFromExpert(const Prototype *prop);

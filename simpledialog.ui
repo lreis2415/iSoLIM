@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>AddGisDataDialog</class>
- <widget class="QDialog" name="AddGisDataDialog">
+ <class>SimpleDialog</class>
+ <widget class="QDialog" name="SimpleDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -17,14 +17,14 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QLabel" name="label">
+      <widget class="QLabel" name="label_1">
        <property name="text">
         <string>Filename:</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="filename_lineEdit"/>
+      <widget class="QLineEdit" name="lineEdit_1"/>
      </item>
      <item>
       <widget class="QPushButton" name="browse_btn">
@@ -45,7 +45,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="covariate_lineEdit"/>
+      <widget class="QLineEdit" name="lineEdit_2"/>
      </item>
     </layout>
    </item>
@@ -70,6 +70,13 @@
         </size>
        </property>
       </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="next_btn">
+       <property name="text">
+        <string>Next</string>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QPushButton" name="ok_btn">

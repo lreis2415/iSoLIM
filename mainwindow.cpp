@@ -282,7 +282,7 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
 }
 
 void MainWindow::onAddGisData(){
-    AddGisDataDialog addGisData(this);
+    SimpleDialog addGisData(SimpleDialog::ADDGISDATA, this);
     addGisData.exec();
     if(addGisData.filename.isEmpty()){
         return;
@@ -317,30 +317,46 @@ void MainWindow::onAddPrototypeFromSamples(){
 }
 
 void MainWindow::onAddPrototypeFromExpert(){
-    AddExpertBase *addExpertBase = new AddExpertBase(proj);
-    addExpertBase->show();
-    connect(addExpertBase,SIGNAL(createBase(const QString)),this,SLOT(onCreateBaseFromExpert(const QString)));
-    connect(addExpertBase,SIGNAL(createPrototype(const QString, const QString)),this,SLOT(onCreatePrototypeFromExpert(const QString,const QString)));
-    connect(addExpertBase,SIGNAL(addlayer()),this,SLOT(onGetGisData()));
-    connect(addExpertBase,SIGNAL(updatePrototype()),this,SLOT(onGetPrototype()));
+    SimpleDialog *addPrototypeBase = new SimpleDialog(SimpleDialog::ADDPROTOTYPEBASE,this);
+    addPrototypeBase->exec();
+    if(!addPrototypeBase->lineEdit2.isEmpty()){
+        QString basename=addPrototypeBase->lineEdit2;
+        proj->prototypeBaseNames.push_back(basename.toStdString());
+        editExpertBase = new QStandardItem("Prototype Base: "+basename);
+        prototypeChild->setChild(prototypeChild->rowCount(),0,editExpertBase);
+        projectView->expand(prototypeChild->index());
+        if(addPrototypeBase->nextFlag){
+            currentBaseName=basename.toStdString();
+            onCreatePrototypeFromExpert();
+        }
+    }
+//    AddRule *addRule = new AddRule(proj);
+//    addRule->show();
+//    connect(addRule,SIGNAL(createBase(const QString)),this,SLOT(onCreateBaseFromExpert(const QString)));
+//    connect(addRule,SIGNAL(createPrototype(const QString, const QString)),this,SLOT(onCreatePrototypeFromExpert(const QString,const QString)));
+//    connect(addRule,SIGNAL(addlayer()),this,SLOT(onGetGisData()));
+//    connect(addRule,SIGNAL(updatePrototype()),this,SLOT(onGetPrototype()));
 }
-void MainWindow::onCreateBaseFromExpert(const QString basename){
-    proj->prototypeBaseNames.push_back(basename.toStdString());
-    editExpertBase = new QStandardItem("Prototype Base: "+basename);
-    prototypeChild->setChild(prototypeChild->rowCount(),0,editExpertBase);
-    projectView->expand(prototypeChild->index());
-}
-void MainWindow::onCreatePrototypeFromExpert(const QString basename, const QString prototypeName){
+
+void MainWindow::onCreatePrototypeFromExpert(){
+    SimpleDialog *addPrototype = new SimpleDialog(SimpleDialog::ADDPROTOTYPE,this);
+    addPrototype->exec();
+    if(addPrototype->lineEdit2.isEmpty()) return;
+    QString prototypeName = addPrototype->lineEdit2;
     Prototype prop;
     prop.prototypeID=prototypeName.toStdString();
     prop.source=solim::EXPERT;
-    prop.prototypeBaseName=basename.toStdString();
+    prop.prototypeBaseName=currentBaseName;
     proj->prototypes.push_back(prop);
     QStandardItem* prototype = new QStandardItem("Prototype ID: "+prototypeName);
     editExpertBase->setChild(editExpertBase->rowCount(),0,prototype);
     prototype->setColumnCount(1);
     prototype->setChild(0,0,new QStandardItem("Source: EXPERT"));
     projectView->expand(editExpertBase->index());
+    if(addPrototype->nextFlag){
+        AddRule *addRule = new AddRule(proj,this);
+        addRule->show();
+    }
 }
 void MainWindow::onUpdatePrototypeFromExpert(const Prototype*prop){
     for(int i =0;i<editExpertBase->rowCount();i++){
@@ -966,6 +982,9 @@ void MainWindow::initialProjectView(){
     projectView->addAction(addGisData);
     connect(addGisData,SIGNAL(triggered()),this,SLOT(onAddGisData()));
     prototypeBaseMenu = new QMenu(projectView);
+    QAction *addProtoExpert = new QAction("Add prototype from expert",prototypeBaseMenu);
+    prototypeBaseMenu->addAction(addProtoExpert);
+    projectView->addAction(addProtoExpert);
     QAction *changeCovName = new QAction("Change covariate name",prototypeBaseMenu);
     prototypeBaseMenu->addAction(changeCovName);
     projectView->addAction(changeCovName);
@@ -975,6 +994,7 @@ void MainWindow::initialProjectView(){
     QAction *exportPrototypeBase_csv = new QAction("Export to .csv file",prototypeBaseMenu);
     prototypeBaseMenu->addAction(exportPrototypeBase_csv);
     projectView->addAction(exportPrototypeBase_csv);
+    connect(addProtoExpert,SIGNAL(triggered()),this,SLOT(onCreatePrototypeFromExpert()));
     connect(changeCovName,SIGNAL(triggered()),this,SLOT(onChangeCovName()));
     connect(exportPrototypeBase_csv,SIGNAL(triggered()),this,SLOT(onExportPrototypeBase()));
     connect(savePrototypeBase_xml, SIGNAL(triggered()),this,SLOT(onSavePrototypeBase()));

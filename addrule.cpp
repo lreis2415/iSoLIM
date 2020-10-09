@@ -1,9 +1,9 @@
-#include "addexpertbase.h"
-#include "ui_addexpertbase.h"
+#include "addrule.h"
+#include "ui_addrule.h"
 
-AddExpertBase::AddExpertBase(SoLIMProject *proj, QWidget *parent) :
+AddRule::AddRule(SoLIMProject *proj, QWidget *parent) :
     QDialog(parent),proj(proj),
-    ui(new Ui::AddExpertBase)
+    ui(new Ui::AddRule)
 {
     ui->setupUi(this);
     myview = new MyGraphicsView();
@@ -62,12 +62,12 @@ AddExpertBase::AddExpertBase(SoLIMProject *proj, QWidget *parent) :
     freeKnotY = new vector<double>;
 }
 
-AddExpertBase::~AddExpertBase()
+AddRule::~AddRule()
 {
     delete ui;
 }
 
-void AddExpertBase::on_btn_create_base_clicked()
+void AddRule::on_btn_create_base_clicked()
 {
     if(!ui->lineEdit_basename->text().isEmpty()){
         basename = ui->lineEdit_basename->text();
@@ -80,7 +80,7 @@ void AddExpertBase::on_btn_create_base_clicked()
     }
 }
 
-void AddExpertBase::on_btn_add_proto_clicked()
+void AddRule::on_btn_add_proto_clicked()
 {
     QString prototypeName = ui->lineEdit_prototype->text();
     if(prototypeNames.contains(prototypeName)) {
@@ -126,7 +126,7 @@ void AddExpertBase::on_btn_add_proto_clicked()
     ui->label_freehand_hint->setVisible(false);
 }
 
-void AddExpertBase::on_radioButton_range_clicked()
+void AddRule::on_radioButton_range_clicked()
 {
     myview->getScene()->clear();
     ui->label_cov->setVisible(true);
@@ -161,7 +161,7 @@ void AddExpertBase::on_radioButton_range_clicked()
     myview->editFreehandRule=false;
 }
 
-void AddExpertBase::on_radioButton_point_clicked()
+void AddRule::on_radioButton_point_clicked()
 {
     myview->getScene()->clear();
     ui->label_cov->setVisible(true);
@@ -196,7 +196,7 @@ void AddExpertBase::on_radioButton_point_clicked()
     myview->editFreehandRule=false;
 }
 
-void AddExpertBase::on_radioButton_freehand_clicked()
+void AddRule::on_radioButton_freehand_clicked()
 {
     myview->getScene()->clear();
     ui->label_cov->setVisible(true);
@@ -242,7 +242,7 @@ void AddExpertBase::on_radioButton_freehand_clicked()
     freeKnotY->shrink_to_fit();
 }
 
-void AddExpertBase::on_radioButton_enum_clicked()
+void AddRule::on_radioButton_enum_clicked()
 {
     myview->getScene()->clear();
     ui->label_cov->setVisible(true);
@@ -286,11 +286,11 @@ void AddExpertBase::on_radioButton_enum_clicked()
     myview->editFreehandRule=false;
 }
 
-void AddExpertBase::on_comboBox_cov_activated(const QString &arg1)
+void AddRule::on_comboBox_cov_activated(const QString &arg1)
 {
     myview->getScene()->clear();
     if(arg1=="[New covariate]"){
-        AddGisDataDialog addGisData(this);
+        SimpleDialog addGisData(SimpleDialog::ADDCOVARIATE,this);
         addGisData.exec();
         if(addGisData.covariate.isEmpty()){
             ui->comboBox_cov->setCurrentIndex(0);
@@ -332,13 +332,13 @@ void AddExpertBase::on_comboBox_cov_activated(const QString &arg1)
     }
 }
 
-void AddExpertBase::pointRuleWarn(){
+void AddRule::pointRuleWarn(){
     QMessageBox warning;
     warning.setText("The chosen covariate does not have corresponding filename. Point rule cannot be set.");
     warning.exec();
     ui->comboBox_cov->setCurrentIndex(-1);
 }
-void AddExpertBase::on_btn_add_prop_clicked()
+void AddRule::on_btn_add_prop_clicked()
 {
     QString propName=ui->lineEdit_prop_name->text();
     QString propVal = ui->lineEdit_prop_val->text();
@@ -360,7 +360,7 @@ void AddExpertBase::on_btn_add_prop_clicked()
     }
 }
 
-void AddExpertBase::addSuccess(QString content){
+void AddRule::addSuccess(QString content){
     QMessageBox propertyAdded;
     propertyAdded.setText(content+" added to prototype success!");
     propertyAdded.show();
@@ -368,7 +368,7 @@ void AddExpertBase::addSuccess(QString content){
     emit updatePrototype();
 }
 
-void AddExpertBase::on_btn_add_rule_clicked()
+void AddRule::on_btn_add_rule_clicked()
 {
     // check valid cov name
     string covname=ui->comboBox_cov->currentText().toStdString();
@@ -507,7 +507,7 @@ void AddExpertBase::on_btn_add_rule_clicked()
     }
 }
 
-void AddExpertBase::on_comboBox_curve_activated(const QString &arg1) {
+void AddRule::on_comboBox_curve_activated(const QString &arg1) {
     if(arg1=="Bell-shaped"){
         ui->lineEdit_value1->setEnabled(true);
         ui->lineEdit_value2->setEnabled(true);
@@ -526,7 +526,7 @@ void AddExpertBase::on_comboBox_curve_activated(const QString &arg1) {
     }
 }
 
-void AddExpertBase::drawMembershipFunction(solim::Curve *c) {
+void AddRule::drawMembershipFunction(solim::Curve *c) {
     QGraphicsScene *scene = myview->getScene();
     scene->clear();
     scene->setSceneRect(0,0,myview->width()*0.9,myview->height()*0.9);
@@ -599,7 +599,7 @@ void AddExpertBase::drawMembershipFunction(solim::Curve *c) {
     }
 }
 
-void AddExpertBase::on_btn_add_opt_val_clicked() {
+void AddRule::on_btn_add_opt_val_clicked() {
     if(!enumViewInit){
         if(!ui->lineEdit_max_cov->text().isEmpty()&&!ui->lineEdit_min_cov->text().isEmpty()){
             bool*toNumFlag = new bool;
@@ -637,7 +637,7 @@ void AddExpertBase::on_btn_add_opt_val_clicked() {
     }
 }
 
-void AddExpertBase::drawEnumRange(){
+void AddRule::drawEnumRange(){
     int margin = fabs(enumMax)>fabs(enumMin)?fabs(enumMax):fabs(enumMin);
     QGraphicsScene *scene = myview->getScene();
     scene->clear();
@@ -700,7 +700,7 @@ void AddExpertBase::drawEnumRange(){
         yaxisName->setPos(0.10*sceneWidth, 0.1*sceneHeight-20);
     }
 }
-void AddExpertBase::drawEnum(int num){
+void AddRule::drawEnum(int num){
     int margin = fabs(enumMax)>fabs(enumMin)?fabs(enumMax):fabs(enumMin);
     QGraphicsScene *scene = myview->getScene();
     int xStart = 0.10*scene->width();
@@ -722,13 +722,13 @@ void AddExpertBase::drawEnum(int num){
     }
 }
 
-void AddExpertBase::enumRuleWarn(){
+void AddRule::enumRuleWarn(){
     QMessageBox warning;
     warning.setText("Please input valid maximum and minimun value.");
     warning.exec();
 }
 
-void AddExpertBase::on_btn_reset_clicked()
+void AddRule::on_btn_reset_clicked()
 {
     if(ui->radioButton_enum->isChecked()){
         enumVals.clear();
@@ -743,7 +743,7 @@ void AddExpertBase::on_btn_reset_clicked()
     }
 }
 
-void AddExpertBase::onAddFreehandRule(const double x, const double y){
+void AddRule::onAddFreehandRule(const double x, const double y){
     int margin = fabs(enumMax)>fabs(enumMin)?fabs(enumMax):fabs(enumMin);
     double knotX = x*2*margin-margin;
     freeKnotX->push_back(knotX);
