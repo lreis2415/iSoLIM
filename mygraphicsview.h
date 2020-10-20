@@ -14,7 +14,6 @@ class MyGraphicsView:public QGraphicsView
     Q_OBJECT
 public:
     explicit MyGraphicsView(QWidget *parent = 0);
-    bool clickForInfo;
     string filename;
     BaseIO *lyr;
     QImage *img;
@@ -23,15 +22,23 @@ public:
     double range;
     bool showImage;
     bool editFreehandRule;
+    bool editEnumRule;
     QTableView *dataDetailsView;
     QStandardItemModel *dataDetailsModel;
     QGraphicsScene *getScene(){ return scene; }
+    vector<double> knotX;
+    vector<double> knotY;
+    int moveKnotNum;
+    int enumRangeMulti;
+    int enumMargin;
 signals:
-    void addFreehandPoint(const double x, const double y);
+    void addFreehandPoint();
+    void addEnumPoint();
 public slots:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
 private:
     QGraphicsScene *scene;
 };

@@ -436,8 +436,8 @@ namespace solim {
         DataTypeEnum dataType;
         double typicalValue;
         double range;
-    private:
         vector <double> vecKnotX;
+    private:
         vector <double> vecKnotY;
         vector <double> vecDY;
         vector <double> vecDDY;

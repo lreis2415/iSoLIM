@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QMessageBox>
 #include <QGraphicsTextItem>
+#include <QLayout>
 #include <vector>
 #include "mygraphicsview.h"
 #include "project.h"
@@ -19,25 +20,17 @@ class AddRule : public QDialog
     Q_OBJECT
 
 public:
-    explicit AddRule(SoLIMProject *proj, QWidget *parent = nullptr);
+    explicit AddRule(SoLIMProject *proj, int protoNum, string currentBaseName="", QWidget *parent = nullptr);
     ~AddRule();
 signals:
-    void createBase(const QString basename);
-    void createPrototype(const QString basename, const QString prototypeName);
     void addlayer();
     void updatePrototype();
 private slots:
-    void on_btn_create_base_clicked();
+    void on_radioButton_range_toggled(bool checked);
 
-    void on_btn_add_proto_clicked();
+    void on_radioButton_freehand_toggled(bool checked);
 
-    void on_radioButton_range_clicked();
-
-    void on_radioButton_point_clicked();
-
-    void on_radioButton_freehand_clicked();
-
-    void on_radioButton_enum_clicked();
+    void on_radioButton_enum_toggled(bool checked);
 
     void on_comboBox_cov_activated(const QString &arg1);
 
@@ -51,26 +44,44 @@ private slots:
 
     void on_btn_reset_clicked();
 
-    void onAddFreehandRule(const double x, const double y);
+    void onAddFreehandPoint();
+
+    void onAddEnumPoint();
+
+    void on_lineEdit_min_cov_textChanged(const QString &arg1);
+
+    void on_lineEdit_max_cov_textChanged(const QString &arg1);
+
+    void on_comboBox_datatype_activated(int index);
+
+    void on_comboBox_datatype_currentIndexChanged(int index);
+
+    void resizeEvent(QResizeEvent* event) override {
+        QWidget::resizeEvent(event);
+        layout()->setSizeConstraint(QLayout::SetMinAndMaxSize);
+    };
+    void on_btn_create_clicked();
 
 private:
     Ui::AddRule *ui;
     QStringList prototypeNames;
     QString basename;
     SoLIMProject *proj;
+    int protoNum;
     MyGraphicsView *myview;
     vector<int> enumVals;
-    int enumMax;
-    int enumMin;
+    int rangeMax;
+    int rangeMin;
     bool enumViewInit;
     vector<double> *freeKnotX;
     vector<double> *freeKnotY;
-    void pointRuleWarn();
+    string currentBasename;
     void drawMembershipFunction(solim::Curve *c);
     void addSuccess(QString content);
-    void drawEnum(int num);
     void drawEnumRange();
     void enumRuleWarn();
+    bool getPointRule(solim::Curve &c);
+
 };
 
 #endif // ADDEXPERTBASE_H

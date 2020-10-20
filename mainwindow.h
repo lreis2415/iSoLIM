@@ -38,9 +38,10 @@ public:
     ~MainWindow();
 
     QStandardItemModel* model;
-    QMenu* prototypeMenu;
+    QMenu* prototypesMenu;
     QMenu* gisDataMenu;
     QMenu* prototypeBaseMenu;
+    QMenu* prototypeMenu;
     QStandardItem *resultChild;
     QStandardItem *prototypeChild;
     QStandardItem *gisDataChild;
@@ -56,14 +57,15 @@ private slots:
     // project tree slots
     void onSelectionChanged(const QItemSelection&,const QItemSelection&);
     void onCustomContextMenu(const QPoint &point);
-    void onAddPrototypeFromSamples();
-    void onAddPrototypeFromExpert();
-    void onAddPrototypeFromMining();
+    void onAddPrototypeBaseFromSamples();
+    void onAddPrototypeBaseFromExpert();
+    void onAddPrototypeBaseFromMining();
     void onImportPrototypeBase();
     void onAddGisData();
     void onChangeCovName();
     void onSavePrototypeBase();
     void onExportPrototypeBase();
+    void onAddRules();
     //prototype from expert
     void onCreatePrototypeFromExpert();
     void onGetGisData();
@@ -86,7 +88,8 @@ private:
     string imgFilename; // store current showing image filename
     QToolBar *zoomToolBar;
     string currentBaseName;
-    QStandardItem *editExpertBase;
+    string currentProtoName;
+    AddRule *addRule;
     void initialProjectView();
     void initDataDetailsView();
     void initModel();

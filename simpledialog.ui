@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>124</height>
+    <height>141</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,7 +19,7 @@
      <item>
       <widget class="QLabel" name="label_1">
        <property name="text">
-        <string>Filename:</string>
+        <string>Filename: </string>
        </property>
       </widget>
      </item>
@@ -27,7 +27,7 @@
       <widget class="QLineEdit" name="lineEdit_1"/>
      </item>
      <item>
-      <widget class="QPushButton" name="browse_btn">
+      <widget class="QPushButton" name="btn_1">
        <property name="text">
         <string>Browse</string>
        </property>
@@ -47,6 +47,13 @@
      <item>
       <widget class="QLineEdit" name="lineEdit_2"/>
      </item>
+     <item>
+      <widget class="QPushButton" name="btn_2">
+       <property name="text">
+        <string>Browse</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>
@@ -55,6 +62,22 @@
       <string>This is a catogorical covariate.</string>
      </property>
     </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <layout class="QVBoxLayout" name="layout_hint"/>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_3">

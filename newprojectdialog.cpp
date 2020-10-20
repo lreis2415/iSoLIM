@@ -48,10 +48,11 @@ void NewProjectDialog::on_ok_btn_clicked()
     close();
 }
 
-void NewProjectDialog::on_projName_lineEdit_textChanged(const QString &arg1)
+void NewProjectDialog::on_projName_lineEdit_textEdited(const QString &arg1)
 {
     if(!arg1.isEmpty()&&!ui->projPath_lineEdit->text().isEmpty())
         ui->ok_btn->setEnabled(true);
+    projectName=ui->projName_lineEdit->text();
 }
 
 void NewProjectDialog::on_projPath_lineEdit_textChanged(const QString &arg1)
@@ -68,5 +69,12 @@ void NewProjectDialog::on_studyArea_radioButton_toggled(bool checked)
     } else {
         ui->studyArea_lineEdit->setVisible(false);
         ui->studyArea_label->setVisible(false);
+    }
+}
+
+void NewProjectDialog::on_studyArea_lineEdit_textChanged(const QString &arg1)
+{
+    if(!ui->projName_lineEdit->text().contains(ui->studyArea_lineEdit->text())){
+        ui->projName_lineEdit->setText(projectName+"_"+ui->studyArea_lineEdit->text());
     }
 }

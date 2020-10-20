@@ -28,11 +28,13 @@ private slots:
 
     void on_ok_btn_clicked();
 
-    void on_projName_lineEdit_textChanged(const QString &arg1);
+    void on_projName_lineEdit_textEdited(const QString &arg1);
 
     void on_projPath_lineEdit_textChanged(const QString &arg1);
 
     void on_studyArea_radioButton_toggled(bool checked);
+
+    void on_studyArea_lineEdit_textChanged(const QString &arg1);
 
 private:
     Ui::NewProjectDialog *ui;

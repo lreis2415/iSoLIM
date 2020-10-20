@@ -11,6 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->menuSample_Design->setDisabled(true);
     setWindowIcon(QIcon("./imgs/solim.jpg"));
     // setup dock view
+    projectViewInitialized = false;
     initialProjectView();
     addDockWidget(Qt::LeftDockWidgetArea,projectDock);
 
@@ -22,10 +23,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionNew,SIGNAL(triggered()),this,SLOT(onProjectNew()));
     connect(ui->actionSave,SIGNAL(triggered()),this,SLOT(onProjectSave()));
     connect(ui->actionOpen,SIGNAL(triggered()),this,SLOT(onProjectOpen()));
-    connect(ui->actionAdd_prototypes_from_samples, SIGNAL(triggered()), this, SLOT(onAddPrototypeFromSamples()));
+    connect(ui->actionAdd_prototypes_from_samples, SIGNAL(triggered()), this, SLOT(onAddPrototypeBaseFromSamples()));
     connect(ui->actionView_Data,SIGNAL(triggered()),this,SLOT(onViewData()));
     connect(ui->actionSave_as,SIGNAL(triggered()),this,SLOT(onProjectSaveAs()));
-    projectViewInitialized = false;
     projectSaved = true;
     img = nullptr;
     proj = nullptr;
@@ -47,6 +47,7 @@ MainWindow::MainWindow(QWidget *parent)
     resultChild = nullptr;
     prototypeChild = nullptr;
     gisDataChild = nullptr;
+    addRule = nullptr;
 }
 
 MainWindow::~MainWindow()
@@ -270,14 +271,19 @@ void MainWindow::onSelectionChanged(const QItemSelection& current,const QItemSel
 void MainWindow::onCustomContextMenu(const QPoint & point){
     QModelIndex index = projectView->indexAt(point);
     if(index.isValid()&&index.data().toString().compare("Prototypes")==0){
-        prototypeMenu->exec(projectView->viewport()->mapToGlobal(point));
+        prototypesMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
     else if(index.isValid()&&index.data().toString().compare("GIS Data")==0){
         gisDataMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
-    if(index.isValid()&&index.parent().data().toString().compare("Prototypes")==0){
+    else if(index.isValid()&&index.parent().data().toString().compare("Prototypes")==0){
         currentBaseName=index.data().toString().mid(16).toStdString();
         prototypeBaseMenu->exec(projectView->viewport()->mapToGlobal(point));
+    }
+    else if(index.isValid()&&index.data().toString().startsWith("Prototype ID:")){
+        currentProtoName = index.data().toString().mid(14).toStdString();
+        currentBaseName=index.parent().data().toString().mid(16).toStdString();
+        prototypeMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
 }
 
@@ -307,7 +313,7 @@ void MainWindow::onAddGisData(){
     onGetGisData();
 }
 
-void MainWindow::onAddPrototypeFromSamples(){
+void MainWindow::onAddPrototypeBaseFromSamples(){
     AddSampleBase*getPrototype = new AddSampleBase(proj,this);
     getPrototype->exec();
     // show prototypes
@@ -316,90 +322,120 @@ void MainWindow::onAddPrototypeFromSamples(){
     projectSaved = false;
 }
 
-void MainWindow::onAddPrototypeFromExpert(){
+void MainWindow::onAddPrototypeBaseFromExpert(){
     SimpleDialog *addPrototypeBase = new SimpleDialog(SimpleDialog::ADDPROTOTYPEBASE,this);
     addPrototypeBase->exec();
     if(!addPrototypeBase->lineEdit2.isEmpty()){
         QString basename=addPrototypeBase->lineEdit2;
+        for(int i = 0;i<proj->prototypeBaseNames.size();i++){
+            if(proj->prototypeBaseNames[i]==basename.toStdString()){
+                QMessageBox warn;
+                warn.setText("Prototype base "+basename+" already exists.");
+                warn.exec();
+                return;
+            }
+        }
         proj->prototypeBaseNames.push_back(basename.toStdString());
-        editExpertBase = new QStandardItem("Prototype Base: "+basename);
-        prototypeChild->setChild(prototypeChild->rowCount(),0,editExpertBase);
+        prototypeChild->setChild(prototypeChild->rowCount(),0,new QStandardItem("Prototype Base: "+basename));
         projectView->expand(prototypeChild->index());
         if(addPrototypeBase->nextFlag){
             currentBaseName=basename.toStdString();
             onCreatePrototypeFromExpert();
         }
     }
-//    AddRule *addRule = new AddRule(proj);
-//    addRule->show();
-//    connect(addRule,SIGNAL(createBase(const QString)),this,SLOT(onCreateBaseFromExpert(const QString)));
-//    connect(addRule,SIGNAL(createPrototype(const QString, const QString)),this,SLOT(onCreatePrototypeFromExpert(const QString,const QString)));
-//    connect(addRule,SIGNAL(addlayer()),this,SLOT(onGetGisData()));
-//    connect(addRule,SIGNAL(updatePrototype()),this,SLOT(onGetPrototype()));
 }
 
 void MainWindow::onCreatePrototypeFromExpert(){
-    SimpleDialog *addPrototype = new SimpleDialog(SimpleDialog::ADDPROTOTYPE,this);
-    addPrototype->exec();
-    if(addPrototype->lineEdit2.isEmpty()) return;
-    QString prototypeName = addPrototype->lineEdit2;
-    Prototype prop;
-    prop.prototypeID=prototypeName.toStdString();
-    prop.source=solim::EXPERT;
-    prop.prototypeBaseName=currentBaseName;
-    proj->prototypes.push_back(prop);
-    QStandardItem* prototype = new QStandardItem("Prototype ID: "+prototypeName);
-    editExpertBase->setChild(editExpertBase->rowCount(),0,prototype);
-    prototype->setColumnCount(1);
-    prototype->setChild(0,0,new QStandardItem("Source: EXPERT"));
-    projectView->expand(editExpertBase->index());
-    if(addPrototype->nextFlag){
-        AddRule *addRule = new AddRule(proj,this);
-        addRule->show();
+//    SimpleDialog *addPrototype = new SimpleDialog(SimpleDialog::ADDPROTOTYPE,this);
+//    addPrototype->exec();
+//    if(addPrototype->lineEdit2.isEmpty()) return;
+//    QString prototypeName = addPrototype->lineEdit2;
+//    Prototype prop;
+//    prop.prototypeID=prototypeName.toStdString();
+//    currentProtoName=prop.prototypeID;
+//    prop.source=solim::EXPERT;
+//    prop.prototypeBaseName=currentBaseName;
+//    proj->prototypes.push_back(prop);
+//    for(int i =0; i<prototypeChild->rowCount();i++){
+//        if(prototypeChild->child(i,0)->text().endsWith(currentBaseName.c_str())){
+//            QStandardItem *editExpertBase=prototypeChild->child(i,0);
+//            QStandardItem* prototype = new QStandardItem("Prototype ID: "+prototypeName);
+//            editExpertBase->setChild(editExpertBase->rowCount(),0,prototype);
+//            prototype->setColumnCount(1);
+//            prototype->setChild(0,0,new QStandardItem("Source: EXPERT"));
+//            projectView->expand(editExpertBase->index());
+//            if(addPrototype->nextFlag){
+//                onAddRules();
+//            }
+//        }
+//    }
+    if(addRule){ addRule->close(); delete addRule;}
+    addRule = new AddRule(proj,-1,currentBaseName,this);
+    addRule->show();
+    connect(addRule,SIGNAL(addlayer()),this,SLOT(onGetGisData()));
+    connect(addRule,SIGNAL(updatePrototype()),this,SLOT(onGetPrototype()));
+}
+
+void MainWindow::onAddRules(){
+    for (int i = 0;i<proj->prototypes.size();i++){
+        if(proj->prototypes[i].prototypeBaseName==currentBaseName
+                &&proj->prototypes[i].prototypeID==currentProtoName){
+            if(addRule){ addRule->close(); delete addRule;}
+            addRule = new AddRule(proj,i,"",this);
+            addRule->show();
+            connect(addRule,SIGNAL(addlayer()),this,SLOT(onGetGisData()));
+            connect(addRule,SIGNAL(updatePrototype()),this,SLOT(onGetPrototype()));
+        }
     }
 }
+
 void MainWindow::onUpdatePrototypeFromExpert(const Prototype*prop){
-    for(int i =0;i<editExpertBase->rowCount();i++){
-        if(editExpertBase->child(i,0)->text().mid(14).toStdString()==prop->prototypeID){
-            QStandardItem*prototype=editExpertBase->child(i,0);
-            prototype->setRowCount(0);
-            prototype->setColumnCount(1);
-            prototype->setChild(0,0,new QStandardItem("Source: EXPERT"));
-            if(prop->properties.size()>0){
-                QStandardItem*properties=new QStandardItem("Properties");
-                prototype->setChild(prototype->rowCount(),0,properties);
-                for(int i = 0;i<prop->properties.size();i++) {
-                    string property = prop->properties[i].propertyName;
-                    if(prop->properties[i].soilPropertyType==solim::CATEGORICAL){
-                        property += " (category): " + to_string(int(prop->properties[i].propertyValue));
-                    } else
-                        property += " (property): " + to_string(prop->properties[i].propertyValue);
-                    properties->setChild(properties->rowCount(),0,new QStandardItem(property.c_str()));
-                }
-            }
-            if(prop->envConditionSize>0){
-                QStandardItem* covariates = new QStandardItem("Covariates");
-                prototype->setChild(prototype->rowCount(),0,covariates);
-                covariates->setColumnCount(1);
-                for(int j = 0; j<prop->envConditionSize;j++){
-                    string cov = "Covariate: " + prop->envConditions[j].covariateName;
-                    covariates->setRowCount(covariates->rowCount()+1);
-                    QStandardItem *covItem = new QStandardItem(cov.c_str());
-                    covariates->setChild(covariates->rowCount()-1,0,covItem);
-                    covItem->setColumnCount(1);
-                    double typicalValue = prop->envConditions[j].typicalValue;
-                    if(fabs(typicalValue-NODATA)>VERY_SMALL){
-                        string typicalV = "Typical value: "+to_string(typicalValue);
-                        covItem->setChild(covItem->rowCount(),0,new QStandardItem(typicalV.c_str()));
+    for(int i =0; i<prototypeChild->rowCount();i++){
+        if(prototypeChild->child(i,0)->text().endsWith(currentBaseName.c_str())){
+            QStandardItem *editExpertBase=prototypeChild->child(i,0);
+            for(int i =0;i<editExpertBase->rowCount();i++){
+                if(editExpertBase->child(i,0)->text().mid(14).toStdString()==prop->prototypeID){
+                    QStandardItem*prototype=editExpertBase->child(i,0);
+                    prototype->setRowCount(0);
+                    prototype->setColumnCount(1);
+                    prototype->setChild(0,0,new QStandardItem("Source: EXPERT"));
+                    if(prop->properties.size()>0){
+                        QStandardItem*properties=new QStandardItem("Properties");
+                        prototype->setChild(prototype->rowCount(),0,properties);
+                        for(int i = 0;i<prop->properties.size();i++) {
+                            string property = prop->properties[i].propertyName;
+                            if(prop->properties[i].soilPropertyType==solim::CATEGORICAL){
+                                property += " (category): " + to_string(int(prop->properties[i].propertyValue));
+                            } else
+                                property += " (property): " + to_string(prop->properties[i].propertyValue);
+                            properties->setChild(properties->rowCount(),0,new QStandardItem(property.c_str()));
+                        }
                     }
-                    // set membership function
-                    covItem->setChild(covItem->rowCount(),0,new QStandardItem("Membership Function"));
+                    if(prop->envConditionSize>0){
+                        QStandardItem* covariates = new QStandardItem("Covariates");
+                        prototype->setChild(prototype->rowCount(),0,covariates);
+                        covariates->setColumnCount(1);
+                        for(int j = 0; j<prop->envConditionSize;j++){
+                            string cov = "Covariate: " + prop->envConditions[j].covariateName;
+                            covariates->setRowCount(covariates->rowCount()+1);
+                            QStandardItem *covItem = new QStandardItem(cov.c_str());
+                            covariates->setChild(covariates->rowCount()-1,0,covItem);
+                            covItem->setColumnCount(1);
+                            double typicalValue = prop->envConditions[j].typicalValue;
+                            if(fabs(typicalValue-NODATA)>VERY_SMALL){
+                                string typicalV = "Typical value: "+to_string(typicalValue);
+                                covItem->setChild(covItem->rowCount(),0,new QStandardItem(typicalV.c_str()));
+                            }
+                            // set membership function
+                            covItem->setChild(covItem->rowCount(),0,new QStandardItem("Membership Function"));
+                        }
+                    }
                 }
             }
         }
     }
 }
-void MainWindow::onAddPrototypeFromMining(){
+void MainWindow::onAddPrototypeBaseFromMining(){
     //qInfo()<<"add maps";
 }
 
@@ -489,6 +525,7 @@ void MainWindow::onImportPrototypeBase(){
 }
 
 void MainWindow::onChangeCovName(){
+    if(proj->prototypes.size()<1) return;
     int i = 0;
     while(i < proj->prototypes.size()){
         if(proj->prototypes[i].prototypeBaseName==currentBaseName)
@@ -601,51 +638,48 @@ void MainWindow::onGetGisData(){
 
 void MainWindow::onGetPrototype(){
     prototypeChild->setColumnCount(1);
-    if(proj->prototypes.size()>0){
-        for(int i =0;i<proj->prototypeBaseNames.size();i++){
-            string prototypebase = proj->prototypeBaseNames[i];
-            QStandardItem *prototypeBase = new QStandardItem(("Prototype Base: "+prototypebase).c_str());
-            prototypeChild->setChild(i,0,prototypeBase);
-            for(vector<Prototype>::iterator it = proj->prototypes.begin(); it!=proj->prototypes.end();it++){
-                if((*it).prototypeBaseName==prototypebase){
-                    QStandardItem* prototype = new QStandardItem(("Prototype ID: "+(*it).prototypeID).c_str());
-                    prototypeBase->setChild(prototypeBase->rowCount(),0,prototype);
-                    prototype->setColumnCount(1);
-                    prototype->setChild(0,0,new QStandardItem(("Source: "+string(solim::PrototypeSource_str[(*it).source])).c_str()));
-                    QStandardItem* properties = new QStandardItem("Properties");
-                    prototype->setChild(1,0,properties);
-                    properties->setColumnCount(1);
-                    for(int i = 0;i<(*it).properties.size();i++) {
-                        string property = (*it).properties[i].propertyName;
-                        if((*it).properties[i].soilPropertyType==solim::CATEGORICAL){
-                            property += " (category): " + to_string(int((*it).properties[i].propertyValue));
-                        } else
-                            property += " (property): " + to_string((*it).properties[i].propertyValue);
-                        properties->setRowCount(properties->rowCount()+1);
-                        properties->setChild(properties->rowCount()-1,0,new QStandardItem(property.c_str()));
+    for(int i =0;i<proj->prototypeBaseNames.size();i++){
+        string prototypebase = proj->prototypeBaseNames[i];
+        QStandardItem *prototypeBase = new QStandardItem(("Prototype Base: "+prototypebase).c_str());
+        prototypeChild->setChild(i,0,prototypeBase);
+        for(vector<Prototype>::iterator it = proj->prototypes.begin(); it!=proj->prototypes.end();it++){
+            if((*it).prototypeBaseName==prototypebase){
+                QStandardItem* prototype = new QStandardItem(("Prototype ID: "+(*it).prototypeID).c_str());
+                prototypeBase->setChild(prototypeBase->rowCount(),0,prototype);
+                prototype->setColumnCount(1);
+                prototype->setChild(0,0,new QStandardItem(("Source: "+string(solim::PrototypeSource_str[(*it).source])).c_str()));
+                QStandardItem* properties = new QStandardItem("Properties");
+                prototype->setChild(1,0,properties);
+                properties->setColumnCount(1);
+                for(int i = 0;i<(*it).properties.size();i++) {
+                    string property = (*it).properties[i].propertyName;
+                    if((*it).properties[i].soilPropertyType==solim::CATEGORICAL){
+                        property += " (category): " + to_string(int((*it).properties[i].propertyValue));
+                    } else
+                        property += " (property): " + to_string((*it).properties[i].propertyValue);
+                    properties->setRowCount(properties->rowCount()+1);
+                    properties->setChild(properties->rowCount()-1,0,new QStandardItem(property.c_str()));
+                }
+                QStandardItem* covariates = new QStandardItem("Covariates");
+                prototype->setChild(2,0,covariates);
+                covariates->setColumnCount(1);
+                for(int j = 0; j<(*it).envConditionSize;j++){
+                    string cov = "Covariate: " + (*it).envConditions[j].covariateName;
+                    covariates->setRowCount(covariates->rowCount()+1);
+                    QStandardItem *covItem = new QStandardItem(cov.c_str());
+                    covariates->setChild(covariates->rowCount()-1,0,covItem);
+                    covItem->setColumnCount(1);
+                    double typicalValue = (*it).envConditions[j].typicalValue;
+                    if(fabs(typicalValue-NODATA)>VERY_SMALL){
+                        string typicalV = "Typical value: "+to_string(typicalValue);
+                        covItem->setChild(covItem->rowCount(),0,new QStandardItem(typicalV.c_str()));
                     }
-                    QStandardItem* covariates = new QStandardItem("Covariates");
-                    prototype->setChild(2,0,covariates);
-                    covariates->setColumnCount(1);
-                    for(int j = 0; j<(*it).envConditionSize;j++){
-                        string cov = "Covariate: " + (*it).envConditions[j].covariateName;
-                        covariates->setRowCount(covariates->rowCount()+1);
-                        QStandardItem *covItem = new QStandardItem(cov.c_str());
-                        covariates->setChild(covariates->rowCount()-1,0,covItem);
-                        covItem->setColumnCount(1);
-                        double typicalValue = (*it).envConditions[j].typicalValue;
-                        if(fabs(typicalValue-NODATA)>VERY_SMALL){
-                            string typicalV = "Typical value: "+to_string(typicalValue);
-                            covItem->setChild(covItem->rowCount(),0,new QStandardItem(typicalV.c_str()));
-                        }
-                        // set membership function
-                        covItem->setChild(covItem->rowCount(),0,new QStandardItem("Membership Function"));
-                    }
+                    // set membership function
+                    covItem->setChild(covItem->rowCount(),0,new QStandardItem("Membership Function"));
                 }
             }
         }
     }
-    onGetGisData();
 }
 
 void MainWindow::onInferResults(){
@@ -820,14 +854,27 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
     int graphHeight = 0.7*sceneHeight;
     int xStart = 0.10*sceneWidth;
     int yEnd = 0.85*sceneHeight;
-    for(int i =0;i<100;i++){
-        x =i*2*margin/101.0-margin;
-        y = proj->prototypes[protoPos].envConditions[covPos].getOptimality(x);
-        if(fabs(y+1)<VERY_SMALL ||fabs(previousy+1)<VERY_SMALL)
-            continue;
-        myGraphicsView->getScene()->addLine((previousx+margin)/scale*graphWidth+xStart,yEnd-previousy*graphHeight,(x+margin)/scale*graphWidth+xStart,yEnd-y*graphHeight,curvePen);
-        previousx = x;
-        previousy = y;
+    if(proj->prototypes[protoPos].envConditions[covPos].dataType==solim::CONTINUOUS){
+        for(int i =0;i<100;i++){
+            x =i*2*margin/101.0-margin;
+            y = proj->prototypes[protoPos].envConditions[covPos].getOptimality(x);
+            if(fabs(y+1)<VERY_SMALL ||fabs(previousy+1)<VERY_SMALL)
+                continue;
+            myGraphicsView->getScene()->addLine((previousx+margin)/scale*graphWidth+xStart,yEnd-previousy*graphHeight,(x+margin)/scale*graphWidth+xStart,yEnd-y*graphHeight,curvePen);
+            previousx = x;
+            previousy = y;
+        }
+    } else {
+        curvePen.setWidth(2);
+        for(int i = 0;i<proj->prototypes[protoPos].envConditions[covPos].vecKnotX.size();i++){
+            x=proj->prototypes[protoPos].envConditions[covPos].vecKnotX[i];
+            myGraphicsView->getScene()->addLine((x+margin)/scale*graphWidth+xStart,yEnd,(x+margin)/scale*graphWidth+xStart,yEnd-graphHeight,curvePen);
+            QGraphicsTextItem *tag = myGraphicsView->getScene()->addText(QString::number(int(x)));
+            tag->setFont(QFont("Times", 8));
+            tag->setDefaultTextColor(Qt::blue);
+            tag->setPos((int(x)+margin)/scale*graphWidth+xStart-4*tag->toPlainText().size(),yEnd);
+        }
+
     }
 }
 
@@ -929,10 +976,13 @@ void MainWindow::initModel(){
         model->item(0,0)->setChild(0,0, new QStandardItem(("Study area: "+proj->studyArea).c_str()));
     }
     gisDataChild = new QStandardItem("GIS Data");
+    gisDataChild->setIcon(QIcon("./imgs/gisdata.svg"));
     model->item(0,0)->setChild(model->item(0,0)->rowCount(),0,gisDataChild);
     prototypeChild = new QStandardItem("Prototypes");
+    prototypeChild->setIcon(QIcon("./imgs/prototype.svg"));
     model->item(0,0)->setChild(model->item(0,0)->rowCount(),0,prototypeChild);
     resultChild = new QStandardItem("Results");
+    resultChild->setIcon(QIcon("./imgs/result.svg"));
     model->item(0,0)->setChild(model->item(0,0)->rowCount(),0,resultChild);
     model->setHorizontalHeaderItem( 0, new QStandardItem("Projects") );
 
@@ -959,22 +1009,22 @@ void MainWindow::initialProjectView(){
     //myGraphicsView->dataDetailsView = dataDetailsView;
     projectView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(projectView,SIGNAL(customContextMenuRequested(const QPoint &)),this,SLOT(onCustomContextMenu(const QPoint &)));
-    prototypeMenu = new QMenu(projectView);
-    QAction *prototypesFromSamples = new QAction("Create new prototype base from samples",prototypeMenu);
-    prototypeMenu->addAction(prototypesFromSamples);
+    prototypesMenu = new QMenu(projectView);
+    QAction *prototypesFromSamples = new QAction("Create new prototype base from samples",prototypesMenu);
+    prototypesMenu->addAction(prototypesFromSamples);
     projectView->addAction(prototypesFromSamples);
-    QAction *prototypesFromExpert = new QAction("Create new prototype base from expert",prototypeMenu);
-    prototypeMenu->addAction(prototypesFromExpert);
+    QAction *prototypesFromExpert = new QAction("Create new prototype base from expert",prototypesMenu);
+    prototypesMenu->addAction(prototypesFromExpert);
     projectView->addAction(prototypesFromExpert);
-    QAction *prototypesFromMining = new QAction("Create new prototype base from data mining",prototypeMenu);
-    prototypeMenu->addAction(prototypesFromMining);
+    QAction *prototypesFromMining = new QAction("Create new prototype base from data mining",prototypesMenu);
+    prototypesMenu->addAction(prototypesFromMining);
     projectView->addAction(prototypesFromMining);
-    QAction *importPrototypeBase = new QAction("Import prototype base from file",prototypeMenu);
-    prototypeMenu->addAction(importPrototypeBase);
+    QAction *importPrototypeBase = new QAction("Import prototype base from file",prototypesMenu);
+    prototypesMenu->addAction(importPrototypeBase);
     projectView->addAction(importPrototypeBase);
-    connect(prototypesFromSamples,SIGNAL(triggered()),this,SLOT(onAddPrototypeFromSamples()));
-    connect(prototypesFromExpert,SIGNAL(triggered()),this,SLOT(onAddPrototypeFromExpert()));
-    connect(prototypesFromMining,SIGNAL(triggered()),this,SLOT(onAddPrototypeFromMining()));
+    connect(prototypesFromSamples,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromSamples()));
+    connect(prototypesFromExpert,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromExpert()));
+    connect(prototypesFromMining,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromMining()));
     connect(importPrototypeBase,SIGNAL(triggered()),this,SLOT(onImportPrototypeBase()));
     gisDataMenu = new QMenu(projectView);
     QAction *addGisData = new QAction("Add GIS Data", gisDataMenu);
@@ -998,6 +1048,11 @@ void MainWindow::initialProjectView(){
     connect(changeCovName,SIGNAL(triggered()),this,SLOT(onChangeCovName()));
     connect(exportPrototypeBase_csv,SIGNAL(triggered()),this,SLOT(onExportPrototypeBase()));
     connect(savePrototypeBase_xml, SIGNAL(triggered()),this,SLOT(onSavePrototypeBase()));
+    prototypeMenu = new QMenu(projectView);
+    QAction *addRules = new QAction("Add rules to this prototype", prototypeMenu);
+    prototypeMenu->addAction(addRules);
+    projectView->addAction(addRules);
+    connect(addRules,SIGNAL(triggered()),this,SLOT(onAddRules()));
     //projectView->addAction(viewData);
     projectViewInitialized = true;
 }
