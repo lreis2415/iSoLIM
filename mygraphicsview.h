@@ -29,8 +29,8 @@ public:
     vector<double> knotX;
     vector<double> knotY;
     int moveKnotNum;
-    int enumRangeMulti;
-    int enumMargin;
+    int enumMax;
+    int enumMin;
 signals:
     void addFreehandPoint();
     void addEnumPoint();

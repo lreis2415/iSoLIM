@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>141</height>
+    <height>151</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -64,6 +64,13 @@
     </widget>
    </item>
    <item>
+    <widget class="QLabel" name="label_hint">
+     <property name="text">
+      <string>Hint</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -75,9 +82,6 @@
       </size>
      </property>
     </spacer>
-   </item>
-   <item>
-    <layout class="QVBoxLayout" name="layout_hint"/>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_3">

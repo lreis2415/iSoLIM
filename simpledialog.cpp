@@ -7,11 +7,17 @@ SimpleDialog::SimpleDialog(int mode, QWidget *parent) :
 {
     ui->setupUi(this);
     layout()->setSizeConstraint(QLayout::SetFixedSize);
+    ui->label_hint->setFrameStyle(QFrame::Sunken);
+    ui->label_hint->setTextFormat(Qt::RichText);
+    ui->label_hint->setStyleSheet("QLabel { background-color : lightGray; color : black; }");
+    ui->label_hint->setFrameStyle(QFrame::Box);
+    ui->label_hint->setWordWrap(true);
     switch (mode) {
     case ADDGISDATA:
         ui->btn_2->setVisible(false);
         ui->next_btn->setVisible(false);
         ui->ok_btn->setEnabled(false);
+        ui->label_hint->setVisible(false);
         break;
     case ADDCOVARIATE:
         ui->label_1->setText("Covariate*:");
@@ -19,6 +25,9 @@ SimpleDialog::SimpleDialog(int mode, QWidget *parent) :
         ui->label_2->setText("Filename:  ");
         ui->next_btn->setVisible(false);
         setWindowTitle("Add covariate");
+        ui->label_hint->setVisible(true);
+        ui->label_hint->setText("<b>Hint</b>: Covariate is required. Covaraite name can be derived from filename."
+                                " You can also add a covariate without specifying corresponding filename.");
         break;
     case ADDPROTOTYPEBASE:
         this->setWindowTitle("Create Prototype Base");
@@ -27,7 +36,8 @@ SimpleDialog::SimpleDialog(int mode, QWidget *parent) :
         ui->btn_1->setVisible(false);
         ui->btn_2->setVisible(false);
         ui->label_2->setText("Create Prototype Base");
-        ui->checkBox->setVisible(false);
+        ui->checkBox->setVisible(false);  
+        ui->label_hint->setVisible(false);
     }
     filename="";
     covariate="";
@@ -75,7 +85,7 @@ void SimpleDialog::on_btn_2_clicked(){
                                                         tr("Open environmental covariate file"),
                                                         "./",
                                                         tr("Covariate file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
-        ui->lineEdit_1->setText(qfilename);
+        ui->lineEdit_2->setText(qfilename);
         filename = qfilename;
         if(!filename.isEmpty()){
             std::size_t first = filename.toStdString().find_last_of('/');
@@ -85,7 +95,7 @@ void SimpleDialog::on_btn_2_clicked(){
             std::size_t end = filename.toStdString().find_last_of('.');
             covariate = filename.toStdString().substr(first+1,end-first-1).c_str();
         }
-        ui->lineEdit_2->setText(covariate);
+        ui->lineEdit_1->setText(covariate);
     }
 }
 

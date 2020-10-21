@@ -6,6 +6,7 @@ MyGraphicsView::MyGraphicsView(QWidget *parent):
 {
     scene = new QGraphicsScene;
     this->setScene(scene);
+    setSceneRect(scene->sceneRect());
     filename = "";
     lyr = nullptr;
     img = nullptr;
@@ -66,10 +67,11 @@ void MyGraphicsView::mousePressEvent(QMouseEvent * e)
         double y = 1.0*(yEnd-pt.y())/graphHeight;
         int py=pt.y();
         if(y>1||y<0) return;
-        if(enumRangeMulti>0){
-            x=x*enumMargin;
+        int margin=fabs(enumMax)>fabs(enumMin)?fabs(enumMax):fabs(enumMin);
+        if(enumMin*enumMax<0||enumMax<0){
+            x=x*2*margin-margin;
         } else {
-            x=x*2*enumMargin-enumMargin;
+            x=x*margin;
         }
         for(int i = 0;i<knotX.size();i++){
             if(fabs(knotX[i]-x)<0.1){
@@ -158,11 +160,13 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent * e){
         double y = 1.0*(yEnd-pt.y())/graphHeight;
         int py=pt.y();
         if(y>1||y<0) return;
-        if(enumRangeMulti>0){
-            x=x*enumMargin;
+        int margin=fabs(enumMax)>fabs(enumMin)?fabs(enumMax):fabs(enumMin);
+        if(enumMin*enumMax<0||enumMax<0){
+            x=x*2*margin-margin;
         } else {
-            x=x*2*enumMargin-enumMargin;
+            x=x*margin;
         }
+        if(x<enumMin||x>enumMax) return;
         for(int i = 0;i<knotX.size();i++){
             if(i!=moveKnotNum){
                 if(fabs(knotX[i]-x)<0.1){
@@ -231,11 +235,13 @@ void MyGraphicsView::mouseDoubleClickEvent(QMouseEvent *e){
         double y = 1.0*(yEnd-pt.y())/graphHeight;
         int py=pt.y();
         if(y>1||y<0) return;
-        if(enumRangeMulti>0){
-            x=x*enumMargin;
+        int margin=fabs(enumMax)>fabs(enumMin)?fabs(enumMax):fabs(enumMin);
+        if(enumMin*enumMax<0||enumMax<0){
+            x=x*2*margin-margin;
         } else {
-            x=x*2*enumMargin-enumMargin;
+            x=x*margin;
         }
+        if(x<enumMin||x>enumMax) return;
         for(int i = 0;i<knotX.size();i++){
             if(fabs(knotX[i]-x)<0.1){
                 knotX.erase(knotX.begin()+i);

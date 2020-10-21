@@ -8,12 +8,13 @@ AddRule::AddRule(SoLIMProject *proj, int protoNum, string currentBaseName, QWidg
     ui->setupUi(this);
     this->layout()->setSizeConstraint(QLayout::SetFixedSize);
     myview = new MyGraphicsView();
-    myview->setMinimumHeight(width()*0.6);
+    myview->setFixedHeight(width()*0.6);
     ui->layout_graphicsView->addWidget(myview);
     myview->setVisible(false);
-    ui->label_freehand_hint->setFrameStyle(QFrame::Sunken);
     ui->label_freehand_hint->setTextFormat(Qt::RichText);
     ui->label_freehand_hint->setStyleSheet("QLabel { background-color : lightGray; color : black; }");
+    ui->label_freehand_hint->setFrameStyle(QFrame::Box);
+    ui->label_freehand_hint->setWordWrap(true);
 //    ui->label_prototype->setTextFormat(Qt::RichText);
 //    string prototypeInfo="Creation of Rules for prototype <b>"+proj->prototypes[protoNum].prototypeID
 //            +"</b> from prototype base <b>"+proj->prototypes[protoNum].prototypeBaseName+"</b>";
@@ -71,6 +72,9 @@ AddRule::AddRule(SoLIMProject *proj, int protoNum, string currentBaseName, QWidg
         ui->lineEdit_prototype->setReadOnly(true);
         ui->btn_create->setVisible(false);
     }
+    ui->radioButton_enum->setEnabled(false);
+    ui->radioButton_freehand->setEnabled(false);
+    ui->radioButton_range->setEnabled(false);
 }
 
 AddRule::~AddRule()
@@ -110,10 +114,9 @@ void AddRule::on_radioButton_range_toggled(bool checked)
     ui->label_freehand_hint->setVisible(true);
     myview->editFreehandRule=false;
     myview->editEnumRule=false;
-    ui->label_freehand_hint->setText("<b>Hint</b>: <i><b>Low cross/high cross</b></i>: The environmental variable values when optimality value decreased to 0.5.<br>\
-<i><b>Low unity/high unity</b></i>: The highest optimality value.");
-    ui->label_freehand_hint->setFrameStyle(QFrame::Box);
-    ui->label_freehand_hint->setWordWrap(true);
+    ui->label_freehand_hint->setText("<b>Hint</b>: <i><b>Low cross/high cross</b></i>: The environmental variable values when optimality value decreased to 0.5.<br>"
+                                     "<i><b>Low unity/high unity</b></i>: The highest optimality value.");
+
 }
 
 void AddRule::on_radioButton_freehand_toggled(bool checked)
@@ -147,7 +150,7 @@ void AddRule::on_radioButton_freehand_toggled(bool checked)
     freeKnotX->shrink_to_fit();
     freeKnotY->clear();
     freeKnotY->shrink_to_fit();
-    ui->label_freehand_hint->setText("<b>Hint</b>: Double click membership function view to add or delete points.");
+    ui->label_freehand_hint->setText("<b>Hint</b>: Double click membership function view to add or delete points. Move points to adjust spline");
     ui->label_freehand_hint->setFrameStyle(QFrame::Box);
     ui->label_freehand_hint->setWordWrap(true);
     myview->editEnumRule=false;
@@ -239,10 +242,16 @@ void AddRule::on_comboBox_cov_activated(const QString &arg1)
             ui->lineEdit_max_cov->setReadOnly(false);
             ui->lineEdit_min_cov->setReadOnly(false);
             ui->comboBox_datatype->setEnabled(true);
-        }
+                    }
     }
+    ui->radioButton_enum->setEnabled(true);
+    ui->radioButton_freehand->setEnabled(true);
+    ui->radioButton_range->setEnabled(true);
     if(ui->comboBox_datatype->currentIndex()==1){
         ui->radioButton_enum->setChecked(true);
+    }
+    if(ui->lineEdit_max_cov->text().isEmpty()||ui->lineEdit_min_cov->text().isEmpty()){
+        ui->label_freehand_hint->setText("<b>Hint</b>: Specify the Maximum and Minimum values of covariate.");
     }
 }
 
@@ -425,10 +434,6 @@ void AddRule::drawMembershipFunction(solim::Curve *c) {
 }
 
 void AddRule::on_btn_add_opt_val_clicked() {
-    if(ui->radioButton_freehand->isChecked()){
-        ui->label_freehand_hint->setVisible(true);
-        myview->editFreehandRule=true;
-    }
     if(ui->radioButton_enum->isChecked()){
         bool*toNumFlag = new bool;
         int num=ui->lineEdit_opt_val->text().toInt(toNumFlag);
@@ -455,13 +460,8 @@ void AddRule::drawEnumRange(){
     myview->setVisible(true);
     int margin = fabs(rangeMax)>fabs(rangeMin)?fabs(rangeMax):fabs(rangeMin);
     if(myview->editEnumRule){
-        if(rangeMax*rangeMin<0||rangeMax<0){
-            myview->enumRangeMulti=-1;
-            myview->enumMargin=margin;
-        } else {
-            myview->enumRangeMulti=1;
-            myview->enumMargin=margin;
-        }
+        myview->enumMax=rangeMax;
+        myview->enumMin=rangeMin;
     }
     QGraphicsScene *scene = myview->getScene();
     scene->clear();
@@ -521,6 +521,14 @@ void AddRule::drawEnumRange(){
         xaxis0->setPos(0.10*sceneWidth-4*xaxis0->toPlainText().size(),0.85*sceneHeight);
         yaxisName->setPos(0.10*sceneWidth, 0.1*sceneHeight-20);
     }
+    if(ui->radioButton_enum->isChecked())
+        ui->label_freehand_hint->setText("<b>Hint</b>: Enumerated rules are used for categorical environmental variables, e.g. geology, land use type."
+                                         " Add all possible conditions when prototype occurs as optimality value");
+    else if(ui->radioButton_freehand->isChecked())
+        ui->label_freehand_hint->setText("<b>Hint</b>: Double click membership function view to add or delete points. Move points to adjust spline");
+    else if(ui->radioButton_range->isChecked())
+        ui->label_freehand_hint->setText("<b>Hint</b>: <i><b>Low cross/high cross</b></i>: The environmental variable values when optimality value decreased to 0.5.<br>"
+                                         "<i><b>Low unity/high unity</b></i>: The highest optimality value.");
 }
 
 void AddRule::enumRuleWarn(){
@@ -609,6 +617,8 @@ void AddRule::onAddEnumPoint(){
     if(rangeMax*rangeMin<0||!rangeMax>0){
         for(int i = 0; i<myview->knotX.size();i++){
             int num = myview->knotX[i];
+            if(num>rangeMax) num=rangeMax;
+            if(num<rangeMin) num=rangeMin;
             for(int i = 0;i<enumVals.size();i++){
                 if(num==enumVals[i]) return;
             }
