@@ -37,7 +37,12 @@
     <addaction name="actionSave"/>
     <addaction name="actionSave_as"/>
     <addaction name="separator"/>
+    <addaction name="actionDefine_Study_Area"/>
+    <addaction name="actionClose_Project"/>
+    <addaction name="separator"/>
     <addaction name="actionAdd_prototypes_from_samples"/>
+    <addaction name="actionAdd_prototypes_from_expert"/>
+    <addaction name="actionAdd_prototypes_from_Data_Mining"/>
    </widget>
    <widget class="QMenu" name="menuCovariates">
     <property name="title">
@@ -99,7 +104,7 @@
   </action>
   <action name="actionAdd_prototypes_from_samples">
    <property name="text">
-    <string>Add prototypes from samples</string>
+    <string>Add Prototype Base from Samples</string>
    </property>
   </action>
   <action name="actionView_Data">
@@ -115,6 +120,26 @@
   <action name="actionSave_as">
    <property name="text">
     <string>Save as</string>
+   </property>
+  </action>
+  <action name="actionAdd_prototypes_from_expert">
+   <property name="text">
+    <string>Add Prototype Base from Expert</string>
+   </property>
+  </action>
+  <action name="actionAdd_prototypes_from_Data_Mining">
+   <property name="text">
+    <string>Add Prototype Base from Data Mining</string>
+   </property>
+  </action>
+  <action name="actionDefine_Study_Area">
+   <property name="text">
+    <string>Define Study Area</string>
+   </property>
+  </action>
+  <action name="actionClose_Project">
+   <property name="text">
+    <string>Close Project</string>
    </property>
   </action>
  </widget>

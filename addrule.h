@@ -79,8 +79,12 @@ private:
     void drawMembershipFunction(solim::Curve *c);
     void addSuccess(QString content);
     void drawEnumRange();
-    void enumRuleWarn();
     bool getPointRule(solim::Curve &c);
+    void warn(QString msg){
+        QMessageBox qb;
+        qb.setText(msg);
+        qb.exec();
+    }
 
 };
 

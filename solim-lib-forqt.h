@@ -7,6 +7,7 @@
 #include "QDebug"
 #include "solim-lib-forQt_global.h"
 #include <algorithm>
+#include <numeric>
 #include <gdal.h>
 #include <ogr_spatialref.h>
 #include <iostream>
@@ -124,7 +125,15 @@ public:
     double getDxA() { return dxA; }
     double getDyA() { return dyA; }
     double getXMin() { return xLeftEdge; }
+    double getXMax() {
+        if (is3dr) return xLeftEdge + cellSize * xSize;
+        else return xLeftEdge + dx * xSize;
+    }
     double getYMax() { return yTopEdge; }
+    double getYMin() {
+        if (is3dr) return yTopEdge - cellSize * ySize;
+        else return yTopEdge - dy * ySize;
+    }
     double getDataMax() { return dataMax; }
     double getDataMin() { return dataMin; }
     double getDataRange() { return dataRange; }
@@ -340,6 +349,8 @@ namespace solim {
         DataTypeEnum DataType;
         //GDALDataset* GdalEnvData;
         BaseIO *baseRef;
+        float* upperBorder;
+        float* lowerBorder;
         double Data_Max;
         double Data_Min;
         double Data_Range;
@@ -450,6 +461,10 @@ namespace solim {
         Curve(string covName, DataTypeEnum type, vector<double> *x, vector<double> *y);	// freehand rule
         Curve(string covName, double lowUnity, double highUnity, double lowCross, double highCross, CurveTypeEnum curveType);	// range rule
         Curve(string covName, double xcoord, double ycoord, EnvLayer *layer);	// point rule
+        Curve(string covName, vector<float> *values);	// data mining continuous
+        Curve(string covName, vector<int> *values);		// data mining categorical
+        Curve(string covName, vector<Curve> *curves);
+        double KernelEst(double x, int n, double h, vector<float> *values);
         void addKnot(double x, double y);
         double getOptimality(double x);
         void updateCurve();
@@ -478,9 +493,12 @@ namespace solim {
 
     public:
         Prototype();
+        Prototype(EnvDataset* eds, string soilIDFieldName, string prototypeBasename, OGRLayer*poLayer,int fid);
         static vector<Prototype> *getPrototypesFromSample(string filename, EnvDataset* eds, string prototypeBaseName="", string xfield="x", string yfield="y");
+        static vector<Prototype> *getPrototypesFromMining_soilType(string filename, EnvDataset* eds, string soilIDFieldName, string prototypeBasename, QProgressBar *progressBar);
+        static vector<Prototype> *getPrototypesFromMining_polygon(string filename, EnvDataset *eds, string soilIDFieldName, string prototypeBasename, QProgressBar *progressBar);
         void addConditions(string filename);
-        void addConditions(Curve con) { envConditions.push_back(con); }
+        void addConditions(Curve con) { envConditions.push_back(con); envConditionSize++; }
         void addProperties(string propertyName, double propertyValue, DataTypeEnum type=CONTINUOUS);
         double getProperty(string propName);
         void writeRules(string fileName);

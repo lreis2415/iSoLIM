@@ -30,6 +30,11 @@ private slots:
 private:
     Ui::inference *ui;
     SoLIMProject *project;
+    void warn(QString msg){
+        QMessageBox qb;
+        qb.setText(msg);
+        qb.exec();
+    }
 };
 
 #endif // INFERENCE_H

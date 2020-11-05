@@ -17,7 +17,7 @@
 #include <QToolBar>
 #include "inference.h"
 #include "project.h"
-#include "addsamplebase.h"
+#include "addprototypebase.h"
 #include "addrule.h"
 #include "mygraphicsview.h"
 #include "newprojectdialog.h"
@@ -66,6 +66,8 @@ private slots:
     void onSavePrototypeBase();
     void onExportPrototypeBase();
     void onAddRules();
+    void onDeletePrototypeBase();
+    void onDeletePrototype();
     //prototype from expert
     void onCreatePrototypeFromExpert();
     void onGetGisData();
@@ -94,7 +96,6 @@ private:
     void initDataDetailsView();
     void initModel();
     bool saveWarning();
-    void wrongFormatWarning();
     bool baseExistsWarning(string basename);
     void updateGisDataFromTree();
 
@@ -102,5 +103,10 @@ private:
     void readPrototype(TiXmlElement*prototypesElement);
     void drawLayer(string filename);
     void drawMembershipFunction(string basename, string idname, string covName);
+    void warn(QString msg){
+        QMessageBox qb;
+        qb.setText(msg);
+        qb.exec();
+    }
 };
 #endif // MAINWINDOW_H

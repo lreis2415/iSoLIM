@@ -9,9 +9,9 @@ changeCovName::changeCovName(solim::Prototype *proto, QWidget *parent) :
     ui->tableWidget->setColumnCount(2);
     ui->tableWidget->setHorizontalHeaderItem(0,new QTableWidgetItem("Current name"));
     ui->tableWidget->setHorizontalHeaderItem(1,new QTableWidgetItem("New name"));
-    ui->tableWidget->setRowCount(proto->envConditions.size());
+    ui->tableWidget->setRowCount(proto->envConditionSize);
     ui->tableWidget->verticalHeader()->setVisible(false);
-    for(int i = 0; i<proto->envConditions.size();i++){
+    for(int i = 0; i<proto->envConditionSize;i++){
         ui->tableWidget->setItem(i,0,new QTableWidgetItem(proto->envConditions[i].covariateName.c_str()));
         QLineEdit *newCovName = new QLineEdit();
         newCovName->setText(proto->envConditions[i].covariateName.c_str());
@@ -33,7 +33,7 @@ void changeCovName::on_cancel_btn_clicked()
 
 void changeCovName::on_ok_btn_clicked()
 {
-    for(int i = 0; i<proto->envConditions.size();i++){
+    for(int i = 0; i<proto->envConditionSize;i++){
         string newName = ((QLineEdit*) ui->tableWidget->cellWidget(i,1))->text().toStdString();
         if(newName!=proto->envConditions[i].covariateName){
             isChanged=true;

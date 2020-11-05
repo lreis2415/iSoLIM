@@ -285,17 +285,13 @@ void AddRule::on_btn_add_rule_clicked()
     // check valid cov name
     string covname=ui->comboBox_cov->currentText().toStdString();
     if(covname=="[New covariate]"){
-        QMessageBox warn;
-        warn.setText("Please specify covariate.");
-        warn.exec();
+        warn("Please specify covariate.");
         return;
     }
     // check unique cov name
-    for(int i=0;i<proj->prototypes[protoNum].envConditions.size();i++){
+    for(int i=0;i<proj->prototypes[protoNum].envConditionSize;i++){
         if(covname==proj->prototypes[protoNum].envConditions[i].covariateName){
-            QMessageBox warn;
-            warn.setText("Rule for covariate \""+ui->comboBox_cov->currentText()+"\" has been added.");
-            warn.exec();
+            warn("Rule for covariate \""+ui->comboBox_cov->currentText()+"\" has been added.");
             return;
         }
     }
@@ -303,8 +299,7 @@ void AddRule::on_btn_add_rule_clicked()
         solim::Curve c;
         if(getPointRule(c)){
             c.range=fabs(rangeMax)>fabs(rangeMin)?fabs(rangeMax):fabs(rangeMin);
-            proj->prototypes[protoNum].envConditions.push_back(c);
-            proj->prototypes[protoNum].envConditionSize++;
+            proj->prototypes[protoNum].addConditions(c);
             //drawMembershipFunction(&c);
             addSuccess("Rule");
             emit updatePrototype();
@@ -313,8 +308,7 @@ void AddRule::on_btn_add_rule_clicked()
         if(freeKnotX->size()>2){
             solim::Curve c = solim::Curve(ui->comboBox_cov->currentText().toStdString(),solim::CONTINUOUS,freeKnotX,freeKnotY);
             c.range=fabs(rangeMax)>fabs(rangeMin)?fabs(rangeMax):fabs(rangeMin);
-            proj->prototypes[protoNum].envConditions.push_back(c);
-            proj->prototypes[protoNum].envConditionSize++;
+            proj->prototypes[protoNum].addConditions(c);
             addSuccess("Rule");
             emit updatePrototype();
             freeKnotX->clear();
@@ -331,8 +325,7 @@ void AddRule::on_btn_add_rule_clicked()
             }
             c.typicalValue=enumVals[0];
             c.range=fabs(rangeMax)>fabs(rangeMin)?fabs(rangeMax):fabs(rangeMin);
-            proj->prototypes[protoNum].envConditions.push_back(c);
-            proj->prototypes[protoNum].envConditionSize++;
+            proj->prototypes[protoNum].addConditions(c);
             addSuccess("Rule");
             emit updatePrototype();
         }
@@ -439,9 +432,7 @@ void AddRule::on_btn_add_opt_val_clicked() {
         int num=ui->lineEdit_opt_val->text().toInt(toNumFlag);
         if(*toNumFlag){
             if(num>rangeMax || num<rangeMin){
-                QMessageBox warn;
-                warn.setText("Optimal value should be in the range of covariate value");
-                warn.exec();
+                warn("Optimal value should be in the range of covariate value");
                 return;
             }
             for(int i=0;i<enumVals.size();i++){
@@ -529,12 +520,6 @@ void AddRule::drawEnumRange(){
     else if(ui->radioButton_range->isChecked())
         ui->label_freehand_hint->setText("<b>Hint</b>: <i><b>Low cross/high cross</b></i>: The environmental variable values when optimality value decreased to 0.5.<br>"
                                          "<i><b>Low unity/high unity</b></i>: The highest optimality value.");
-}
-
-void AddRule::enumRuleWarn(){
-    QMessageBox warning;
-    warning.setText("Please input valid maximum and minimun value.");
-    warning.exec();
 }
 
 void AddRule::on_btn_reset_clicked()

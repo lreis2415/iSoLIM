@@ -64,8 +64,13 @@ inference::inference(SoLIMProject *proj, QWidget *parent) :
             }
 
             QStringList propertyList;
-            for(int i = 0; i<proj->propertyNames.size();i++){
-                propertyList.push_back(proj->propertyNames[i].c_str());
+            for(int i = 0; i<proj->prototypes.size();i++){
+                if(proj->prototypes[i].prototypeBaseName==proj->prototypeBaseNames[0]){
+                    for(int j = 0;j<proj->prototypes[i].properties.size();j++){
+                        propertyList.push_back(proj->prototypes[i].properties[j].propertyName.c_str());
+                    }
+                    break;
+                }
             }
             ui->InferedProperty_comboBox->addItems(propertyList);
         }
@@ -95,10 +100,7 @@ void inference::on_Inference_OK_btn_clicked()
 {
     ui->cancel_btn->setEnabled(false);
     if(ui->OutputSoilFile_lineEdit->text().isEmpty()||ui->OutputUncerFile_lineEdit->text().isEmpty()){
-        QMessageBox warning;
-        warning.setText("Please fill in the output filename!");
-        warning.setStandardButtons(QMessageBox::Ok);
-        warning.exec();
+        warn("Please fill in the output filename!");
         return;
     }
     vector<string> envFileNames;

@@ -1,6 +1,7 @@
 #ifndef PROJECT_H
 #define PROJECT_H
 #include "solim-lib-forqt.h"
+#include <QMessageBox>
 class SoLIMProject{
 public:
     string projName;
@@ -12,7 +13,6 @@ public:
     vector<solim::Prototype> prototypes;
     vector<solim::Exception> exceptions;
     vector<string> prototypeBaseNames;
-    vector<string> propertyNames;
     vector<string> results;
     vector<string> noFileLayers;
     vector<string> noFileDatatypes;
@@ -27,7 +27,6 @@ public:
         prototypes.clear();
         exceptions.clear();
         prototypeBaseNames.clear();
-        propertyNames.clear();
         noFileLayers.clear();
         noFileDatatypes.clear();
     }
