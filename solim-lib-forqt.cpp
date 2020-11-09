@@ -1497,23 +1497,23 @@ namespace solim {
         return prototypes;
     }
 
-    Prototype::Prototype(EnvDataset* eds, string soilIDFieldName, string prototypeBasename, OGRLayer*poLayer,int fid){
-        OGRFeature* poFeature = poLayer->GetFeature(fid);
+    Prototype::Prototype(EnvDataset* eds, string soilIDFieldName, string prototypeBasename, OGRFeature* poFeature, int fid){
+        envConditions.clear();
+        properties.clear();
+        envConsIsSorted = false;
+        envConditionSize = 0;
+        uncertainty = 0;
+        source = MAP;
+        prototypeBaseName=prototypeBasename;
+        if (poFeature->GetGeometryRef() == NULL) return;
         OGREnvelope *extent = new OGREnvelope;
         poFeature->GetGeometryRef()->getEnvelope(extent);
         int globalXMin, globalXMax, globalYMin, globalYMax;
         eds->LayerRef->geoToGlobalXY(extent->MinX, extent->MinY, globalXMin, globalYMax);
         eds->LayerRef->geoToGlobalXY(extent->MaxX, extent->MaxY, globalXMax, globalYMin);
         // iterate over features
-        prototypeBaseName=prototypeBasename;
-        source = MAP;
         OGRGeometry *poGeometry;
         poGeometry = poFeature->GetGeometryRef();
-#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(2,3,0)
-        OGRPolygon *poPolygon = poGeometry->toPolygon();
-#else
-        OGRPolygon *poPolygon = (OGRPolygon *)poGeometry;
-#endif
         vector<vector<float>*> freq;
         for (size_t i = 0; i < eds->Layers.size(); i++) {
             freq.push_back(new vector<float>);
@@ -1539,12 +1539,17 @@ namespace solim {
             int endcol = localxmax < nx ? localxmax : nx;
             int startrow = localymin > 0 ? localymin : 0;
             int endrow = localymax < ny ? localymax : ny;
+//#pragma omp parallel for schedule(dynamic) reduction(merge: freq)
             for (int ncol = startcol; ncol < endcol; ++ncol) {
+                vector<vector<float>*> freq_private;
+                for (size_t i = 0; i < eds->Layers.size(); i++) {
+                    freq_private.push_back(new vector<float>);
+                }
                 for (int nrow = startrow; nrow < endrow; ++nrow) {
                     int iloc = nrow*nx + ncol;
                     double geoX, geoY;
                     eds->LayerRef->globalXYToGeo(ncol, nrow, geoX, geoY);
-                    OGRBoolean within = OGRPoint(geoX, geoY).Within(poPolygon);
+                    OGRBoolean within = OGRPoint(geoX, geoY).Within(poGeometry);
                     if (within != 0) {
                         for (int k = 0; k < eds->Layers.size(); ++k) {
                             freq[k]->push_back(eds->Layers.at(k)->EnvData[iloc]);
@@ -1553,6 +1558,7 @@ namespace solim {
                 }
             }
         }
+        if (freq[0]->size() < 4) return;
         for (size_t i = 0; i < eds->Layers.size(); i++) {
             if (eds->Layers.at(i)->DataType == CATEGORICAL) {
                 vector<int>*values = new vector<int>(freq[i]->begin(), freq[i]->end());
@@ -1598,6 +1604,7 @@ namespace solim {
             properties.push_back(sp);
         }
         if (!foundID) prototypeID = prototypeBasename + to_string(fid);
+        //GDALClose(poDS);
     }
     vector<Prototype> *Prototype::getPrototypesFromMining_soilType(string filename, EnvDataset *eds, string soilIDFieldName, string prototypeBasename, QProgressBar *progressBar) {
         vector<Prototype> *prototypes = new vector<Prototype>;
@@ -1607,157 +1614,7 @@ namespace solim {
         }
         GDALAllRegister();
         GDALDataset *poDS;
-        poDS = (GDALDataset*)GDALOpenEx(filename.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
-        if (poDS == NULL)
-        {
-            cout<<"Open failed."<<endl;
-            exit(1);
-        }
-        OGRLayer  *poLayer;
-        poLayer = poDS->GetLayer(0);
-        poLayer->ResetReading();
-        // check if shapefile type is polygon
-        OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
-        if (poFDefn->GetGeomType() != wkbPolygon) {
-            cout << "Feature type is not polygon type. Cannot be used for data mining." << endl;
-            return nullptr;
-        }
-        // check the extent of the layer
-        OGREnvelope *extent = new OGREnvelope;
-        poLayer->GetExtent(extent);
-        if (extent->MinX > eds->LayerRef->getXMax() || extent->MaxX < eds->LayerRef->getXMin() ||
-            extent->MinY > eds->LayerRef->getYMax() || extent->MaxY < eds->LayerRef->getYMin()) {
-            cout << "Feature extent does not match covariate extent. Cannot be used for data mining." << endl;
-            return nullptr;
-        }
-
-        int feature_count = poLayer->GetFeatureCount();
-        progressBar->setRange(0,feature_count);
-        progressBar->setValue(0);
-#pragma omp parallel for schedule(dynamic)
-        for (int feature_num = 0; feature_num < feature_count; feature_num++) {
-            OGRFeature* poFeature = poLayer->GetFeature(feature_num);
-            poFeature->GetGeometryRef()->getEnvelope(extent);
-            int globalXMin, globalXMax, globalYMin, globalYMax;
-            eds->LayerRef->geoToGlobalXY(extent->MinX, extent->MinY, globalXMin, globalYMax);
-            eds->LayerRef->geoToGlobalXY(extent->MaxX, extent->MaxY, globalXMax, globalYMin);
-            // iterate over features
-            Prototype p;
-            p.prototypeBaseName=prototypeBasename;
-            p.source = MAP;
-            OGRGeometry *poGeometry;
-            poGeometry = poFeature->GetGeometryRef();
-            if (poGeometry == NULL)	continue;
-#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(2,3,0)
-            OGRPolygon *poPolygon = poGeometry->toPolygon();
-#else
-            OGRPolygon *poPolygon = (OGRPolygon *)poGeometry;
-#endif
-            vector<vector<float>*> freq;
-            for (size_t i = 0; i < eds->Layers.size(); i++) {
-                freq.push_back(new vector<float>);
-            }
-            // iterate over pixel
-            int block_size = eds->Layers.at(0)->BlockSize;
-            int nx = eds->BlockSizeX;
-            int ny = eds->BlockSizeY;
-            for (int i = 0; i < block_size; ++i) {
-                // check if this block is within the extent of the feature
-                if (i == (block_size - 1)) {
-                    ny = eds->TotalY - i * eds->BlockSizeY;
-                }
-                int localymin, localxmin, localymax, localxmax;
-                eds->Layers.at(0)->baseRef->globalToLocal(i, globalXMin, globalYMin, localxmin, localymin);
-                eds->Layers.at(0)->baseRef->globalToLocal(i, globalXMax, globalYMax, localxmax, localymax);
-                if (localymin > ny || localymax < 0 || localxmin > nx || localxmax < 0) continue;
-                // read the data into all the env layers
-                for (size_t k = 0; k < eds->Layers.size(); ++k) {
-                    eds->Layers.at(k)->ReadByBlock(i);
-                }
-                int startcol=localxmin > 0 ? localxmin : 0;
-                int endcol = localxmax < nx ? localxmax : nx;
-                int startrow = localymin > 0 ? localymin : 0;
-                int endrow = localymax < ny ? localymax : ny;
-                for (int ncol = startcol; ncol < endcol; ++ncol) {
-                    for (int nrow = startrow; nrow < endrow; ++nrow) {
-                        int iloc = nrow*nx + ncol;
-                        double geoX, geoY;
-                        eds->LayerRef->globalXYToGeo(ncol, nrow, geoX, geoY);
-                        OGRBoolean within = OGRPoint(geoX, geoY).Within(poPolygon);
-                        if (within != 0) {
-                            for (int k = 0; k < eds->Layers.size(); ++k) {
-                                freq[k]->push_back(eds->Layers.at(k)->EnvData[iloc]);
-                            }
-                        }
-                    }
-                }
-            }
-            if (freq[0]->size() < 4) continue;
-            for (size_t i = 0; i < eds->Layers.size(); i++) {
-                if (eds->Layers.at(i)->DataType == CATEGORICAL) {
-                    vector<int>*values = new vector<int>(freq[i]->begin(), freq[i]->end());
-                    p.addConditions(Curve(eds->Layers.at(i)->LayerName, values));
-                    p.envConditions.at(i).range=ranges[i];
-                }
-                else {
-                    p.addConditions(Curve(eds->Layers.at(i)->LayerName, freq[i]));
-                    p.envConditions.at(i).range=ranges[i];
-                }
-            }
-            bool foundID = false;
-            for (int iField = 0; iField < poFeature->GetFieldCount(); iField++)
-            {
-                // iterate over fields
-                OGRFieldDefn *poFieldDefn = poFeature->GetFieldDefnRef(iField);
-                string fieldname = poFieldDefn->GetNameRef();
-                if (fieldname == soilIDFieldName) {
-                    p.prototypeID = poFeature->GetFieldAsString(iField);
-                    foundID = true;
-                    continue;
-                }
-                SoilProperty sp;
-                sp.propertyName = fieldname;
-                switch (poFieldDefn->GetType())
-                {
-                case OFTInteger:
-                    sp.propertyValue = poFeature->GetFieldAsInteger(iField);
-                    break;
-                case OFTInteger64:
-                    sp.propertyValue = poFeature->GetFieldAsInteger64(iField);
-                    break;
-                case OFTReal:
-                    sp.propertyValue = poFeature->GetFieldAsDouble(iField);
-                    break;
-                case OFTString:
-                    sp.propertyName = sp.propertyName + poFeature->GetFieldAsString(iField);
-                    sp.propertyValue = NODATA;
-                    break;
-                default:
-                    sp.propertyName = sp.propertyName + poFeature->GetFieldAsString(iField);
-                    sp.propertyValue = NODATA;
-                    break;
-                }
-                p.properties.push_back(sp);
-            }
-            if (!foundID) p.prototypeID = prototypeBasename + to_string(feature_num);
-            prototypes->push_back(p);
-            if(omp_get_thread_num()==0)
-                progressBar->setValue(feature_num);
-        }
-        progressBar->setValue(feature_count);
-        return prototypes;
-    }
-
-    vector<Prototype> *Prototype::getPrototypesFromMining_polygon(string filename, EnvDataset *eds,string soilIDFieldName, string prototypeBasename, QProgressBar *progressBar) {
-        vector<Prototype> *prototypes = new vector<Prototype>;
-        vector<double> ranges;
-        for(size_t i =0; i < eds->Layers.size(); i++){
-            ranges.push_back(fabs(eds->Layers.at(i)->Data_Max)>fabs(eds->Layers.at(i)->Data_Min)?fabs(eds->Layers.at(i)->Data_Max):fabs(eds->Layers.at(i)->Data_Min));
-        }
-        GDALAllRegister();
-        GDALDataset *poDS;
-        vector<string> soilIDs;
-        poDS = (GDALDataset*)GDALOpenEx(filename.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
+        poDS = (GDALDataset*)GDALOpenEx(filename.c_str(), GDAL_OF_VECTOR&GDAL_OF_READONLY&GDAL_OF_SHARED, NULL, NULL, NULL);
         if (poDS == NULL)
         {
             cout << "Open failed." << endl;
@@ -1765,7 +1622,6 @@ namespace solim {
         }
         OGRLayer  *poLayer;
         poLayer = poDS->GetLayer(0);
-        poLayer->ResetReading();
         // check if shapefile type is polygon
         OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
         if (poFDefn->GetGeomType() != wkbPolygon) {
@@ -1783,117 +1639,74 @@ namespace solim {
         int feature_count = poLayer->GetFeatureCount();
         progressBar->setRange(0,feature_count*2);
         progressBar->setValue(0);
-#pragma omp parallel for schedule(dynamic)
+//#pragma omp parallel for schedule(dynamic)
         for (int feature_num = 0; feature_num < feature_count; feature_num++) {
-            OGRFeature* poFeature = poLayer->GetFeature(feature_num);
-            int globalXMin, globalXMax, globalYMin, globalYMax;
-            eds->LayerRef->geoToGlobalXY(extent->MinX, extent->MinY, globalXMin, globalYMax);
-            eds->LayerRef->geoToGlobalXY(extent->MaxX, extent->MaxY, globalXMax, globalYMin);
             // iterate over features
-            Prototype p;
-            p.source = MAP;
-            p.prototypeBaseName=prototypeBasename;
-            OGRGeometry *poGeometry;
-            poGeometry = poFeature->GetGeometryRef();
-            if (poGeometry == NULL) continue;
-#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(2,3,0)
-            OGRPolygon *poPolygon = poGeometry->toPolygon();
-#else
-            OGRPolygon *poPolygon = (OGRPolygon *)poGeometry;
-#endif
-            vector<vector<float>*> freq;
+            Prototype p(eds,soilIDFieldName,prototypeBasename,poLayer->GetFeature(feature_num),feature_num);
+
+            if(p.envConditionSize==0) continue;
             for (size_t i = 0; i < eds->Layers.size(); i++) {
-                freq.push_back(new vector<float>);
+                p.envConditions.at(i).range=ranges[i];
             }
-            // iterate over pixel
-            int block_size = eds->Layers.at(0)->BlockSize;
-            int nx = eds->BlockSizeX;
-            int ny = eds->BlockSizeY;
-            for (int i = 0; i < block_size; ++i) {
-                // check if this block is within the extent of the feature
-                if (i == (block_size - 1)) {
-                    ny = eds->TotalY - i * eds->BlockSizeY;
-                }
-                int localymin, localxmin, localymax, localxmax;
-                eds->Layers.at(0)->baseRef->globalToLocal(i, globalXMin, globalYMin, localxmin, localymin);
-                eds->Layers.at(0)->baseRef->globalToLocal(i, globalXMax, globalYMax, localxmax, localymax);
-                if (localymin > ny || localymax < 0 || localxmin > nx || localxmax < 0) continue;
-                // read the data into all the env layers
-                for (size_t k = 0; k < eds->Layers.size(); ++k) {
-                    eds->Layers.at(k)->ReadByBlock(i);
-                }
-                int startcol=localxmin > 0 ? localxmin : 0;
-                int endcol = localxmax < nx ? localxmax : nx;
-                int startrow = localymin > 0 ? localymin : 0;
-                int endrow = localymax < ny ? localymax : ny;
-                for (int ncol = startcol; ncol < endcol; ++ncol) {
-                    for (int nrow = startrow; nrow < endrow; ++nrow) {
-                        int iloc = nrow*nx + ncol;
-                        double geoX, geoY;
-                        eds->LayerRef->globalXYToGeo(ncol, nrow, geoX, geoY);
-                        OGRBoolean within = OGRPoint(geoX, geoY).Within(poPolygon);
-                        if (within != 0) {
-                            for (size_t k = 0; k < eds->Layers.size(); ++k) {
-                                freq[k]->push_back(eds->Layers.at(k)->EnvData[iloc]);
-                            }
-                        }
-                    }
-                }
-            }
-            if (freq[0]->size() < 4) continue;
-            for (size_t i = 0; i < eds->Layers.size(); i++) {
-                if (eds->Layers.at(i)->DataType == CATEGORICAL) {
-                    vector<int>*values = new vector<int>(freq[i]->begin(), freq[i]->end());
-                    p.addConditions(Curve(eds->Layers.at(i)->LayerName, values));
-                    p.envConditions.at(i).range=ranges[i];
-                }
-                else {
-                    p.addConditions(Curve(eds->Layers.at(i)->LayerName, freq[i]));
-                    p.envConditions.at(i).range=ranges[i];
-                }
-            }
-            bool foundID = false;
-            for (int iField = 0; iField < poFeature->GetFieldCount(); iField++)
-            {
-                // iterate over fields
-                OGRFieldDefn *poFieldDefn = poFeature->GetFieldDefnRef(iField);
-                string fieldname = poFieldDefn->GetNameRef();
-                if (fieldname == soilIDFieldName) {
-                    soilIDs.push_back(poFeature->GetFieldAsString(iField));
-                    p.prototypeID= poFeature->GetFieldAsString(iField);
-                    foundID = true;
-                    continue;
-                }
-                SoilProperty sp;
-                sp.propertyName = fieldname;
-                switch (poFieldDefn->GetType())
-                {
-                case OFTInteger:
-                    sp.propertyValue = poFeature->GetFieldAsInteger(iField);
-                    break;
-                case OFTInteger64:
-                    sp.propertyValue = poFeature->GetFieldAsInteger64(iField);
-                    break;
-                case OFTReal:
-                    sp.propertyValue = poFeature->GetFieldAsDouble(iField);
-                    break;
-                case OFTString:
-                    sp.propertyName = sp.propertyName + poFeature->GetFieldAsString(iField);
-                    sp.propertyValue = NODATA;
-                    break;
-                default:
-                    sp.propertyName = sp.propertyName + poFeature->GetFieldAsString(iField);
-                    sp.propertyValue = NODATA;
-                    break;
-                }
-                p.properties.push_back(sp);
-            }
-            if (!foundID) p.prototypeID = prototypeBasename + to_string(feature_num);
             prototypes->push_back(p);
-            if(omp_get_thread_num()==0)
+            //if(omp_get_thread_num()==0)
                 progressBar->setValue(feature_num);
         }
-        progressBar->setValue(feature_count);
+        //if(omp_get_thread_num()==0)
+            progressBar->setValue(feature_count);
+        return prototypes;
+    }
+
+    vector<Prototype> *Prototype::getPrototypesFromMining_polygon(string filename, EnvDataset *eds,string soilIDFieldName, string prototypeBasename, QProgressBar *progressBar) {
+        vector<Prototype> *prototypes = new vector<Prototype>;
+        vector<double> ranges;
+        for(size_t i =0; i < eds->Layers.size(); i++){
+            ranges.push_back(fabs(eds->Layers.at(i)->Data_Max)>fabs(eds->Layers.at(i)->Data_Min)?fabs(eds->Layers.at(i)->Data_Max):fabs(eds->Layers.at(i)->Data_Min));
+        }
+        GDALAllRegister();
+        GDALDataset *poDS;
+        vector<string> soilIDs;
+        poDS = (GDALDataset*)GDALOpenEx(filename.c_str(), GDAL_OF_VECTOR&GDAL_OF_READONLY&GDAL_OF_SHARED, NULL, NULL, NULL);
+        if (poDS == NULL)
+        {
+            cout << "Open failed." << endl;
+            exit(1);
+        }
+        OGRLayer  *poLayer;
+        poLayer = poDS->GetLayer(0);
+        // check if shapefile type is polygon
+        OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+        if (poFDefn->GetGeomType() != wkbPolygon) {
+            cout << "Feature type is not polygon type. Cannot be used for data mining." << endl;
+            return nullptr;
+        }
+        // check the extent of the layer
+        OGREnvelope *extent = new OGREnvelope;
+        poLayer->GetExtent(extent);
+        if (extent->MinX > eds->LayerRef->getXMax() || extent->MaxX < eds->LayerRef->getXMin() ||
+            extent->MinY > eds->LayerRef->getYMax() || extent->MaxY < eds->LayerRef->getYMin()) {
+            cout << "Feature extent does not match covariate extent. Cannot be used for data mining." << endl;
+            return nullptr;
+        }
+        int feature_count = poLayer->GetFeatureCount();
+        progressBar->setRange(0,feature_count*2);
+        progressBar->setValue(0);
+//#pragma omp parallel for schedule(dynamic)
+        for (int feature_num = 0; feature_num < feature_count; feature_num++) {
+            // iterate over features
+            Prototype p(eds,soilIDFieldName,prototypeBasename,poLayer->GetFeature(feature_num),feature_num);
+
+            if(p.envConditionSize==0) continue;
+            for (size_t i = 0; i < eds->Layers.size(); i++) {
+                p.envConditions.at(i).range=ranges[i];
+            }
+            soilIDs.push_back(p.prototypeID);
+            prototypes->push_back(p);
+            //if(omp_get_thread_num()==0)
+                progressBar->setValue(feature_num);
+        }
+        //if(omp_get_thread_num()==0)
+            progressBar->setValue(feature_count);
         std::sort(soilIDs.begin(), soilIDs.end());
         vector<string>::iterator unique_it = std::unique(soilIDs.begin(), soilIDs.end());
         soilIDs.resize(std::distance(soilIDs.begin(), unique_it));
@@ -1937,7 +1750,7 @@ namespace solim {
                 }
                 soiltypes_proto->push_back(p);
             }
-            progressBar->setValue(progressBar->value()+tmp_protos.size());
+            if(omp_get_thread_num()==0) progressBar->setValue(progressBar->value()+tmp_protos.size());
         }
         return soiltypes_proto;
     }
