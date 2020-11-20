@@ -15,10 +15,7 @@ AddPrototypeBase::AddPrototypeBase(addPrototypeBaseMode mode,SoLIMProject *proj,
     ui->covariate_tableWidget->setHorizontalHeaderItem(0,new QTableWidgetItem("Filename"));
     ui->covariate_tableWidget->setHorizontalHeaderItem(1,new QTableWidgetItem("Covariate"));
     ui->covariate_tableWidget->setHorizontalHeaderItem(2,new QTableWidgetItem("Categorical?"));
-    ui->label_hint->setVisible(false);
-    for(int i = 0; i<proj->filenames.size();i++){
-        ui->label_hint->setVisible(true);
-        ui->label_hint->setText("Polygon mode ");
+    for(size_t i = 0; i<proj->filenames.size();i++){
         ui->covariate_tableWidget->insertRow(ui->covariate_tableWidget->rowCount());
         ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1,
                                                 0,
@@ -34,9 +31,11 @@ AddPrototypeBase::AddPrototypeBase(addPrototypeBaseMode mode,SoLIMProject *proj,
                                                 categoriacl_cb);
     }
     if(mode==AddPrototypeBase::SAMPLE){
-        ui->radioButton_mapunit->setVisible(false);
         ui->radioButton_poly->setVisible(false);
         ui->radioButton_soiltype->setVisible(false);
+        ui->btn_hint->setVisible(false);
+        ui->label_singlemode->setVisible(false);
+        ui->checkBox->setVisible(false);
     }
     else if(mode==AddPrototypeBase::MAP){
         ui->radioButton_poly->setChecked(true);
@@ -81,7 +80,7 @@ void AddPrototypeBase::on_addCovariate_btn_clicked()
 //                                                2,
 //                                                categoriacl_cb);
 //    }
-    SimpleDialog addGisData(SimpleDialog::ADDGISDATA,this);
+    SimpleDialog addGisData(SimpleDialog::ADDGISDATA,project,this);
     addGisData.exec();
     for(int i = 0;i<ui->covariate_tableWidget->rowCount();i++){
         if(ui->covariate_tableWidget->item(i,0)->text()==addGisData.filename){
@@ -286,4 +285,21 @@ void AddPrototypeBase::on_ok_btn_clicked()
         }
     }
     close();
+}
+
+void AddPrototypeBase::on_btn_hint_clicked()
+{
+    QMessageBox msg;
+    msg.setTextFormat(Qt::RichText);
+    msg.setTextInteractionFlags(Qt::TextBrowserInteraction);
+    msg.setText("When each polygon has <b>only one dominant soil type</b>:"
+                "<ul><li><b>Polygon mode</b>: For each soil type, mining rules from every polygon, and then merge the rules from polygons to generate the rule for the soil type"
+                " <a href=\"https://www.sciencedirect.com/science/article/pii/S2095311918619380\">(Cheng et al., 2019)</a>.</li>"
+                "<li><b>Soil Type mode</b>: For each soil type, mining rules from overall distribution of covariate values from all polygon in the soil type"
+                " <a href=\"https://www.tandfonline.com/doi/abs/10.1080/13658810310001596049\">(Qi and Zhu, 2003)</a>.</li></ul>"
+                "When each polygon contains <b>one or more soil types</b>: "
+                "<ul><li>To be continued</li></ul>");
+    msg.setStandardButtons(QMessageBox::Ok);
+    //ui->label_hint->setOpenExternalLinks(true);
+    msg.exec();
 }

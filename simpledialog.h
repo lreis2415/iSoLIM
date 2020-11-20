@@ -5,6 +5,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QLayout>
+#include <project.h>
 
 namespace Ui {
 class SimpleDialog;
@@ -15,8 +16,8 @@ class SimpleDialog : public QDialog
     Q_OBJECT
 
 public:
-    enum simpleDialogMode{ADDGISDATA,ADDCOVARIATE,ADDPROTOTYPEBASE};
-    explicit SimpleDialog(int mode, QWidget *parent = nullptr);
+    enum simpleDialogMode{ADDGISDATA,ADDCOVARIATE,ADDPROTOTYPEBASE,EDITSTUDYAREA};
+    explicit SimpleDialog(int mode, SoLIMProject *proj, QWidget *parent = nullptr);
     ~SimpleDialog();
     QString filename;
     QString covariate;

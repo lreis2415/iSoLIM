@@ -134,7 +134,7 @@
   </action>
   <action name="actionDefine_Study_Area">
    <property name="text">
-    <string>Define Study Area</string>
+    <string>Edit Study Area</string>
    </property>
   </action>
   <action name="actionClose_Project">

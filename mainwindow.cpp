@@ -26,6 +26,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionAdd_prototypes_from_samples, SIGNAL(triggered()), this, SLOT(onAddPrototypeBaseFromSamples()));
     connect(ui->actionView_Data,SIGNAL(triggered()),this,SLOT(onViewData()));
     connect(ui->actionSave_as,SIGNAL(triggered()),this,SLOT(onProjectSaveAs()));
+    connect(ui->actionAdd_prototypes_from_Data_Mining,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromMining()));
+    connect(ui->actionAdd_prototypes_from_expert,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromExpert()));
+    connect(ui->actionDefine_Study_Area,SIGNAL(triggered()),this,SLOT(onEditStudyArea()));
     projectSaved = true;
     img = nullptr;
     proj = nullptr;
@@ -214,6 +217,14 @@ void MainWindow::onProjectOpen(){
 
 }
 
+void MainWindow::onEditStudyArea(){
+    if(proj==nullptr) return;
+    SimpleDialog editStudyArea(SimpleDialog::EDITSTUDYAREA,proj,this);
+    editStudyArea.exec();
+    proj->studyArea = editStudyArea.lineEdit2.toStdString();
+    model->item(0,0)->setChild(0,0, new QStandardItem(("Study area: "+proj->studyArea).c_str()));
+    projectSaved = false;
+}
 void MainWindow::onSoilInferenceFromPrototypes(){
     updateGisDataFromTree();
     if(proj){
@@ -286,7 +297,7 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
 }
 
 void MainWindow::onAddGisData(){
-    SimpleDialog addGisData(SimpleDialog::ADDGISDATA, this);
+    SimpleDialog addGisData(SimpleDialog::ADDGISDATA,proj, this);
     addGisData.exec();
     if(addGisData.filename.isEmpty()){
         return;
@@ -329,7 +340,7 @@ void MainWindow::onAddPrototypeBaseFromSamples(){
 }
 
 void MainWindow::onAddPrototypeBaseFromExpert(){
-    SimpleDialog *addPrototypeBase = new SimpleDialog(SimpleDialog::ADDPROTOTYPEBASE,this);
+    SimpleDialog *addPrototypeBase = new SimpleDialog(SimpleDialog::ADDPROTOTYPEBASE,proj,this);
     addPrototypeBase->exec();
     if(!addPrototypeBase->lineEdit2.isEmpty()){
         QString basename=addPrototypeBase->lineEdit2;
@@ -1017,9 +1028,7 @@ void MainWindow::initModel(){
     model->setColumnCount(1);
     model->setRowCount(1);
     model->setData(model->index(0,0), proj->projName.c_str());
-    if(!proj->studyArea.empty()){
-        model->item(0,0)->setChild(0,0, new QStandardItem(("Study area: "+proj->studyArea).c_str()));
-    }
+    model->item(0,0)->setChild(0,0, new QStandardItem(("Study area: "+proj->studyArea).c_str()));
     gisDataChild = new QStandardItem("GIS Data");
     gisDataChild->setIcon(QIcon("./imgs/gisdata.svg"));
     model->item(0,0)->setChild(model->item(0,0)->rowCount(),0,gisDataChild);

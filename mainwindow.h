@@ -54,6 +54,7 @@ private slots:
     void onProjectSaveAs();
     void onViewData();
     void onSoilInferenceFromPrototypes();
+    void onEditStudyArea();
     // project tree slots
     void onSelectionChanged(const QItemSelection&,const QItemSelection&);
     void onCustomContextMenu(const QPoint &point);

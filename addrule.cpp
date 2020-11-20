@@ -201,7 +201,7 @@ void AddRule::on_comboBox_cov_activated(const QString &arg1)
     ui->lineEdit_min_cov->clear();
     myview->getScene()->clear();
     if(arg1=="[New covariate]"){
-        SimpleDialog addGisData(SimpleDialog::ADDCOVARIATE,this);
+        SimpleDialog addGisData(SimpleDialog::ADDCOVARIATE,proj,this);
         addGisData.exec();
         if(addGisData.covariate.isEmpty()){
             ui->comboBox_cov->setCurrentIndex(0);

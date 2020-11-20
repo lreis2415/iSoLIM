@@ -1,7 +1,7 @@
 #include "simpledialog.h"
 #include "ui_simpledialog.h"
 
-SimpleDialog::SimpleDialog(int mode, QWidget *parent) :
+SimpleDialog::SimpleDialog(int mode, SoLIMProject *proj, QWidget *parent) :
     mode(mode),QDialog(parent),
     ui(new Ui::SimpleDialog)
 {
@@ -38,6 +38,19 @@ SimpleDialog::SimpleDialog(int mode, QWidget *parent) :
         ui->label_2->setText("Create Prototype Base");
         ui->checkBox->setVisible(false);  
         ui->label_hint->setVisible(false);
+        break;
+    case EDITSTUDYAREA:
+        this->setWindowTitle("Edit Study Area");
+        ui->label_1->setVisible(false);
+        ui->lineEdit_1->setVisible(false);
+        ui->btn_1->setVisible(false);
+        ui->btn_2->setVisible(false);
+        ui->label_2->setText("Study Area Name");
+        ui->lineEdit_2->setText(proj->studyArea.c_str());
+        ui->checkBox->setVisible(false);
+        ui->label_hint->setVisible(false);
+        ui->next_btn->setVisible(false);
+        break;
     }
     filename="";
     covariate="";
@@ -147,6 +160,9 @@ void SimpleDialog::on_ok_btn_clicked()
             lineEdit2=ui->lineEdit_2->text();
             close();
         }
+    } else if(mode==EDITSTUDYAREA){
+        lineEdit2=ui->lineEdit_2->text();
+        close();
     }
 }
 

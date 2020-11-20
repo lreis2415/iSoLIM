@@ -40,6 +40,8 @@ private slots:
         layout()->setSizeConstraint(QLayout::SetMinAndMaxSize);
     };
 
+    void on_btn_hint_clicked();
+
 private:
     addPrototypeBaseMode mode;
     Ui::AddPrototypeBase *ui;
