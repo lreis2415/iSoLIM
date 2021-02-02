@@ -6,10 +6,10 @@ SoLIM (Soil Land Inference Model) is a new technology for soil mapping based on 
 ## Development Framework
 This software is developed based on Qt Framework, with the C++ language.
 ### File Description
-*solim-lib-forqt.* - This file includes all the computational codes that can conduct the actual SoLIM functions.
-*Group of file with the same filename and different suffix *.io, *.cpp, *.h - the codes for one interface of the software
-  */*.io - The outlook of interface
-  */*.h, *.cpp - The interactive functions of the interface
+* solim-lib-forqt.* - This file includes all the computational codes that can conduct the actual SoLIM functions.
+* Group of file with the same filename and different suffix *.io, *.cpp, *.h - the codes for one interface of the software
+  * *.io - The outlook of interface
+  * *.h, *.cpp - The interactive functions of the interface
 
 ## Current Functions
 2021/02/01
