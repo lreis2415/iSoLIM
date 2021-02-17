@@ -73,7 +73,7 @@ MainWindow::~MainWindow()
 void MainWindow::onProjectNew(){
     if(!saveWarning())
         return;
-    NewProjectDialog newProject;
+    NewProjectDialog newProject(workingDir,this);
     newProject.exec();
     QString projName = newProject.projectName;
     QString studyArea = newProject.studyArea;
@@ -83,7 +83,8 @@ void MainWindow::onProjectNew(){
     proj->projName = projName.toStdString();
     proj->studyArea=studyArea.toStdString();
     initModel();
-
+    workingDir=workingDir=QFileInfo(newProject.projectFilename).absoluteDir().absolutePath();
+    proj->workingDir=workingDir;
 }
 
 void MainWindow::onProjectSave(){
@@ -155,7 +156,7 @@ void MainWindow::onProjectSaveAs(){
                                                     tr("*.slp"),
                                                     workingDir);
     proj->projFilename=filename.toStdString();
-    workingDir=QFileInfo(filename).absoluteDir().dirName();
+    workingDir=QFileInfo(filename).absoluteDir().absolutePath();
     onProjectSave();
 }
 
@@ -166,7 +167,7 @@ void MainWindow::onProjectOpen(){
                                                        tr("Open SoLIM Project"),
                                                        workingDir,
                                                        tr("Project file(*.slp)"));
-    workingDir=QFileInfo(projectFile).absoluteDir().dirName();
+    workingDir=QFileInfo(projectFile).absoluteDir().absolutePath();
     if(projectFile.isEmpty()){
         return;
     }
@@ -178,6 +179,7 @@ void MainWindow::onProjectOpen(){
     TiXmlHandle docHandle(&doc);
     TiXmlHandle projectHandle = docHandle.FirstChildElement("Project");
     proj = new SoLIMProject();
+    proj->workingDir=workingDir;
     proj->projName = projectHandle.ToElement()->Attribute("Name");
     proj->projFilename = projectHandle.FirstChildElement("ProjectFilename").ToElement()->GetText();
     if(projectHandle.FirstChildElement("StudyArea").ToElement()->GetText())
@@ -243,7 +245,7 @@ void MainWindow::onViewData(){
                                                    tr("Open Raster File"),
                                                    workingDir,
                                                    tr("Raster file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)")).toStdString();
-    workingDir=QFileInfo(filename.c_str()).absoluteDir().dirName();
+    workingDir=QFileInfo(filename.c_str()).absoluteDir().absolutePath();
     if(!filename.empty())
         drawLayer(filename);
 }
@@ -468,7 +470,7 @@ void MainWindow::onAddPrototypeBaseFromMining(){
 
 void MainWindow::onImportPrototypeBase(){
     QString basefilename=QFileDialog::getOpenFileName(this,tr("Open prototype base file"),workingDir,tr("(*.csv *.xml)"));
-    workingDir=QFileInfo(basefilename).absoluteDir().dirName();
+    workingDir=QFileInfo(basefilename).absoluteDir().absolutePath();
     if(basefilename.isEmpty())  return;
     if(basefilename.endsWith(".csv",Qt::CaseInsensitive)){
         QFile basefile(basefilename);
@@ -574,7 +576,7 @@ void MainWindow::onSavePrototypeBase(){
                                                     tr("Save prototype base as"),
                                                     workingDir,
                                                     tr("(*.xml)"));
-    workingDir=QFileInfo(filename).absoluteDir().dirName();
+    workingDir=QFileInfo(filename).absoluteDir().absolutePath();
     TiXmlDocument *doc = new TiXmlDocument();
     TiXmlDeclaration *pDeclaration = new TiXmlDeclaration("1.0", "UTF-8", "");
     doc->LinkEndChild(pDeclaration);
@@ -593,7 +595,7 @@ void MainWindow::onExportPrototypeBase(){
                                                     tr("Export prototype base as"),
                                                     workingDir,
                                                     tr("(*.csv)"));
-    workingDir=QFileInfo(filename).absoluteDir().dirName();
+    workingDir=QFileInfo(filename).absoluteDir().absolutePath();
     if(filename.isEmpty()){
         warn("Please input file name!");
         return;

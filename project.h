@@ -16,6 +16,7 @@ public:
     vector<string> results;
     vector<string> noFileLayers;
     vector<string> noFileDatatypes;
+    QString workingDir;
 public:
     SoLIMProject(){
         projName = "";

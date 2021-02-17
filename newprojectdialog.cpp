@@ -1,14 +1,16 @@
 #include "newprojectdialog.h"
 #include "ui_newprojectdialog.h"
 
-NewProjectDialog::NewProjectDialog(QWidget *parent) :
-    QDialog(parent),
+NewProjectDialog::NewProjectDialog(QString workDir, QWidget *parent) :
+    QDialog(parent),workingDir(workDir),
     ui(new Ui::NewProjectDialog)
 {
     ui->setupUi(this);
     ui->studyArea_lineEdit->setVisible(false);
     ui->studyArea_label->setVisible(false);
-    ui->projPath_lineEdit->setText(QDir::currentPath());
+    QFileInfo dir(workingDir);
+    if(dir.exists()&&dir.isDir()) ui->projPath_lineEdit->setText(workingDir);
+    else ui->projPath_lineEdit->setText(QDir::currentPath());
     ui->ok_btn->setEnabled(false);
 }
 
@@ -21,8 +23,8 @@ void NewProjectDialog::on_pushButton_clicked()
 {
     QString path=QFileDialog::getExistingDirectory(this,
                                                    tr("Choose project directory"),
-                                                   "./");
-    ui->projPath_lineEdit->setText(path);
+                                                   workingDir);
+    if(!path.isEmpty()) ui->projPath_lineEdit->setText(path);
 }
 
 void NewProjectDialog::on_cancel_btn_clicked()

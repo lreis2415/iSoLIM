@@ -15,11 +15,12 @@ class NewProjectDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit NewProjectDialog(QWidget *parent = nullptr);
+    explicit NewProjectDialog(QString workingDir,QWidget *parent = nullptr);
     ~NewProjectDialog();
     QString projectName;
     QString projectFilename;
     QString studyArea;
+    QString workingDir;
 
 private slots:
     void on_pushButton_clicked();

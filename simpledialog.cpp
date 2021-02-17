@@ -56,6 +56,7 @@ SimpleDialog::SimpleDialog(int mode, SoLIMProject *proj, QWidget *parent) :
     covariate="";
     lineEdit2="";
     nextFlag=false;
+    workingDir=proj->workingDir;
 }
 
 SimpleDialog::~SimpleDialog()
@@ -76,7 +77,7 @@ void SimpleDialog::on_btn_1_clicked()
     if(mode==ADDGISDATA){
         QString qfilename = QFileDialog::getOpenFileName(this,
                                                         tr("Open environmental covariate file"),
-                                                        "./",
+                                                        workingDir,
                                                         tr("Covariate file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
         ui->lineEdit_1->setText(qfilename);
         filename = qfilename;

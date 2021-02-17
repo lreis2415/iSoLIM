@@ -24,6 +24,7 @@ public:
     std::string datatype;
     QString lineEdit2;
     bool nextFlag;
+    QString workingDir;
 
 private slots:
     void on_lineEdit_1_textChanged(const QString &arg1);
