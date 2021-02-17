@@ -19,6 +19,7 @@ SOURCES += \
     addprototypebase.cpp \
     addrule.cpp \
     changecovname.cpp \
+    editprototypebases.cpp \
     inference.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -35,6 +36,7 @@ HEADERS += \
     addprototypebase.h \
     addrule.h \
     changecovname.h \
+    editprototypebases.h \
     inference.h \
     mainwindow.h \
     mygraphicsview.h \
@@ -50,6 +52,7 @@ FORMS += \
     addprototypebase.ui \
     addrule.ui \
     changecovname.ui \
+    editprototypebases.ui \
     inference.ui \
     mainwindow.ui \
     newprojectdialog.ui \

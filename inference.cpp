@@ -31,8 +31,8 @@ inference::inference(SoLIMProject *proj, QWidget *parent) :
             if(project->prototypeBaseNames.size()==1){
                 ui->editPrototypeBase_btn->setEnabled(false);
                 ui->editPrototypeBase_btn->setVisible(false);
-                ui->prototypeBaseName_lineEdit->setText(project->prototypeBaseNames[0].c_str());
             }
+            ui->prototypeBaseName_lineEdit->setText(project->prototypeBaseNames[0].c_str());
             ui->RAMEfficient_low_rbtn->setChecked(true);
             ui->Threshold_lineEdit->setText("0.0");
             ui->CovariateFiles_tableWidget->setColumnCount(4);
@@ -98,6 +98,12 @@ void inference::on_SoilFileCreate_btn_clicked()
 
 void inference::on_Inference_OK_btn_clicked()
 {
+    if(ui->prototypeBaseName_lineEdit->text().isEmpty()){
+        QMessageBox warn;
+        warn.setText("Please specify the prototype base(s) used for inference.");
+        warn.exec();
+        return;
+    }
     ui->cancel_btn->setEnabled(false);
     if(ui->OutputSoilFile_lineEdit->text().isEmpty()||ui->OutputUncerFile_lineEdit->text().isEmpty()){
         warn("Please fill in the output filename!");
@@ -138,18 +144,30 @@ void inference::on_Inference_OK_btn_clicked()
     ui->Inference_OK_btn->setEnabled(false);
     solim::EnvDataset *eds = new solim::EnvDataset(envFileNames,datatypes,layernames,ramEfficient);
     vector<solim::Prototype> *prototypes = new vector<solim::Prototype>;
-    for(int i = 0;i<project->prototypes.size();i++){
-        if(project->prototypes[i].prototypeBaseName == ui->prototypeBaseName_lineEdit->text().toStdString())
+    for(size_t i = 0;i<project->prototypes.size();i++){
+        //if(project->prototypes[i].prototypeBaseName == ui->prototypeBaseName_lineEdit->text().toStdString())
+        if(ui->prototypeBaseName_lineEdit->text().split(';').contains(project->prototypes[i].prototypeBaseName.c_str()))
             prototypes->push_back(project->prototypes[i]);
     }
     solim::Inference::inferMap(eds, &(project->prototypes), targetName, threshold, outSoil, outUncer,ui->progressBar);
 
     project->results.push_back(outSoil);
-    project->results.push_back(outUncer);
+    project->results.push_back(outUncer);;
     this->close();
 }
 
 void inference::on_cancel_btn_clicked()
 {
     this->close();
+}
+
+void inference::on_editPrototypeBase_btn_clicked()
+{
+    //todo
+    QStringList names;
+    for(size_t i = 0;i<project->prototypeBaseNames.size();i++)
+        names.append(project->prototypeBaseNames[i].c_str());
+    editPrototypeBases editDialog(names,ui->prototypeBaseName_lineEdit->text(),this);
+    editDialog.exec();
+    ui->prototypeBaseName_lineEdit->setText(editDialog.selectedNames);
 }

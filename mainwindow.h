@@ -46,6 +46,7 @@ public:
     QStandardItem *prototypeChild;
     QStandardItem *gisDataChild;
     SoLIMProject *proj;
+    QString workingDir;
 private slots:
     // main menu
     void onProjectNew();
@@ -77,6 +78,7 @@ private slots:
     //graphics view
     void onZoomin();
     void onZoomout();
+    void onInferResults();
 
 private:
     Ui::MainWindow *ui;
@@ -99,8 +101,6 @@ private:
     bool saveWarning();
     bool baseExistsWarning(string basename);
     void updateGisDataFromTree();
-
-    void onInferResults();
     void readPrototype(TiXmlElement*prototypesElement);
     void drawLayer(string filename);
     void drawMembershipFunction(string basename, string idname, string covName);
@@ -109,5 +109,7 @@ private:
         qb.setText(msg);
         qb.exec();
     }
+    void initParas();
+    void saveSetting();
 };
 #endif // MAINWINDOW_H

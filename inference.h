@@ -7,6 +7,7 @@
 #include <QTimer>
 #include <QCheckBox>
 #include "project.h"
+#include "editprototypebases.h"
 
 namespace Ui {
 class inference;
@@ -19,13 +20,16 @@ class inference : public QDialog
 public:
     explicit inference(SoLIMProject *proj, QWidget *parent = nullptr);
     ~inference();
-
+signals:
+    void inferred();
 private slots:
     void on_SoilFileCreate_btn_clicked();
 
     void on_Inference_OK_btn_clicked();
 
     void on_cancel_btn_clicked();
+
+    void on_editPrototypeBase_btn_clicked();
 
 private:
     Ui::inference *ui;

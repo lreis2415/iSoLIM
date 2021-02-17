@@ -51,6 +51,7 @@ MainWindow::MainWindow(QWidget *parent)
     prototypeChild = nullptr;
     gisDataChild = nullptr;
     addRule = nullptr;
+    initParas();
 }
 
 MainWindow::~MainWindow()
@@ -58,6 +59,7 @@ MainWindow::~MainWindow()
     if(!projectSaved){
         saveWarning();
     }
+    saveSetting();
     delete ui;
     if(img!=nullptr) delete img;
     if(projectView!=nullptr) delete projectView;
@@ -151,8 +153,9 @@ void MainWindow::onProjectSaveAs(){
     QString filename = QFileDialog::getSaveFileName(this,
                                                     tr("Save project as"),
                                                     tr("*.slp"),
-                                                    "./");
+                                                    workingDir);
     proj->projFilename=filename.toStdString();
+    workingDir=QFileInfo(filename).absoluteDir().dirName();
     onProjectSave();
 }
 
@@ -161,8 +164,9 @@ void MainWindow::onProjectOpen(){
         return;
     QString projectFile = QFileDialog::getOpenFileName(this,
                                                        tr("Open SoLIM Project"),
-                                                       "./",
+                                                       workingDir,
                                                        tr("Project file(*.slp)"));
+    workingDir=QFileInfo(projectFile).absoluteDir().dirName();
     if(projectFile.isEmpty()){
         return;
     }
@@ -237,8 +241,9 @@ void MainWindow::onSoilInferenceFromPrototypes(){
 void MainWindow::onViewData(){
     string filename = QFileDialog::getOpenFileName(this,
                                                    tr("Open Raster File"),
-                                                   "./",
+                                                   workingDir,
                                                    tr("Raster file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)")).toStdString();
+    workingDir=QFileInfo(filename.c_str()).absoluteDir().dirName();
     if(!filename.empty())
         drawLayer(filename);
 }
@@ -462,7 +467,8 @@ void MainWindow::onAddPrototypeBaseFromMining(){
 }
 
 void MainWindow::onImportPrototypeBase(){
-    QString basefilename=QFileDialog::getOpenFileName(this,tr("Open prototype base file"),"./",tr("(*.csv *.xml)"));
+    QString basefilename=QFileDialog::getOpenFileName(this,tr("Open prototype base file"),workingDir,tr("(*.csv *.xml)"));
+    workingDir=QFileInfo(basefilename).absoluteDir().dirName();
     if(basefilename.isEmpty())  return;
     if(basefilename.endsWith(".csv",Qt::CaseInsensitive)){
         QFile basefile(basefilename);
@@ -566,9 +572,9 @@ void MainWindow::onChangeCovName(){
 void MainWindow::onSavePrototypeBase(){
     QString filename = QFileDialog::getSaveFileName(this,
                                                     tr("Save prototype base as"),
-                                                    ".",
+                                                    workingDir,
                                                     tr("(*.xml)"));
-
+    workingDir=QFileInfo(filename).absoluteDir().dirName();
     TiXmlDocument *doc = new TiXmlDocument();
     TiXmlDeclaration *pDeclaration = new TiXmlDeclaration("1.0", "UTF-8", "");
     doc->LinkEndChild(pDeclaration);
@@ -585,8 +591,9 @@ void MainWindow::onSavePrototypeBase(){
 void MainWindow::onExportPrototypeBase(){
     QString filename = QFileDialog::getSaveFileName(this,
                                                     tr("Export prototype base as"),
-                                                    ".",
+                                                    workingDir,
                                                     tr("(*.csv)"));
+    workingDir=QFileInfo(filename).absoluteDir().dirName();
     if(filename.isEmpty()){
         warn("Please input file name!");
         return;
@@ -1184,4 +1191,36 @@ bool MainWindow::baseExistsWarning(string basename){
         }
     }
     return false;
+}
+
+void MainWindow::initParas(){
+    bool validFile=false;
+    QFile setting("./setting.txt");
+    if(setting.exists()){
+        if(setting.open(QIODevice::ReadWrite)){
+            QTextStream in(&setting);
+            while(!in.atEnd()) {
+                QString line = in.readLine();
+                QStringList info = line.split("=");
+                if(info.at(0)=="WorkingDir"){
+                    QFileInfo dir=info.at(1);
+                    if(dir.exists()&dir.isDir())
+                        workingDir=info.at(1);
+                    else
+                        workingDir="./";
+                    validFile=true;
+                }
+            }
+        }
+    }
+    if(!validFile)
+        workingDir="./";
+}
+
+void MainWindow::saveSetting(){
+    QFile setting("./setting.txt");
+    if(setting.open(QIODevice::WriteOnly)){
+        QTextStream out(&setting);
+        out<<"WorkingDir="+workingDir<<endl;
+    }
 }

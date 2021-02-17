@@ -292,13 +292,14 @@ void AddPrototypeBase::on_btn_hint_clicked()
     QMessageBox msg;
     msg.setTextFormat(Qt::RichText);
     msg.setTextInteractionFlags(Qt::TextBrowserInteraction);
-    msg.setText("When each polygon has <b>only one dominant soil type</b>:"
-                "<ul><li><b>Polygon mode</b>: For each soil type, mining rules from every polygon, and then merge the rules from polygons to generate the rule for the soil type"
+    msg.setText("<b>Polygon mode</b>:"
+                "<ul><li>When each polygon has <b>only one dominant soil type</b>: For each soil type, mining rules from every polygon, and then merge the rules from polygons to generate the rule for the soil type"
                 " <a href=\"https://www.sciencedirect.com/science/article/pii/S2095311918619380\">(Cheng et al., 2019)</a>.</li>"
-                "<li><b>Soil Type mode</b>: For each soil type, mining rules from overall distribution of covariate values from all polygon in the soil type"
-                " <a href=\"https://www.tandfonline.com/doi/abs/10.1080/13658810310001596049\">(Qi and Zhu, 2003)</a>.</li></ul>"
-                "When each polygon contains <b>one or more soil types</b>: "
-                "<ul><li>To be continued</li></ul>");
+                "<li>When each polygon contains <b>one or more soil types</b>: To be continued</li></ul>"
+                "<b>Soil Type mode</b>: "
+                "<ul><li>When each polygon has <b>only one dominant soil type</b>: For each soil type, mining rules from overall distribution of covariate values from all polygon in the soil type"
+                " <a href=\"https://www.tandfonline.com/doi/abs/10.1080/13658810310001596049\">(Qi and Zhu, 2003)</a>.</li>"
+                "<li>When each polygon contains <b>one or more soil types</b>: To be continued</li></ul>");
     msg.setStandardButtons(QMessageBox::Ok);
     //ui->label_hint->setOpenExternalLinks(true);
     msg.exec();
