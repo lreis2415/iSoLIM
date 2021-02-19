@@ -101,7 +101,7 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent * e){
                                         //dataDetailsModel->setItem(i,j, new QStandardItem(""));
                             model->setItem(i+4,j+4, new QStandardItem("NoData"));
                         } else {
-                            if(range>100)
+                            if(imgMax>10)
                                 model->setItem(i+4,j+4,new QStandardItem(QString::number(int(pixel*range+imgMin))));
                             else
                                 model->setItem(i+4,j+4,new QStandardItem(QString::number(pixel*range+imgMin,'g',4)));

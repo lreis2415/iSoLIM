@@ -754,11 +754,42 @@ void MainWindow::drawLayer(string filename){
     double imgMin = lyr->getDataMin();
     if(img->isNull()){
         delete img;
-        float* pafScanline = new float[lyr->getXSize()*lyr->getYSize()];
-        unsigned char*imgData = new unsigned char[lyr->getXSize()*lyr->getYSize()];
-        lyr->read(0,0,lyr->getYSize(),lyr->getXSize(),pafScanline);
+        int stretch=1;
+        int xsize=lyr->getXSize();
+        int ysize=lyr->getYSize();
+        if(xsize*ysize>1000000){
+            stretch=sqrt(xsize*ysize/1000000);
+            xsize=xsize/stretch;
+            if(lyr->getXSize()%stretch>0) xsize=xsize+1;
+            ysize=ysize/stretch;
+            if(lyr->getYSize()%stretch>0) ysize=ysize+1;
+        }
+        float* pafScanline = new float[xsize*ysize];
+        unsigned char*imgData = new unsigned char[xsize*ysize];
+        if(stretch==1)
+            lyr->read(0,0,lyr->getYSize(),lyr->getXSize(),pafScanline);
+        else {
+            lyr->blockInit();
+            float* tmp = new float[lyr->getBlockX()*lyr->getBlockY()];
+            int k = 0;
+            for(int i = 0;i<lyr->getBlockSize();i++){
+                int mode=(stretch-i*lyr->getBlockY()%stretch)%stretch;
+                int blockX = lyr->getBlockX();
+                int blockY = lyr->getBlockY();
+                if(i==lyr->getBlockSize()-1&i>0){
+                    blockY=lyr->getYSize()-i*lyr->getBlockY();
+                }
+                lyr->read(0,i*lyr->getBlockY(),blockY,blockX,tmp);
+                for(int n=mode;n<blockY;n+=stretch){
+                    for(int m=0;m<blockX;m+=stretch){
+                        pafScanline[k]=tmp[n*blockX+m];
+                        k++;
+                    }
+                }
+            }
+        }
         float range = 254.0/(imgMax-imgMin);
-        for(int i = 0; i<lyr->getXSize()*lyr->getYSize();i++){
+        for(int i = 0; i<xsize*ysize;i++){
             float value = pafScanline[i];
             if(fabs(value-NODATA)<VERY_SMALL||value<NODATA){
                 imgData[i]=255;
@@ -766,10 +797,13 @@ void MainWindow::drawLayer(string filename){
                 imgData[i] = (value-imgMin)*range;
             }
         }
-        img = new QImage(imgData, lyr->getXSize(),lyr->getYSize(),lyr->getXSize(), QImage::Format_Grayscale8);
+        img = new QImage(imgData, xsize,ysize,xsize, QImage::Format_Grayscale8);
         img->save(imagename.c_str());
+        img->load(imagename.c_str());
         if(pafScanline)
             delete []pafScanline;
+        if(imgData)
+            delete []imgData;
     }
     delete lyr;
     int viewHeight = myGraphicsView->height();
