@@ -62,7 +62,7 @@ inference::inference(SoLIMProject *proj, QWidget *parent) :
                                                               3,
                                                               selected_cb);
             }
-
+            connect(ui->CovariateFiles_tableWidget, SIGNAL(cellDoubleClicked(int,int)), this, SLOT(tableItemClicked(int,int)));
             QStringList propertyList;
             for(int i = 0; i<proj->prototypes.size();i++){
                 if(proj->prototypes[i].prototypeBaseName==proj->prototypeBaseNames[0]){
@@ -104,7 +104,6 @@ void inference::on_Inference_OK_btn_clicked()
         warn.exec();
         return;
     }
-    ui->cancel_btn->setEnabled(false);
     if(ui->OutputSoilFile_lineEdit->text().isEmpty()||ui->OutputUncerFile_lineEdit->text().isEmpty()){
         warn("Please fill in the output filename!");
         return;
@@ -116,12 +115,21 @@ void inference::on_Inference_OK_btn_clicked()
         QCheckBox *selected = (QCheckBox*) ui->CovariateFiles_tableWidget->cellWidget(i,3);
         if(!selected->isChecked())
             continue;
-        envFileNames.push_back(ui->CovariateFiles_tableWidget->item(i,0)->text().toStdString());
+        QString filename = ui->CovariateFiles_tableWidget->item(i,0)->text();
+        QString layername = ui->CovariateFiles_tableWidget->item(i,1)->text();
+        QFileInfo fileinfo(filename);
+        if(!fileinfo.exists()){
+            QMessageBox warn;
+            warn.setText("Filename for layer "+layername+" is invalid!");
+            warn.exec();
+            return;
+        }
+        envFileNames.push_back(filename.toStdString());
         QCheckBox *type = (QCheckBox*) ui->CovariateFiles_tableWidget->cellWidget(i,2);
         if(type->isChecked())
             datatypes.push_back("CATEGORICAL");
         else datatypes.push_back("CONTINUOUS");
-        layernames.push_back(ui->CovariateFiles_tableWidget->item(i,1)->text().toStdString());
+        layernames.push_back(layername.toStdString());
     }
     double ramEfficient;
     if(ui->RAMEfficient_low_rbtn->isChecked()){
@@ -141,6 +149,7 @@ void inference::on_Inference_OK_btn_clicked()
     ui->progressBar->setRange(0,100);
     ui->progressBar->setValue(0);
     ui->progressBar->setVisible(TRUE);
+    ui->cancel_btn->setEnabled(false);
     ui->Inference_OK_btn->setEnabled(false);
     solim::EnvDataset *eds = new solim::EnvDataset(envFileNames,datatypes,layernames,ramEfficient);
     vector<solim::Prototype> *prototypes = new vector<solim::Prototype>;
@@ -170,4 +179,14 @@ void inference::on_editPrototypeBase_btn_clicked()
     editPrototypeBases editDialog(names,ui->prototypeBaseName_lineEdit->text(),this);
     editDialog.exec();
     ui->prototypeBaseName_lineEdit->setText(editDialog.selectedNames);
+}
+
+void inference::tableItemClicked(int row,int col){
+    if(col == 0){
+        SimpleDialog addGisData(SimpleDialog::MODIFYGISDATA,project, this);
+        addGisData.exec();
+        ui->CovariateFiles_tableWidget->setItem(row,
+                                                0,
+                                                new QTableWidgetItem(addGisData.filename));
+    }
 }

@@ -7,8 +7,14 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     ui->actionAdd_prototypes_from_samples->setDisabled(true);
-    ui->menuCovariates->setDisabled(true);
-    ui->menuSample_Design->setDisabled(true);
+    //ui->menuSample_Design->setDisabled(true);
+    ui->actionAdd_prototypes_from_Data_Mining->setDisabled(true);
+    ui->actionAdd_prototypes_from_expert->setDisabled(true);
+    ui->actionSave->setDisabled(true);
+    ui->actionSave_as->setDisabled(true);
+    ui->actionClose_Project->setDisabled(true);
+    ui->actionDefine_Study_Area->setDisabled(true);
+    ui->actionFrom_Prototypes->setDisabled(true);
     setWindowIcon(QIcon("./imgs/solim.jpg"));
     // setup dock view
     projectViewInitialized = false;
@@ -192,9 +198,21 @@ void MainWindow::onProjectOpen(){
     TiXmlHandle gisDataHandle = projectHandle.FirstChildElement("GISData");
     for(TiXmlElement* layer = gisDataHandle.FirstChildElement("Layer").ToElement();
         layer; layer = layer->NextSiblingElement("Layer")){
-        proj->layernames.push_back(layer->Attribute("Name"));
-        proj->layertypes.push_back(layer->Attribute("Type"));
-        proj->filenames.push_back(layer->GetText());
+        QFileInfo fileinfo(layer->GetText());
+        if(fileinfo.exists()){
+            proj->layernames.push_back(layer->Attribute("Name"));
+            proj->layertypes.push_back(layer->Attribute("Type"));
+            proj->filenames.push_back(layer->GetText());
+        } else {
+            proj->layernames.push_back(layer->Attribute("Name"));
+            proj->layertypes.push_back(layer->Attribute("Type"));
+            proj->filenames.push_back("");
+            QMessageBox warn;
+            string layername = layer->Attribute("Name");
+            warn.setText(("Layer \""+layername+"\" does not exist.").c_str());
+            warn.setStandardButtons(QMessageBox::Ok);
+            warn.exec();
+        }
     }
     onGetGisData();
     for(TiXmlElement* layer = gisDataHandle.FirstChildElement("NoFileLayer").ToElement();
@@ -647,8 +665,10 @@ void MainWindow::onGetGisData(){
     if(proj->filenames.size()>gisDataChild->rowCount()){
         for(size_t i = 0;i<proj->filenames.size();i++){
             gisDataChild->setChild(i,0,new QStandardItem(proj->layernames[i].c_str()));
-            gisDataChild->child(i)->setChild(0,0,new QStandardItem(("Filename: "+proj->filenames[i]).c_str()));
-            gisDataChild->child(i)->setChild(1,0,new QStandardItem(("Type: "+proj->layertypes[i]).c_str()));
+            if(proj->filenames[i]!=""){
+                gisDataChild->child(i)->setChild(0,0,new QStandardItem(("Filename: "+proj->filenames[i]).c_str()));
+                gisDataChild->child(i)->setChild(1,0,new QStandardItem(("Type: "+proj->layertypes[i]).c_str()));
+            }
         }
     }
 }
@@ -698,6 +718,7 @@ void MainWindow::onGetPrototype(){
             }
         }
     }
+    ui->actionFrom_Prototypes->setEnabled(true);
 }
 
 void MainWindow::onInferResults(){
@@ -719,6 +740,8 @@ void MainWindow::onInferResults(){
 //=========================== Main Graphics View function===============================
 void MainWindow::drawLayer(string filename){
     if(filename.empty()) return;
+    QFileInfo fileinfo(filename.c_str());
+    if(!fileinfo.exists()) return;
     myGraphicsView->showImage = true;
     zoomToolBar->setVisible(true);
     imgFilename = filename;
@@ -1011,13 +1034,9 @@ void MainWindow::onZoomout()
 
 //=========================== non-slot functions ============================================
 void MainWindow::updateGisDataFromTree(){
-    proj->filenames.clear();
     proj->layernames.clear();
-    proj->layertypes.clear();
     for (int i = 0; i<gisDataChild->rowCount();i++) {
         proj->layernames.push_back(gisDataChild->child(i,0)->text().toStdString());
-        proj->filenames.push_back(gisDataChild->child(i,0)->child(0,0)->text().mid(10).toStdString());
-        proj->layertypes.push_back(gisDataChild->child(i,0)->child(1,0)->text().mid(6).toStdString());
     }
 }
 
@@ -1056,6 +1075,12 @@ void MainWindow::initModel(){
     connect(projectView->selectionModel(),SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
             this, SLOT(onSelectionChanged(const QItemSelection&,const QItemSelection&)));
     ui->actionAdd_prototypes_from_samples->setEnabled(true);
+    ui->actionAdd_prototypes_from_Data_Mining->setEnabled(true);
+    ui->actionAdd_prototypes_from_expert->setEnabled(true);
+    ui->actionSave->setEnabled(true);
+    ui->actionSave_as->setEnabled(true);
+    ui->actionClose_Project->setEnabled(true);
+    ui->actionDefine_Study_Area->setEnabled(true);
 }
 
 void MainWindow::initialProjectView(){
@@ -1224,5 +1249,20 @@ void MainWindow::saveSetting(){
     if(setting.open(QIODevice::WriteOnly)){
         QTextStream out(&setting);
         out<<"WorkingDir="+workingDir<<endl;
+    }
+}
+
+void MainWindow::on_actionAdd_Covariates_triggered()
+{
+    if(proj==nullptr){
+        QString studyArea = "";
+        proj = new SoLIMProject();
+        proj->projFilename = "./Untitled.slp";
+        proj->projName = "Untitled";
+        proj->studyArea="";
+        initModel();
+        onAddGisData();
+    }  else {
+        onAddGisData();
     }
 }

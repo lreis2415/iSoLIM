@@ -16,7 +16,7 @@ class SimpleDialog : public QDialog
     Q_OBJECT
 
 public:
-    enum simpleDialogMode{ADDGISDATA,ADDCOVARIATE,ADDPROTOTYPEBASE,EDITSTUDYAREA};
+    enum simpleDialogMode{ADDGISDATA,ADDCOVARIATE,ADDPROTOTYPEBASE,EDITSTUDYAREA,MODIFYGISDATA};
     explicit SimpleDialog(int mode, SoLIMProject *proj, QWidget *parent = nullptr);
     ~SimpleDialog();
     QString filename;
@@ -25,6 +25,7 @@ public:
     QString lineEdit2;
     bool nextFlag;
     QString workingDir;
+    SoLIMProject *project;
 
 private slots:
     void on_lineEdit_1_textChanged(const QString &arg1);

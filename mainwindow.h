@@ -80,6 +80,8 @@ private slots:
     void onZoomout();
     void onInferResults();
 
+    void on_actionAdd_Covariates_triggered();
+
 private:
     Ui::MainWindow *ui;
     QTreeView *projectView;

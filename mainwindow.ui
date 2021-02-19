@@ -48,11 +48,7 @@
     <property name="title">
      <string>Covariates</string>
     </property>
-   </widget>
-   <widget class="QMenu" name="menuSample_Design">
-    <property name="title">
-     <string>Sample Design</string>
-    </property>
+    <addaction name="actionAdd_Covariates"/>
    </widget>
    <widget class="QMenu" name="menuSoil_Inference">
     <property name="title">
@@ -73,7 +69,6 @@
    </widget>
    <addaction name="menuProjects"/>
    <addaction name="menuCovariates"/>
-   <addaction name="menuSample_Design"/>
    <addaction name="menuSoil_Inference"/>
    <addaction name="menuUtilities"/>
    <addaction name="menuHelp"/>
@@ -112,11 +107,6 @@
     <string>View Data</string>
    </property>
   </action>
-  <action name="actiontest">
-   <property name="text">
-    <string>test</string>
-   </property>
-  </action>
   <action name="actionSave_as">
    <property name="text">
     <string>Save as</string>
@@ -140,6 +130,11 @@
   <action name="actionClose_Project">
    <property name="text">
     <string>Close Project</string>
+   </property>
+  </action>
+  <action name="actionAdd_Covariates">
+   <property name="text">
+    <string>Add Covariates</string>
    </property>
   </action>
  </widget>

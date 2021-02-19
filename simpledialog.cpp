@@ -19,6 +19,16 @@ SimpleDialog::SimpleDialog(int mode, SoLIMProject *proj, QWidget *parent) :
         ui->ok_btn->setEnabled(false);
         ui->label_hint->setVisible(false);
         break;
+    case MODIFYGISDATA:
+        ui->btn_2->setVisible(false);
+        ui->next_btn->setVisible(false);
+        ui->ok_btn->setEnabled(false);
+        ui->label_hint->setVisible(false);
+        ui->label_2->setVisible(false);
+        ui->lineEdit_2->setVisible(false);
+        ui->checkBox->setVisible(false);
+        setWindowTitle("Modify covariate");
+        break;
     case ADDCOVARIATE:
         ui->label_1->setText("Covariate*:");
         ui->btn_1->setVisible(false);
@@ -57,6 +67,7 @@ SimpleDialog::SimpleDialog(int mode, SoLIMProject *proj, QWidget *parent) :
     lineEdit2="";
     nextFlag=false;
     workingDir=proj->workingDir;
+    project=proj;
 }
 
 SimpleDialog::~SimpleDialog()
@@ -66,7 +77,7 @@ SimpleDialog::~SimpleDialog()
 
 void SimpleDialog::on_lineEdit_1_textChanged(const QString &arg1)
 {
-    if(mode==ADDGISDATA){
+    if(mode==ADDGISDATA||MODIFYGISDATA){
         if(!arg1.isEmpty())
             ui->ok_btn->setEnabled(true);
     }
@@ -74,11 +85,12 @@ void SimpleDialog::on_lineEdit_1_textChanged(const QString &arg1)
 
 void SimpleDialog::on_btn_1_clicked()
 {
-    if(mode==ADDGISDATA){
+    if(mode==ADDGISDATA||MODIFYGISDATA){
         QString qfilename = QFileDialog::getOpenFileName(this,
                                                         tr("Open environmental covariate file"),
                                                         workingDir,
                                                         tr("Covariate file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
+        workingDir=QFileInfo(qfilename).absoluteDir().absolutePath();
         ui->lineEdit_1->setText(qfilename);
         filename = qfilename;
         if(!filename.isEmpty()){
@@ -118,28 +130,35 @@ void SimpleDialog::on_cancel_btn_clicked()
     filename.clear();
     covariate.clear();
     lineEdit2.clear();
+    project->workingDir=workingDir;
     close();
 }
 
 void SimpleDialog::on_ok_btn_clicked()
 {
+    project->workingDir=workingDir;
     if(mode==ADDGISDATA){
         filename = ui->lineEdit_1->text();
         covariate=ui->lineEdit_2->text();
         if(ui->checkBox->isChecked()) datatype="CATEGORICAL";
         else datatype="CONTINUOUS";
         QFile f(filename);
-        if(mode==ADDGISDATA){
-            if(f.exists()){
-                close();
-            } else {
-                QMessageBox warn;
-                warn.setText("File does not exist.");
-                warn.exec();
-            }
-        }else {
-            if(!f.exists()) filename="";
+        if(f.exists()){
             close();
+        } else {
+            QMessageBox warn;
+            warn.setText("File does not exist.");
+            warn.exec();
+        }
+    } else if(mode==MODIFYGISDATA){
+        filename = ui->lineEdit_1->text();
+        QFile f(filename);
+        if(f.exists()){
+            close();
+        } else {
+            QMessageBox warn;
+            warn.setText("File does not exist.");
+            warn.exec();
         }
     } else if (mode==ADDCOVARIATE){
         filename = ui->lineEdit_2->text();
