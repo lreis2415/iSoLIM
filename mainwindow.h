@@ -47,6 +47,7 @@ public:
     QStandardItem *gisDataChild;
     SoLIMProject *proj;
     QString workingDir;
+    QThread createImgThread;
 private slots:
     // main menu
     void onProjectNew();
@@ -79,8 +80,9 @@ private slots:
     void onZoomin();
     void onZoomout();
     void onInferResults();
-
     void on_actionAdd_Covariates_triggered();
+    void createImg();
+    void finishedCreateImg();
 
 private:
     Ui::MainWindow *ui;
@@ -97,6 +99,9 @@ private:
     string currentBaseName;
     string currentProtoName;
     AddRule *addRule;
+    BaseIO *lyr;
+    double imgMax;
+    double imgMin;
     void initialProjectView();
     void initDataDetailsView();
     void initModel();

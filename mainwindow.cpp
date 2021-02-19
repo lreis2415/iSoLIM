@@ -35,6 +35,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionAdd_prototypes_from_Data_Mining,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromMining()));
     connect(ui->actionAdd_prototypes_from_expert,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromExpert()));
     connect(ui->actionDefine_Study_Area,SIGNAL(triggered()),this,SLOT(onEditStudyArea()));
+    connect(&createImgThread, SIGNAL(finished()), this, SLOT(finishedCreateImg())); //cant have parameter sorry, when using connect
+    connect(&createImgThread, SIGNAL(started()), this, SLOT(createImg())); //cant have parameter sorry, when using connect
     projectSaved = true;
     img = nullptr;
     proj = nullptr;
@@ -742,70 +744,108 @@ void MainWindow::drawLayer(string filename){
     if(filename.empty()) return;
     QFileInfo fileinfo(filename.c_str());
     if(!fileinfo.exists()) return;
-    myGraphicsView->showImage = true;
-    zoomToolBar->setVisible(true);
     imgFilename = filename;
-    myGraphicsView->getScene()->clear();
     string imagename = filename+".png";
     img = new QImage(imagename.c_str());
-    BaseIO *lyr = new BaseIO(filename);
+    lyr = new BaseIO(filename);
     if(!lyr->openSuccess) return;
-    double imgMax = lyr->getDataMax();
-    double imgMin = lyr->getDataMin();
+    imgMax = lyr->getDataMax();
+    imgMin = lyr->getDataMin();
     if(img->isNull()){
+        ui->statusBar->showMessage("Loading Data...");
         delete img;
-        int stretch=1;
-        int xsize=lyr->getXSize();
-        int ysize=lyr->getYSize();
-        if(xsize*ysize>1000000){
-            stretch=sqrt(xsize*ysize/1000000);
-            xsize=xsize/stretch;
-            if(lyr->getXSize()%stretch>0) xsize=xsize+1;
-            ysize=ysize/stretch;
-            if(lyr->getYSize()%stretch>0) ysize=ysize+1;
-        }
-        float* pafScanline = new float[xsize*ysize];
-        unsigned char*imgData = new unsigned char[xsize*ysize];
-        if(stretch==1)
-            lyr->read(0,0,lyr->getYSize(),lyr->getXSize(),pafScanline);
-        else {
-            lyr->blockInit();
-            float* tmp = new float[lyr->getBlockX()*lyr->getBlockY()];
-            int k = 0;
-            for(int i = 0;i<lyr->getBlockSize();i++){
-                int mode=(stretch-i*lyr->getBlockY()%stretch)%stretch;
-                int blockX = lyr->getBlockX();
-                int blockY = lyr->getBlockY();
-                if(i==lyr->getBlockSize()-1&i>0){
-                    blockY=lyr->getYSize()-i*lyr->getBlockY();
-                }
-                lyr->read(0,i*lyr->getBlockY(),blockY,blockX,tmp);
-                for(int n=mode;n<blockY;n+=stretch){
-                    for(int m=0;m<blockX;m+=stretch){
-                        pafScanline[k]=tmp[n*blockX+m];
-                        k++;
-                    }
-                }
-            }
-        }
-        float range = 254.0/(imgMax-imgMin);
-        for(int i = 0; i<xsize*ysize;i++){
-            float value = pafScanline[i];
-            if(fabs(value-NODATA)<VERY_SMALL||value<NODATA){
-                imgData[i]=255;
-            }else{
-                imgData[i] = (value-imgMin)*range;
-            }
-        }
-        img = new QImage(imgData, xsize,ysize,xsize, QImage::Format_Grayscale8);
-        img->save(imagename.c_str());
-        img->load(imagename.c_str());
-        if(pafScanline)
-            delete []pafScanline;
-        if(imgData)
-            delete []imgData;
+        createImgThread.start();
+
+    } else {
+        myGraphicsView->showImage = true;
+        zoomToolBar->setVisible(true);
+        myGraphicsView->getScene()->clear();
+
+        delete lyr;
+        int viewHeight = myGraphicsView->height();
+        int viewWidth = myGraphicsView->width();
+        myGraphicsView->getScene()->setSceneRect(0,0,viewWidth+30,viewHeight);
+        QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(*img).scaled(viewWidth,viewHeight,Qt::KeepAspectRatio,Qt::SmoothTransformation));
+        myGraphicsView->getScene()->addItem(item);
+        item->setPos(30,0);
+        QLinearGradient linear(QPoint(5,15),QPoint(5,65));
+        linear.setColorAt(0,Qt::white);
+        linear.setColorAt(1,Qt::black);
+        linear.setSpread(QGradient::PadSpread);
+        myGraphicsView->getScene()->addRect(5,15,10,50,QPen(QColor(255,255,255),0),linear);
+        //std::ostringstream maxss;
+        QGraphicsTextItem *minLabel = myGraphicsView->getScene()->addText(QString::number(imgMin));
+        minLabel->setPos(15,50);
+        QGraphicsTextItem *maxLabel = myGraphicsView->getScene()->addText(QString::number(imgMax));
+        maxLabel->setPos(15,0);
+        myGraphicsView->img = img;
+        myGraphicsView->imgMax = imgMax;
+        myGraphicsView->imgMin = imgMin;
+        myGraphicsView->range = (imgMax-imgMin)/254.0;
     }
+
+}
+
+void MainWindow::createImg(){
+    string imagename = lyr->getFilename()+".png";
+    int stretch=1;
+    int xsize=lyr->getXSize();
+    int ysize=lyr->getYSize();
+    if(xsize*ysize>1000000){
+        stretch=sqrt(xsize*ysize/1000000);
+        xsize=xsize/stretch;
+        if(lyr->getXSize()%stretch>0) xsize=xsize+1;
+        ysize=ysize/stretch;
+        if(lyr->getYSize()%stretch>0) ysize=ysize+1;
+    }
+    float* pafScanline = new float[xsize*ysize];
+    unsigned char*imgData = new unsigned char[xsize*ysize];
+    if(stretch==1)
+        lyr->read(0,0,lyr->getYSize(),lyr->getXSize(),pafScanline);
+    else {
+        lyr->blockInit();
+        float* tmp = new float[lyr->getBlockX()*lyr->getBlockY()];
+        int k = 0;
+        for(int i = 0;i<lyr->getBlockSize();i++){
+            int mode=(stretch-i*lyr->getBlockY()%stretch)%stretch;
+            int blockX = lyr->getBlockX();
+            int blockY = lyr->getBlockY();
+            if(i==lyr->getBlockSize()-1&i>0){
+                blockY=lyr->getYSize()-i*lyr->getBlockY();
+            }
+            lyr->read(0,i*lyr->getBlockY(),blockY,blockX,tmp);
+            for(int n=mode;n<blockY;n+=stretch){
+                for(int m=0;m<blockX;m+=stretch){
+                    pafScanline[k]=tmp[n*blockX+m];
+                    k++;
+                }
+            }
+        }
+    }
+    float range = 254.0/(imgMax-imgMin);
+    for(int i = 0; i<xsize*ysize;i++){
+        float value = pafScanline[i];
+        if(fabs(value-NODATA)<VERY_SMALL||value<NODATA){
+            imgData[i]=255;
+        }else{
+            imgData[i] = (value-imgMin)*range;
+        }
+    }
+    img = new QImage(imgData, xsize,ysize,xsize, QImage::Format_Grayscale8);
+    img->save(imagename.c_str());
+    img->load(imagename.c_str());
+    if(pafScanline)
+        delete []pafScanline;
+    if(imgData)
+        delete []imgData;
     delete lyr;
+    createImgThread.exit(0);
+}
+
+void MainWindow::finishedCreateImg(){
+    myGraphicsView->showImage = true;
+    zoomToolBar->setVisible(true);
+    myGraphicsView->getScene()->clear();
     int viewHeight = myGraphicsView->height();
     int viewWidth = myGraphicsView->width();
     myGraphicsView->getScene()->setSceneRect(0,0,viewWidth+30,viewHeight);
@@ -826,7 +866,7 @@ void MainWindow::drawLayer(string filename){
     myGraphicsView->imgMax = imgMax;
     myGraphicsView->imgMin = imgMin;
     myGraphicsView->range = (imgMax-imgMin)/254.0;
-
+    ui->statusBar->clearMessage();
 }
 
 void MainWindow::drawMembershipFunction(string basename, string idname, string covName){
@@ -1021,12 +1061,12 @@ void MainWindow::onZoomin()
     QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(*img).scaled(width,height,Qt::KeepAspectRatio,Qt::SmoothTransformation));
     item->setPos(30,0);
     myGraphicsView->getScene()->addItem(item);
+    // add legend
     QLinearGradient linear(QPoint(5,15),QPoint(5,65));
     linear.setColorAt(0,Qt::white);
     linear.setColorAt(1,Qt::black);
     linear.setSpread(QGradient::PadSpread);
     myGraphicsView->getScene()->addRect(5,15,10,50,QPen(QColor(255,255,255),0),linear);
-    //std::ostringstream maxss;
     QGraphicsTextItem *minLabel = myGraphicsView->getScene()->addText(QString::number(myGraphicsView->imgMin));
     minLabel->setPos(15,50);
     QGraphicsTextItem *maxLabel = myGraphicsView->getScene()->addText(QString::number(myGraphicsView->imgMax));
@@ -1286,14 +1326,14 @@ void MainWindow::saveSetting(){
     }
 }
 
-void MainWindow::on_actionAdd_Covariates_triggered()
-{
+void MainWindow::on_actionAdd_Covariates_triggered() {
     if(proj==nullptr){
         QString studyArea = "";
         proj = new SoLIMProject();
         proj->projFilename = "./Untitled.slp";
         proj->projName = "Untitled";
         proj->studyArea="";
+        proj->workingDir=workingDir;
         initModel();
         onAddGisData();
     }  else {

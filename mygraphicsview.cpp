@@ -93,22 +93,22 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent * e){
             int col = (pt.x()-30)/strechWidth*(tempimg.width());
             if(row<tempimg.height()-1&&col<tempimg.width()-1&&row>0&&col>0){
                 QStandardItemModel*model = new QStandardItemModel(dataDetailsView);
-
-                for(int i = -4; i<5;i++){
-                    for(int j = -4;j<5;j++){
+                int neighbor=3;
+                for(int i = 0-neighbor; i<=neighbor;i++){
+                    for(int j = 0-neighbor;j<=neighbor;j++){
                         int pixel = tempimg.pixelColor(col+i,row+j).red();
                         if(pixel == 255){
                                         //dataDetailsModel->setItem(i,j, new QStandardItem(""));
-                            model->setItem(i+4,j+4, new QStandardItem("NoData"));
+                            model->setItem(i+neighbor,j+neighbor, new QStandardItem("NoData"));
                         } else {
                             if(imgMax>10)
-                                model->setItem(i+4,j+4,new QStandardItem(QString::number(int(pixel*range+imgMin))));
+                                model->setItem(i+neighbor,j+neighbor,new QStandardItem(QString::number(int(pixel*range+imgMin))));
                             else
-                                model->setItem(i+4,j+4,new QStandardItem(QString::number(pixel*range+imgMin,'g',4)));
+                                model->setItem(i+neighbor,j+neighbor,new QStandardItem(QString::number(pixel*range+imgMin,'g',4)));
                             //((QStandardItemModel*)dataDetailsView->model())->item(i+1,j+1)->setData(QString::number(int(pixel*range+imgMin)));
                         }
                         if(i==0&&j==0)
-                            model->item(i+4,j+4)->setForeground(QBrush(QColor(255, 0, 0)));
+                            model->item(i+neighbor,j+neighbor)->setForeground(QBrush(QColor(255, 0, 0)));
                     }
                 }
                 dataDetailsView->setModel(model);

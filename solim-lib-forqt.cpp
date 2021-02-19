@@ -1,6 +1,7 @@
 #include "solim-lib-forqt.h"
 
 BaseIO::BaseIO(string filename, FileDataType newFileDataType) {
+    fileName=filename;
     if (strcmp(strrchr(filename.c_str(), '.'), ".3dr") == 0) {
         is3dr = TRUE;
         fileName = filename;

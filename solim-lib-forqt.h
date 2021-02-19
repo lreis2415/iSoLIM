@@ -99,6 +99,7 @@ public:
     BaseIO(string filename, FileDataType newFileDataType = FLOAT_TYPE);
     ~BaseIO();
     //void parallelInit(MPI_Datatype MPIt);
+    string getFilename() { return fileName; }
     void blockInit(double divide=1);
     void blockCopy(BaseIO *ref);
     void read(long xStart, long yStart, long numRows, long numCols, float *dest);
