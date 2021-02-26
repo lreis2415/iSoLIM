@@ -27,7 +27,7 @@ SimpleDialog::SimpleDialog(int mode, SoLIMProject *proj, QWidget *parent) :
         ui->label_2->setVisible(false);
         ui->lineEdit_2->setVisible(false);
         ui->checkBox->setVisible(false);
-        setWindowTitle("Modify covariate");
+        setWindowTitle("Modify covariate file");
         break;
     case ADDCOVARIATE:
         ui->label_1->setText("Covariate*:");

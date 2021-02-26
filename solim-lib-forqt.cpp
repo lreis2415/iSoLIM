@@ -1912,16 +1912,16 @@ namespace solim {
                 for (int iCon = 0; iCon < tmp_protos[0].envConditionSize; ++iCon) {
                     string covname = tmp_protos[0].envConditions[iCon].covariateName;
                     vector<Curve>* curves = new vector<Curve>;
-                    for (int iProto = 0; iProto < tmp_protos.size(); ++iProto) {
+                    for (size_t iProto = 0; iProto < tmp_protos.size(); ++iProto) {
                         curves->push_back(tmp_protos[iProto].envConditions[iCon]);
                     }
                     p.addConditions(Curve(covname, curves));
                     p.envConditions.at(iCon).range=ranges[iCon];
                 }
-                for (int i = 0; i < tmp_protos[0].properties.size(); i++) {
+                for (size_t i = 0; i < tmp_protos[0].properties.size(); i++) {
                     string propertyName = tmp_protos[0].properties[i].propertyName;
                     double value = tmp_protos[0].properties[i].propertyValue;
-                    for (int iProto = 1; iProto < tmp_protos.size(); ++iProto) {
+                    for (size_t iProto = 1; iProto < tmp_protos.size(); ++iProto) {
                         if(propertyName!=tmp_protos[iProto].properties[i].propertyName||
                             fabs(value- tmp_protos[iProto].properties[i].propertyValue)<VERY_SMALL)
                             continue;

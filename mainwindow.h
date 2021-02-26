@@ -40,6 +40,7 @@ public:
     QStandardItemModel* model;
     QMenu* prototypesMenu;
     QMenu* gisDataMenu;
+    QMenu* gisLayerMenu;
     QMenu* prototypeBaseMenu;
     QMenu* prototypeMenu;
     QStandardItem *resultChild;
@@ -83,6 +84,8 @@ private slots:
     void on_actionAdd_Covariates_triggered();
     void createImg();
     void finishedCreateImg();
+    void onDeleteGisLayer();
+    void onModifyCovFile();
 
 private:
     Ui::MainWindow *ui;
@@ -98,6 +101,7 @@ private:
     QToolBar *zoomToolBar;
     string currentBaseName;
     string currentProtoName;
+    string currentLayerName;
     AddRule *addRule;
     BaseIO *lyr;
     double imgMax;

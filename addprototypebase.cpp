@@ -266,22 +266,66 @@ void AddPrototypeBase::on_ok_btn_clicked()
         vector<Prototype>* prototypes = Prototype::getPrototypesFromSample(sampleFile,eds, prototypeBaseName,
                                                                            ui->xFiled_comboBox->currentText().toStdString(),
                                                                            ui->yFiled_comboBox->currentText().toStdString());
-        project->prototypeBaseNames.push_back(prototypeBaseName);
-        project->prototypes.insert(project->prototypes.end(),prototypes->begin(),prototypes->end());
+        //project->prototypeBaseNames.push_back(prototypeBaseName);
+        int protoNum=prototypes->size();
+        if(protoNum>0){
+            project->prototypeBaseNames.push_back(prototypeBaseName);
+            vector<string> ids;
+            for(int i =0; i<protoNum; i++){
+                ids.push_back(prototypes->at(i).prototypeID);
+            }
+            std::sort(ids.begin(),ids.end());
+            for(int i = 0; i<protoNum;i++){
+                for(vector<Prototype>::iterator it=prototypes->begin();it!=prototypes->end();it++){
+                    if((*it).prototypeID==ids[i])
+                        project->prototypes.insert(project->prototypes.end(),it,it+1);
+                }
+            }
+            //project->prototypes.insert(project->prototypes.end(),prototypes->begin(),prototypes->end());
+        }
         ui->progressBar->setValue(2);
     } else if(mode == AddPrototypeBase::MAP){
         if(ui->radioButton_soiltype->isChecked()){
             vector<Prototype>* prototypes = Prototype::getPrototypesFromMining_soilType(sampleFile,eds,
                                                                                         ui->xFiled_comboBox->currentText().toStdString(),
                                                                                         prototypeBaseName,ui->progressBar);
-            project->prototypeBaseNames.push_back(prototypeBaseName);
-            project->prototypes.insert(project->prototypes.end(),prototypes->begin(),prototypes->end());
+            int protoNum=prototypes->size();
+            if(protoNum>0){
+                project->prototypeBaseNames.push_back(prototypeBaseName);
+                vector<string> ids;
+                for(int i =0; i<protoNum; i++){
+                    ids.push_back(prototypes->at(i).prototypeID);
+                }
+                std::sort(ids.begin(),ids.end());
+                for(int i = 0; i<protoNum;i++){
+                    for(vector<Prototype>::iterator it=prototypes->begin();it!=prototypes->end();it++){
+                        if((*it).prototypeID==ids[i])
+                            project->prototypes.insert(project->prototypes.end(),it,it+1);
+                    }
+                }
+                //project->prototypes.insert(project->prototypes.end(),prototypes->begin(),prototypes->end());
+            }
         } else {// if(ui->radioButton_poly->isChecked()){
             vector<Prototype>* prototypes = Prototype::getPrototypesFromMining_polygon(sampleFile,eds,
                                                                                        ui->xFiled_comboBox->currentText().toStdString(),
                                                                                        prototypeBaseName,ui->progressBar);
-            project->prototypeBaseNames.push_back(prototypeBaseName);
-            project->prototypes.insert(project->prototypes.end(),prototypes->begin(),prototypes->end());
+
+            int protoNum=prototypes->size();
+            if(protoNum>0){
+                project->prototypeBaseNames.push_back(prototypeBaseName);
+                vector<string> ids;
+                for(int i =0; i<protoNum; i++){
+                    ids.push_back(prototypes->at(i).prototypeID);
+                }
+                std::sort(ids.begin(),ids.end());
+                for(int i = 0; i<protoNum;i++){
+                    for(vector<Prototype>::iterator it=prototypes->begin();it!=prototypes->end();it++){
+                        if((*it).prototypeID==ids[i])
+                            project->prototypes.insert(project->prototypes.end(),it,it+1);
+                    }
+                }
+                //project->prototypes.insert(project->prototypes.end(),prototypes->begin(),prototypes->end());
+            }
         }
     }
     close();

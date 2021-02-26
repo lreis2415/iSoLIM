@@ -107,10 +107,6 @@ void MainWindow::onProjectSave(){
     TiXmlElement *root_node = new TiXmlElement("Project");
     root_node->SetAttribute("Name", proj->projName.c_str());
     doc->LinkEndChild(root_node);
-    TiXmlElement *workingDirec_node = new TiXmlElement("ProjectFilename");
-    root_node->LinkEndChild(workingDirec_node);
-    TiXmlText *workingDirec_text = new TiXmlText(proj->projFilename.c_str());
-    workingDirec_node->LinkEndChild(workingDirec_text);
     TiXmlElement *studyArea_node = new TiXmlElement("StudyArea");
     root_node->LinkEndChild(studyArea_node);
     TiXmlText *studyarea_text = new TiXmlText(proj->studyArea.c_str());
@@ -153,8 +149,13 @@ void MainWindow::onProjectSave(){
         TiXmlText *result_text = new TiXmlText(proj->results[i].c_str());
         result_node->LinkEndChild(result_text);
     }
-    doc->SaveFile(filename.c_str());
-    projectSaved = true;
+    if(doc->SaveFile(filename.c_str()))
+        projectSaved = true;
+    else {
+        QMessageBox warn;
+        warn.setText("Project file save failed!");
+        warn.exec();
+    }
 }
 
 void MainWindow::onProjectSaveAs(){
@@ -188,8 +189,8 @@ void MainWindow::onProjectOpen(){
     TiXmlHandle projectHandle = docHandle.FirstChildElement("Project");
     proj = new SoLIMProject();
     proj->workingDir=workingDir;
+    proj->projFilename = projectFile.toStdString();
     proj->projName = projectHandle.ToElement()->Attribute("Name");
-    proj->projFilename = projectHandle.FirstChildElement("ProjectFilename").ToElement()->GetText();
     if(projectHandle.FirstChildElement("StudyArea").ToElement()->GetText())
         proj->studyArea = projectHandle.FirstChildElement("StudyArea").ToElement()->GetText();
     else
@@ -312,6 +313,10 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
     else if(index.isValid()&&index.data().toString().compare("GIS Data")==0){
         gisDataMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
+    else if (index.isValid()&&index.parent().data().toString().compare("GIS Data")==0){
+        currentLayerName=index.data().toString().toStdString();
+        gisLayerMenu->exec(projectView->viewport()->mapToGlobal(point));
+}
     else if(index.isValid()&&index.parent().data().toString().compare("Prototypes")==0){
         currentBaseName=index.data().toString().mid(16).toStdString();
         prototypeBaseMenu->exec(projectView->viewport()->mapToGlobal(point));
@@ -591,6 +596,36 @@ void MainWindow::onChangeCovName(){
     }
 }
 
+void MainWindow::onDeleteGisLayer() {
+    for(size_t i = 0;i<proj->layernames.size();i++){
+        if(currentLayerName==proj->layernames[i]){
+            proj->layernames.erase(proj->layernames.begin()+i);
+            proj->filenames.erase(proj->filenames.begin()+i);
+            proj->layertypes.erase(proj->layertypes.begin()+i);
+            projectSaved = false;
+            break;
+        }
+    }
+    onGetGisData();
+}
+
+void MainWindow::onModifyCovFile() {
+    for(size_t i = 0;i<proj->layernames.size();i++){
+        if(currentLayerName==proj->layernames[i]){
+            SimpleDialog modifyGisData(SimpleDialog::MODIFYGISDATA,proj, this);
+            modifyGisData.exec();
+            if(modifyGisData.filename.isEmpty()){
+                return;
+            } else {
+               proj->filenames[i]=modifyGisData.filename.toStdString();
+               projectSaved = false;
+            }
+            break;
+        }
+    }
+    onGetGisData();
+}
+
 void MainWindow::onSavePrototypeBase(){
     QString filename = QFileDialog::getSaveFileName(this,
                                                     tr("Save prototype base as"),
@@ -664,13 +699,14 @@ void MainWindow::onExportPrototypeBase(){
 //=================================== upadte project tree view ==================================
 void MainWindow::onGetGisData(){
     gisDataChild->setColumnCount(1);
-    if(proj->filenames.size()>gisDataChild->rowCount()){
-        for(size_t i = 0;i<proj->filenames.size();i++){
-            gisDataChild->setChild(i,0,new QStandardItem(proj->layernames[i].c_str()));
-            if(proj->filenames[i]!=""){
-                gisDataChild->child(i)->setChild(0,0,new QStandardItem(("Filename: "+proj->filenames[i]).c_str()));
-                gisDataChild->child(i)->setChild(1,0,new QStandardItem(("Type: "+proj->layertypes[i]).c_str()));
-            }
+    for(size_t i = 0;i<proj->filenames.size();i++){
+        gisDataChild->setChild(i,0,new QStandardItem(proj->layernames[i].c_str()));
+        gisDataChild->setRowCount(proj->filenames.size());
+        if(proj->filenames[i]!=""){
+            gisDataChild->child(i)->setChild(0,0,new QStandardItem(("Filename: "+proj->filenames[i]).c_str()));
+            gisDataChild->child(i)->setChild(1,0,new QStandardItem(("Type: "+proj->layertypes[i]).c_str()));
+        } else {
+            gisDataChild->child(i)->setChild(0,0,new QStandardItem(("Type: "+proj->layertypes[i]).c_str()));
         }
     }
 }
@@ -909,8 +945,9 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
     xmax = atof(endCoord[0].c_str());
     int sceneWidth = myGraphicsView->getScene()->width();
     int sceneHeight = myGraphicsView->getScene()->height();
-    double scale = proj->prototypes[protoPos].envConditions[covPos].range;
-    if(scale<VERY_SMALL) scale = fabs(xmax)>fabs(xmin)?fabs(xmax):fabs(xmin);
+    //double scale = proj->prototypes[protoPos].envConditions[covPos].range;
+    //if(scale<VERY_SMALL)
+    double scale = fabs(xmax)>fabs(xmin)?fabs(xmax):fabs(xmin);
     if(scale<10) scale = (int(scale)+1)*2;
     else scale = (int(scale/10)+1)*10*2;
     int margin = 0.5*scale;
@@ -947,7 +984,7 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
     yaxis0->setFont(QFont("Times", 10, QFont::Bold));
     yaxis0->setPos(0.45*sceneWidth-5,0.85*sceneHeight);
 
-    if(xmin*xmax<0||!xmax>0){
+    if(xmin*xmax<0||xmax<VERY_SMALL){
         // set axis
         myGraphicsView->getScene()->addLine(0.45*sceneWidth,0.85*sceneHeight,0.45*sceneWidth,0.1*sceneHeight,axisPen);
         myGraphicsView->getScene()->addLine(0.45*sceneWidth,0.1*sceneHeight,0.45*sceneWidth-3,0.1*sceneHeight+3,axisPen);
@@ -975,7 +1012,7 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
         if ((xmin>xmax-xmin && xmin>10) || margin-xmax>xmax-xmin) {
             yaxis0->setPos(0.10*sceneWidth-20,0.85*sceneHeight-20);
             int rangemin = int(xmin/10)*10;
-            margin = (int(xmax/10)+1)*10;
+            if(margin>5) margin = (int(xmax/10)+1)*10;
             scale=margin-rangemin;
             QGraphicsTextItem *xaxis0 = myGraphicsView->getScene()->addText(QString::number(rangemin));
             xaxis0->setFont(QFont("Times", 10, QFont::Bold));
@@ -995,7 +1032,7 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
 
     double previousx,previousy;
     double range_min,interval;
-    if(xmin*xmax<0||!xmax>0){
+    if(xmin*xmax<0||xmax<VERY_SMALL){
         previousy = proj->prototypes[protoPos].envConditions[covPos].getOptimality(0-margin);
         previousx = -margin;
         interval = 2*margin/100.0;
@@ -1171,6 +1208,7 @@ void MainWindow::initialProjectView(){
     //myGraphicsView->dataDetailsView = dataDetailsView;
     projectView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(projectView,SIGNAL(customContextMenuRequested(const QPoint &)),this,SLOT(onCustomContextMenu(const QPoint &)));
+    // prototype menu
     prototypesMenu = new QMenu(projectView);
     QAction *prototypesFromSamples = new QAction("Create new prototype base from samples",prototypesMenu);
     prototypesMenu->addAction(prototypesFromSamples);
@@ -1188,11 +1226,23 @@ void MainWindow::initialProjectView(){
     connect(prototypesFromExpert,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromExpert()));
     connect(prototypesFromMining,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromMining()));
     connect(importPrototypeBase,SIGNAL(triggered()),this,SLOT(onImportPrototypeBase()));
+    // gis data menu
     gisDataMenu = new QMenu(projectView);
     QAction *addGisData = new QAction("Add GIS Data", gisDataMenu);
     gisDataMenu->addAction(addGisData);
     projectView->addAction(addGisData);
     connect(addGisData,SIGNAL(triggered()),this,SLOT(onAddGisData()));
+    // gis layer menu
+    gisLayerMenu = new QMenu(projectView);
+    QAction *deleteGisLayer = new QAction("Delete this layer", gisLayerMenu);
+    gisLayerMenu->addAction(deleteGisLayer);
+    projectView->addAction(deleteGisLayer);
+    QAction *modifyCovFile = new QAction("Modify covariate file", gisLayerMenu);
+    gisLayerMenu->addAction(modifyCovFile);
+    projectView->addAction(modifyCovFile);
+    connect(deleteGisLayer,SIGNAL(triggered()),this,SLOT(onDeleteGisLayer()));
+    connect(modifyCovFile,SIGNAL(triggered()),this,SLOT(onModifyCovFile()));
+    // prototype base menu
     prototypeBaseMenu = new QMenu(projectView);
     QAction *addProtoExpert = new QAction("Add prototype from expert",prototypeBaseMenu);
     prototypeBaseMenu->addAction(addProtoExpert);
