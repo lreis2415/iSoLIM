@@ -59,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent)
     prototypeChild = nullptr;
     gisDataChild = nullptr;
     addRule = nullptr;
+    graphicFilename="";
     initParas();
 }
 
@@ -176,10 +177,10 @@ void MainWindow::onProjectOpen(){
                                                        tr("Open SoLIM Project"),
                                                        workingDir,
                                                        tr("Project file(*.slp)"));
-    workingDir=QFileInfo(projectFile).absoluteDir().absolutePath();
     if(projectFile.isEmpty()){
         return;
     }
+    workingDir=QFileInfo(projectFile).absoluteDir().absolutePath();
     TiXmlDocument doc(projectFile.toStdString().c_str());
     bool loadOK = doc.LoadFile();
     if (!loadOK) {
@@ -248,6 +249,7 @@ void MainWindow::onEditStudyArea(){
     if(proj==nullptr) return;
     SimpleDialog editStudyArea(SimpleDialog::EDITSTUDYAREA,proj,this);
     editStudyArea.exec();
+    workingDir=proj->workingDir;
     proj->studyArea = editStudyArea.lineEdit2.toStdString();
     model->item(0,0)->setChild(0,0, new QStandardItem(("Study area: "+proj->studyArea).c_str()));
     projectSaved = false;
@@ -266,9 +268,10 @@ void MainWindow::onViewData(){
                                                    tr("Open Raster File"),
                                                    workingDir,
                                                    tr("Raster file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)")).toStdString();
-    workingDir=QFileInfo(filename.c_str()).absoluteDir().absolutePath();
-    if(!filename.empty())
+    if(!filename.empty()){
+        workingDir=QFileInfo(filename.c_str()).absoluteDir().absolutePath();
         drawLayer(filename);
+    }
 }
 
 //==================================== Project tree slots ==========================================
@@ -331,6 +334,7 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
 void MainWindow::onAddGisData(){
     SimpleDialog addGisData(SimpleDialog::ADDGISDATA,proj, this);
     addGisData.exec();
+    workingDir=proj->workingDir;
     if(addGisData.filename.isEmpty()){
         return;
     }
@@ -359,6 +363,7 @@ void MainWindow::onAddGisData(){
     proj->filenames.push_back(addGisData.filename.toStdString());
     proj->layernames.push_back(addGisData.covariate.toStdString());
     proj->layertypes.push_back(addGisData.datatype);
+    drawLayer(addGisData.filename.toStdString());
     onGetGisData();
 }
 
@@ -368,12 +373,14 @@ void MainWindow::onAddPrototypeBaseFromSamples(){
     // show prototypes
     //connect(getPrototype,SIGNAL(finished(int)),this,SLOT(onGetPrototype()));
     onGetPrototype();
+    workingDir=proj->workingDir;
     projectSaved = false;
 }
 
 void MainWindow::onAddPrototypeBaseFromExpert(){
     SimpleDialog *addPrototypeBase = new SimpleDialog(SimpleDialog::ADDPROTOTYPEBASE,proj,this);
     addPrototypeBase->exec();
+    workingDir=proj->workingDir;
     if(!addPrototypeBase->lineEdit2.isEmpty()){
         QString basename=addPrototypeBase->lineEdit2;
         for(size_t i = 0;i<proj->prototypeBaseNames.size();i++){
@@ -489,14 +496,15 @@ void MainWindow::onUpdatePrototypeFromExpert(const Prototype*prop){
 void MainWindow::onAddPrototypeBaseFromMining(){
     AddPrototypeBase*getPrototype = new AddPrototypeBase(AddPrototypeBase::MAP,proj,this);
     getPrototype->exec();
+    workingDir=proj->workingDir;
     projectSaved = false;
     onGetPrototype();
 }
 
 void MainWindow::onImportPrototypeBase(){
     QString basefilename=QFileDialog::getOpenFileName(this,tr("Open prototype base file"),workingDir,tr("(*.csv *.xml)"));
-    workingDir=QFileInfo(basefilename).absoluteDir().absolutePath();
     if(basefilename.isEmpty())  return;
+    workingDir=QFileInfo(basefilename).absoluteDir().absolutePath();
     if(basefilename.endsWith(".csv",Qt::CaseInsensitive)){
         QFile basefile(basefilename);
         if(!basefile.open(QFile::ReadOnly)){
@@ -599,6 +607,8 @@ void MainWindow::onChangeCovName(){
 void MainWindow::onDeleteGisLayer() {
     for(size_t i = 0;i<proj->layernames.size();i++){
         if(currentLayerName==proj->layernames[i]){
+            if(graphicFilename==proj->filenames[i])
+                myGraphicsView->getScene()->clear();
             proj->layernames.erase(proj->layernames.begin()+i);
             proj->filenames.erase(proj->filenames.begin()+i);
             proj->layertypes.erase(proj->layertypes.begin()+i);
@@ -614,6 +624,7 @@ void MainWindow::onModifyCovFile() {
         if(currentLayerName==proj->layernames[i]){
             SimpleDialog modifyGisData(SimpleDialog::MODIFYGISDATA,proj, this);
             modifyGisData.exec();
+            workingDir=proj->workingDir;
             if(modifyGisData.filename.isEmpty()){
                 return;
             } else {
@@ -699,6 +710,7 @@ void MainWindow::onExportPrototypeBase(){
 //=================================== upadte project tree view ==================================
 void MainWindow::onGetGisData(){
     gisDataChild->setColumnCount(1);
+    gisDataChild->setRowCount(proj->layernames.size());
     for(size_t i = 0;i<proj->filenames.size();i++){
         gisDataChild->setChild(i,0,new QStandardItem(proj->layernames[i].c_str()));
         gisDataChild->setRowCount(proj->filenames.size());
@@ -777,6 +789,7 @@ void MainWindow::onInferResults(){
 
 //=========================== Main Graphics View function===============================
 void MainWindow::drawLayer(string filename){
+    graphicFilename=filename;
     if(filename.empty()) return;
     QFileInfo fileinfo(filename.c_str());
     if(!fileinfo.exists()) return;
@@ -794,8 +807,11 @@ void MainWindow::drawLayer(string filename){
 
     } else {
         myGraphicsView->showImage = true;
+        myGraphicsView->showMembership=false;
         zoomToolBar->setVisible(true);
         myGraphicsView->getScene()->clear();
+        ui->statusBar->showMessage("coordinate: ("+QString::number(lyr->getXMin())+", "
+                                   +QString::number(lyr->getYMin())+") (TopLeft)");
 
         delete lyr;
         int viewHeight = myGraphicsView->height();
@@ -880,6 +896,7 @@ void MainWindow::createImg(){
 
 void MainWindow::finishedCreateImg(){
     myGraphicsView->showImage = true;
+    myGraphicsView->showMembership=false;
     zoomToolBar->setVisible(true);
     myGraphicsView->getScene()->clear();
     int viewHeight = myGraphicsView->height();
@@ -906,6 +923,8 @@ void MainWindow::finishedCreateImg(){
 }
 
 void MainWindow::drawMembershipFunction(string basename, string idname, string covName){
+    graphicFilename="";
+    zoomToolBar->setVisible(false);
     myGraphicsView->showImage = false;
     myGraphicsView->dataDetailsView->setModel(new QStandardItemModel(myGraphicsView->dataDetailsView));
     myGraphicsView->getScene()->clear();
@@ -927,6 +946,8 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
     if(protoPos==-1||covPos==-1){
         return;
     }
+    myGraphicsView->showMembership=true;
+    myGraphicsView->membership=&(proj->prototypes[protoPos].envConditions[covPos]);
     myGraphicsView->getScene()->setSceneRect(0,0,myGraphicsView->width()*0.9,myGraphicsView->height()*0.9);
     QPen curvePen(Qt::black);
     QPen axisPen(Qt::gray);
@@ -997,6 +1018,8 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
         QGraphicsTextItem *xaxis0 = myGraphicsView->getScene()->addText(QString::number(-margin));
         xaxis0->setFont(QFont("Times", 10, QFont::Bold));
         xaxis0->setPos(0.10*sceneWidth-4*xaxis0->toPlainText().size(),0.85*sceneHeight);
+        myGraphicsView->curveXMin=-margin;
+        myGraphicsView->curveXMax=margin;
     }
     else {
         myGraphicsView->getScene()->addLine(0.10*sceneWidth,0.85*sceneHeight,0.10*sceneWidth,0.1*sceneHeight,axisPen);
@@ -1020,13 +1043,16 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
             QGraphicsTextItem *xaxis1 = myGraphicsView->getScene()->addText(QString::number(margin));
             xaxis1->setFont(QFont("Times", 10, QFont::Bold));
             xaxis1->setPos(0.80*sceneWidth-4*xaxis1->toPlainText().size(),0.85*sceneHeight);
-
+            myGraphicsView->curveXMin=rangemin;
+            myGraphicsView->curveXMax=margin;
         } else {
             // set label
             QGraphicsTextItem *xaxis1 = myGraphicsView->getScene()->addText(QString::number(margin));
             xaxis1->setFont(QFont("Times", 10, QFont::Bold));
             xaxis1->setPos(0.80*sceneWidth-4*xaxis1->toPlainText().size(),0.85*sceneHeight);
             scale=margin;
+            myGraphicsView->curveXMin=0;
+            myGraphicsView->curveXMax=margin;
         }
     }
 

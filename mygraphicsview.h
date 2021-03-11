@@ -21,6 +21,10 @@ public:
     double imgMin;
     double range;
     bool showImage;
+    solim::Curve *membership;
+    float curveXMin;
+    float curveXMax;
+    bool showMembership;
     bool editFreehandRule;
     bool editEnumRule;
     QTableView *dataDetailsView;

@@ -133,34 +133,35 @@ void AddPrototypeBase::on_browseSampleFile_btn_clicked()
     if(mode==AddPrototypeBase::SAMPLE){
         filename = QFileDialog::getOpenFileName(this,
                                                tr("Open samples file"),
-                                               "./",
+                                               project->workingDir,
                                                tr("Sample file(*.csv *.txt)"));
         if(filename.isEmpty()) return;
         ui->sampleFile_lineEdit->setText(filename);
-        QFile sampleFile(filename);
-        if(!sampleFile.open(QIODevice::ReadOnly)){
-             warn("File open failed.");
-             ui->sampleFile_lineEdit->clear();
-             return;
+        project->workingDir=QFileInfo(filename).absoluteDir().absolutePath();
+        ifstream file(filename.toStdString()); // declare file stream:
+        if(!file.is_open()) return;
+        string line;
+        getline(file, line);
+        vector<string> names;
+        solim::ParseStr(line, ',', names);
+        QStringList columnNames;
+        for(size_t i = 0;i<names.size();i++){
+            columnNames.append(names[i].c_str());
         }
-        QTextStream *out = new QTextStream(&sampleFile);
-        QStringList tempOption = out->readAll().split("\n");
-        QStringList columnNames = tempOption.at(0).split(",");
         ui->xFiled_comboBox->addItems(columnNames);
         ui->yFiled_comboBox->addItems(columnNames);
-        for (int i = 0;i<columnNames.size();i++){
-            QString name = columnNames.at(i);
-            if(name.compare("x")==0||name.compare("X")==0){
-                ui->xFiled_comboBox->setCurrentText(name);
+        for (size_t i = 0;i<names.size();i++){
+            if(names[i]=="x"||names[i]=="X"){
+                ui->xFiled_comboBox->setCurrentText(names[i].c_str());
             }
-            if(name.compare("y")==0||name.compare("Y")==0){
-                ui->yFiled_comboBox->setCurrentText(name);
+            if(names[i]=="y"||names[i]=="Y"){
+                ui->yFiled_comboBox->setCurrentText(names[i].c_str());
             }
         }
     } else if (mode==AddPrototypeBase::MAP){
         filename = QFileDialog::getOpenFileName(this,
                                                tr("Open samples file"),
-                                               "./",
+                                               project->workingDir,
                                                tr("Sample file(*.shp)"));
         if(filename.isEmpty()) return;
         ui->sampleFile_lineEdit->setText(filename);
@@ -282,6 +283,10 @@ void AddPrototypeBase::on_ok_btn_clicked()
                 }
             }
             //project->prototypes.insert(project->prototypes.end(),prototypes->begin(),prototypes->end());
+        } else {
+            QMessageBox warning;
+            warning.setText("Samples are not within the range of covariate coordinates. Please check the coordinates of samples or covariates.");
+            warning.exec();
         }
         ui->progressBar->setValue(2);
     } else if(mode == AddPrototypeBase::MAP){

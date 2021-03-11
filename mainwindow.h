@@ -106,6 +106,7 @@ private:
     BaseIO *lyr;
     double imgMax;
     double imgMin;
+    string graphicFilename;
     void initialProjectView();
     void initDataDetailsView();
     void initModel();

@@ -242,7 +242,7 @@ void AddRule::on_comboBox_cov_activated(const QString &arg1)
             ui->lineEdit_max_cov->setReadOnly(false);
             ui->lineEdit_min_cov->setReadOnly(false);
             ui->comboBox_datatype->setEnabled(true);
-                    }
+        }
     }
     ui->radioButton_enum->setEnabled(true);
     ui->radioButton_freehand->setEnabled(true);

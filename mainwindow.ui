@@ -39,10 +39,6 @@
     <addaction name="separator"/>
     <addaction name="actionDefine_Study_Area"/>
     <addaction name="actionClose_Project"/>
-    <addaction name="separator"/>
-    <addaction name="actionAdd_prototypes_from_samples"/>
-    <addaction name="actionAdd_prototypes_from_expert"/>
-    <addaction name="actionAdd_prototypes_from_Data_Mining"/>
    </widget>
    <widget class="QMenu" name="menuCovariates">
     <property name="title">
@@ -67,7 +63,16 @@
      <string>Help</string>
     </property>
    </widget>
+   <widget class="QMenu" name="menuPrototypes">
+    <property name="title">
+     <string>Prototypes</string>
+    </property>
+    <addaction name="actionAdd_prototypes_from_samples"/>
+    <addaction name="actionAdd_prototypes_from_expert"/>
+    <addaction name="actionAdd_prototypes_from_Data_Mining"/>
+   </widget>
    <addaction name="menuProjects"/>
+   <addaction name="menuPrototypes"/>
    <addaction name="menuCovariates"/>
    <addaction name="menuSoil_Inference"/>
    <addaction name="menuUtilities"/>

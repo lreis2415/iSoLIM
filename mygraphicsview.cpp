@@ -11,6 +11,7 @@ MyGraphicsView::MyGraphicsView(QWidget *parent):
     lyr = nullptr;
     img = nullptr;
     dataDetailsView = nullptr;
+    membership=nullptr;
     imgMax = 0;
     imgMin = 0;
     showImage = false;
@@ -183,6 +184,22 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent * e){
         }
         knotX[moveKnotNum]=int(x+0.5);
         emit addEnumPoint();
+    }
+    else if(showMembership){
+        if(membership!=nullptr&&dataDetailsView){
+            int xpos=mapToScene(e->pos()).x();
+            int sceneWidth=this->getScene()->width();
+            if(xpos>sceneWidth*0.10&&sceneWidth*0.80){
+                float x = (xpos-sceneWidth*0.10)/0.7/sceneWidth*(curveXMax-curveXMin)+curveXMin;
+                float y = membership->getOptimality(x);
+                QStandardItemModel*model = new QStandardItemModel(dataDetailsView);
+                model->setItem(0,0, new QStandardItem("Covariate value: "+QString::number(x)));
+                model->setItem(1,0, new QStandardItem("Membership value: "+QString::number(y)));
+                dataDetailsView->setModel(model);
+                dataDetailsView->resizeColumnsToContents();
+
+            }
+        }
     }
 }
 

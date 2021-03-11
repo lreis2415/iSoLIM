@@ -90,7 +90,7 @@ void SimpleDialog::on_btn_1_clicked()
                                                         tr("Open environmental covariate file"),
                                                         workingDir,
                                                         tr("Covariate file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
-        workingDir=QFileInfo(qfilename).absoluteDir().absolutePath();
+        if(!qfilename.isEmpty()) workingDir=QFileInfo(qfilename).absoluteDir().absolutePath();
         ui->lineEdit_1->setText(qfilename);
         filename = qfilename;
         if(!filename.isEmpty()){
@@ -109,9 +109,10 @@ void SimpleDialog::on_btn_2_clicked(){
     if(mode==ADDCOVARIATE){
         QString qfilename = QFileDialog::getOpenFileName(this,
                                                         tr("Open environmental covariate file"),
-                                                        "./",
+                                                        workingDir,
                                                         tr("Covariate file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
         ui->lineEdit_2->setText(qfilename);
+        if(!qfilename.isEmpty()) workingDir=QFileInfo(qfilename).absoluteDir().absolutePath();
         filename = qfilename;
         if(!filename.isEmpty()){
             std::size_t first = filename.toStdString().find_last_of('/');
