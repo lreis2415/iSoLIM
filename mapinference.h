@@ -1,5 +1,5 @@
-#ifndef INFERENCE_H
-#define INFERENCE_H
+#ifndef MAPINFERENCE_H
+#define MAPINFERENCE_H
 
 #include <QDialog>
 #include <QFileDialog>
@@ -9,19 +9,20 @@
 #include "project.h"
 #include "editprototypebases.h"
 #include "simpledialog.h"
+#include "solim_lib/inference.h"
 
 namespace Ui {
-class inference;
+class mapInference;
 }
 
-class inference : public QDialog
+class mapInference : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit inference(SoLIMProject *proj, QWidget *parent = nullptr);
+    explicit mapInference(SoLIMProject *proj, QWidget *parent = nullptr);
     QString workingDir;
-    ~inference();
+    ~mapInference();
 signals:
     void inferred();
 private slots:
@@ -36,7 +37,7 @@ private slots:
     void tableItemClicked(int,int);
 
 private:
-    Ui::inference *ui;
+    Ui::mapInference *ui;
     SoLIMProject *project;
     void warn(QString msg){
         QMessageBox qb;
@@ -45,4 +46,4 @@ private:
     }
 };
 
-#endif // INFERENCE_H
+#endif // MAPINFERENCE_H

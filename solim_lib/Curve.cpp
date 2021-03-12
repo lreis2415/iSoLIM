@@ -10,6 +10,7 @@ namespace solim {
 		vecDDY.clear();
 		vecS.clear();
 		iKnotNum = 0;
+        range = 0;
 		typicalValue = NODATA;
 	}
 
@@ -21,6 +22,7 @@ namespace solim {
 		vecKnotY = *y;
 		iKnotNum = vecKnotX.size();
 		typicalValue = NODATA;
+        range=0;
 		if (iKnotNum != vecKnotY.size()) {
 			throw invalid_argument( "Error in knot coordinates");
 		}
@@ -33,6 +35,7 @@ namespace solim {
 		if (dataType == CONTINUOUS) {
 			bubbleSort();
 			calcSpline();
+            range=fabs(vecKnotX[0])>fabs(vecKnotX[iKnotNum-1])?fabs(vecKnotX[0]):fabs(vecKnotX[iKnotNum-1]);
 		}
 	}
 
@@ -46,9 +49,10 @@ namespace solim {
 		vecS.clear();
 		iKnotNum = 0;
 		typicalValue = NODATA;
+        range=0;
 	}
 
-	Curve::Curve(string covName, DataTypeEnum type, int knotNum, string coords) {
+    Curve::Curve(string covName, DataTypeEnum type, int knotNum, string coords, double valueRange) {
 		// knowledge from experts: word rule
 		covariateName = covName;
 		dataType = type;
@@ -58,6 +62,7 @@ namespace solim {
 		vecDDY.clear();
 		vecS.clear();
 		iKnotNum = knotNum;
+        range = valueRange;
 
 		vector<string> xycoord;
 		ParseStr(coords, ',', xycoord);
@@ -80,7 +85,7 @@ namespace solim {
 		calcSpline();			
 	}
 
-	Curve::Curve(string covName, double lowUnity, double highUnity, double lowCross, double highCross, double lowRange, double highRange, CurveTypeEnum curveType) {
+    Curve::Curve(string covName, double lowUnity, double highUnity, double lowCross, double highCross, CurveTypeEnum curveType) {
 		// knowledge from experts: range rule
 		covariateName = covName;
 		dataType = CONTINUOUS;
@@ -90,37 +95,48 @@ namespace solim {
 		vecDDY.clear();
 		vecS.clear();
 		iKnotNum = 0;
+        double rangePar=2.5775678826705466;  //sqrt(ln(0.01)/ln(0.5))
+        double rangePar_75=0.64423404076379;    //sqrt(ln(0.75)/ln(0.5))
+        double rangePar_25 = 1.41421356237309;
+        double lowRange=lowUnity-(lowUnity - lowCross)*rangePar;
+        double low_75=lowUnity-(lowUnity - lowCross)*rangePar_75;
+        double highRange=highUnity+(highCross-highUnity)*rangePar;
+        double high_75=highUnity+(highCross-highUnity)*rangePar_75;
+        range=fabs(lowRange)>fabs(highRange)?fabs(lowRange):fabs(highRange);
 
 		// add 6 points to generate the spline curve
 		// two unity points, two range points, and two cross points
 		if (curveType == BELL_SHAPED) {
-			addKnot(lowRange, exp(pow(fabs(lowRange - lowUnity) / (lowUnity - lowCross), 2)*log(0.5)));
-			addKnot(lowCross, 0.5);
-			addKnot(lowUnity, 1);
-			addKnot(highUnity, 1);
-			addKnot(highCross, 0.5);
-			addKnot(highRange, exp(pow(fabs(highRange - highUnity) / (highUnity - highCross), 2)*log(0.5)));
-			typicalValue = (highUnity + lowUnity)*0.5;
+            addKnot(lowRange, 0);
+            addKnot(lowUnity-(lowUnity - lowCross)*rangePar_25,0.25);
+            addKnot(lowCross, 0.5);
+            addKnot(low_75,0.75);
+            addKnot(lowUnity, 1);
+            addKnot(highUnity, 1);
+            addKnot(high_75,0.75);
+            addKnot(highCross, 0.5);
+            addKnot(highUnity+(highCross-highUnity)*rangePar_25,0.25);
+            addKnot(highRange, 0);
+            typicalValue = (highUnity+lowUnity)*0.5;
 		}
 		else if (curveType == S_SHAPED) {
-			highUnity = (lowUnity + highRange) / 2;
-			addKnot(lowRange, exp(pow(fabs(lowRange - lowUnity) / (lowUnity - lowCross), 2)*log(0.5)));
-			addKnot(lowCross, 0.5);
-			addKnot(lowUnity, 1);
-			addKnot(highUnity, 1);
-			addKnot(highRange, 1);
-			typicalValue = highUnity;
+            range=fabs(range)>fabs(lowUnity+1)?fabs(range):fabs(lowUnity+1);
+            addKnot(lowRange, 0);
+            addKnot(lowUnity-(lowUnity - lowCross)*rangePar_25,0.25);
+            addKnot(lowCross, 0.5);
+            addKnot(low_75,0.75);
+            addKnot(lowUnity, 1);
+            typicalValue = lowUnity;
 		}
 		else if (curveType == Z_SHAPED) {
-			lowUnity = (highUnity + lowRange) / 2;
-			addKnot(lowRange, 1);
-			addKnot(lowUnity, 1);
-			addKnot(highUnity, 1);
-			addKnot(highCross, 0.5);
-			addKnot(highRange, exp(pow(fabs(highRange - highUnity) / (highUnity - highCross), 2)*log(0.5)));
-			typicalValue = lowUnity;
+            range=fabs(range)>fabs(highUnity-1)?fabs(range):fabs(highUnity-1);
+            addKnot(highUnity, 1);
+            addKnot(high_75,0.75);
+            addKnot(highCross, 0.5);
+            addKnot(highUnity+(highCross-highUnity)*rangePar_25,0.25);
+            addKnot(highRange, 0);
+            typicalValue = lowUnity;
 		}
-		bubbleSort();
 		calcSpline();
 	}
 
@@ -136,6 +152,9 @@ namespace solim {
 		vecDDY.clear();
 		vecS.clear();
 		int row, col;
+        double max = layer->Data_Max;
+        double min = layer->Data_Min;
+        range = (fabs(max)>fabs(min))?fabs(max):fabs(min);
 		//int halfKnotNum = 3;
 		layer->baseRef->geoToGlobalXY(x, y, col, row);
 		typicalValue = layer->baseRef->getValue(col, row);
@@ -143,10 +162,6 @@ namespace solim {
 			addKnot(typicalValue, 1);
 			return;
 		}
-		double dataMin = layer->Data_Min;
-		double dataMax = layer->Data_Max;
-		dataMin -= 0.05*(dataMax - dataMin);
-		dataMax += 0.05*(dataMax - dataMin);
 		int cellNum = 0;
 		double sum = 0;
 		double squareSum = 0;
@@ -167,28 +182,13 @@ namespace solim {
 		double SDSquare = squareSum / (double)cellNum - mean * mean;
 		double SDjSquare = SDjSquareSum / (double)cellNum;
 
-		/*addKnot(dataMin, exp(-pow(dataMin - centerValue, 2) / 2.0 / (SDSquare*SDSquare / SDjSquare)));
-		for (int i = 0; i < halfKnotNum; ++i) {
-			double knotX = dataMin + (centerValue - dataMin) / (double)halfKnotNum*i;
-			double knotY = exp(-pow(knotX - centerValue, 2) / 2.0 / pow(SDSquare*SDSquare / SDjSquare, 2));
-			addKnot(knotX, knotY);
-		}
-		addKnot(centerValue, 1);
-
-		for (int i = 0; i < halfKnotNum; ++i) {
-			double knotX = centerValue + (dataMax - centerValue) / (double)halfKnotNum * i;
-			double knotY = exp(-pow(knotX - centerValue, 2) / 2.0 / (SDSquare*SDSquare / SDjSquare));
-			addKnot(knotX, knotY);
-		}
-		addKnot(dataMax, exp(-pow(dataMax - centerValue, 2) / 2.0 / (SDSquare*SDSquare / SDjSquare)));*/
-		double halfPar = SDSquare / sqrt(SDjSquare)*1.17741002251547469101;    // 1.117=sqrt(-2*ln0.5);
-		addKnot(dataMax, exp(-pow(dataMax - typicalValue, 2) * 0.5 / SDSquare*SDSquare * SDjSquare));
-		addKnot(typicalValue - halfPar, 0.5);
-		addKnot(typicalValue, 1);
-		addKnot(typicalValue + halfPar, 0.5);
-		addKnot(dataMin, exp(-pow(dataMin - typicalValue, 2) * 0.5 / SDSquare*SDSquare * SDjSquare));
-		
-		bubbleSort();
+        double halfPar = SDSquare/sqrt(SDjSquare)*1.17741002251547469101;    // 1.117=sqrt(-2*ln0.5);
+        double zeroPar = SDSquare/sqrt(SDjSquare)*3.03485425877029270172;    // 3.034=sqrt(-2*ln0.01);
+        addKnot(typicalValue - zeroPar,0);
+        addKnot(typicalValue - halfPar,0.5);
+        addKnot(typicalValue,1);
+        addKnot(typicalValue + halfPar, 0.5);
+        addKnot(typicalValue + zeroPar, 0);
 		calcSpline();
 	}
 
@@ -218,6 +218,7 @@ namespace solim {
 		double h = 1.06*p*pow(n, -0.2);	// 1.06min(std,quartile range)n^(-0.2)
 		float xmin = *std::min_element(values->begin(),values->end());	//minimum value
 		float xrange = *std::max_element(values->begin(), values->end())-xmin;
+        range = (fabs(xrange+xmin)>fabs(xmin))?fabs(xrange+xmin):fabs(xmin);
 		double x_pre = xmin;
 		double y_pre = KernelEst(x_pre, n, h, values);
 		addKnot(x_pre, y_pre);
@@ -256,60 +257,66 @@ namespace solim {
 			for (int i = 0; i < iKnotNum; i++) vecKnotY[i] = (vecKnotY[i] - ymin) * strechRatio;
 		}
 		bubbleSort();
+        if(1 - vecKnotY[0]>VERY_SMALL) vecKnotY[0] = 0;
+        if(1-vecKnotY[iKnotNum-1]>VERY_SMALL) vecKnotY[iKnotNum-1]=0;
 		calcSpline();
 	}
 	Curve::Curve(string covName, vector<Curve> *curves) {
-		covariateName = covName;
-		dataType = CONTINUOUS;
-		iKnotNum = 0;
-		vecKnotX.clear();
-		vecKnotY.clear();
-		vecDY.clear();
-		vecDDY.clear();
-		vecS.clear();
-		typicalValue = curves->at(0).typicalValue;
-		int knotNumSum = 0;
-		vector<float> vecXCollect;
-		for (int i = 0; i < curves->size(); ++i) {
-			knotNumSum += curves->at(i).iKnotNum;
-			vecXCollect.insert(vecXCollect.end(), curves->at(i).vecKnotX.begin(), curves->at(i).vecKnotX.end());
-		}
-		std::sort(vecXCollect.begin(), vecXCollect.end());
-		float x_pre = vecXCollect[0];
-		float y_pre = curves->at(0).getOptimality(x_pre);
-		float x, y, x_next, y_next;
-		for (int n = 1; n < curves->size(); ++n) {
-			float y_tmp = curves->at(n).getOptimality(x_pre);
-			if (y_tmp > y_pre) y_pre = y_tmp;
-		}
-		addKnot(x_pre, y_pre); 
-		x = x_pre + (vecXCollect[1] - x_pre)*0.1;
-		y = curves->at(0).getOptimality(x);
-		for (int n = 1; n < curves->size(); ++n) {
-			float y_tmp = curves->at(n).getOptimality(x);
-			if (y_tmp > y) y = y_tmp;
-		}
-		for (int i = 1; i < vecXCollect.size(); ++i) {
-			float x_interval = (vecXCollect[i] - vecXCollect[i-1])*0.1;
-			int k = 0;
-			if (i == 1) k = 1;
-			for (; k < 10; k++) {
-				x_next = x + x_interval;
-				y_next = curves->at(0).getOptimality(x_next);
-				for (int n = 1; n < curves->size(); ++n) {
-					float y_tmp = curves->at(n).getOptimality(x_next);
-					if (y_tmp > y_next) y_next = y_tmp;
-				}
-				if ((y - y_pre)*(y - y_next) < 0);
-				else if (fabs(y - y_pre) < VERY_SMALL&&fabs(y - y_next) < VERY_SMALL);
-				else addKnot(x, y);
-				x_pre = x;
-				y_pre = y;
-				x = x_next;
-				y = y_next;
-			}	
-		}
-		addKnot(x_next, y_next);
+        covariateName = covName;
+        dataType = CONTINUOUS;
+        iKnotNum = 0;
+        vecKnotX.clear();
+        vecKnotY.clear();
+        vecDY.clear();
+        vecDDY.clear();
+        vecS.clear();
+        typicalValue = curves->at(0).typicalValue;
+        int knotNumSum = 0;
+        vector<float> vecXCollect;
+        for (int i = 0; i < curves->size(); ++i) {
+            knotNumSum += curves->at(i).iKnotNum;
+            vecXCollect.insert(vecXCollect.end(), curves->at(i).vecKnotX.begin(), curves->at(i).vecKnotX.end());
+        }
+        std::sort(vecXCollect.begin(), vecXCollect.end());
+        float x_pre = vecXCollect[0];
+        float y_pre = curves->at(0).getOptimality(x_pre);
+        float x, y, x_next, y_next;
+        for (int n = 1; n < curves->size(); ++n) {
+            float y_tmp = curves->at(n).getOptimality(x_pre);
+            if (y_tmp > y_pre) y_pre = y_tmp;
+        }
+        addKnot(x_pre, y_pre);
+        x = x_pre + (vecXCollect[1] - x_pre)*0.1;
+        y = curves->at(0).getOptimality(x);
+        for (int n = 1; n < curves->size(); ++n) {
+            float y_tmp = curves->at(n).getOptimality(x);
+            if (y_tmp > y) y = y_tmp;
+        }
+        for (int i = 1; i < vecXCollect.size(); ++i) {
+            float x_interval = (vecXCollect[i] - vecXCollect[i-1])*0.1;
+            int k = 0;
+            if (i == 1) k = 1;
+            for (; k < 10; k++) {
+                x_next = x + x_interval;
+                y_next = curves->at(0).getOptimality(x_next);
+                for (int n = 1; n < curves->size(); ++n) {
+                    float y_tmp = curves->at(n).getOptimality(x_next);
+                    if (y_tmp > y_next) y_next = y_tmp;
+                }
+                if ((y - y_pre)*(y - y_next) < 0);
+                else if (fabs(y - y_pre) < VERY_SMALL&&fabs(y - y_next) < VERY_SMALL);
+                else addKnot(x, y);
+                x_pre = x;
+                y_pre = y;
+                x = x_next;
+                y = y_next;
+            }
+        }
+        addKnot(x_next, y_next);
+        bubbleSort();
+        if(1 - vecKnotY[0]>VERY_SMALL) vecKnotY[0] = 0;
+        if(1-vecKnotY[iKnotNum-1]>VERY_SMALL) vecKnotY[iKnotNum-1]=0;
+        calcSpline();
 	}
 
 	double Curve::KernelEst(double x,int n,double h, vector<float> *values){
@@ -347,16 +354,13 @@ namespace solim {
 	}
 
 	void Curve::addKnot(double x, double y) {
-		bool notAddedFlag = TRUE;
 		for (int i = 0; i < iKnotNum; ++i) {
 			if (fabs(vecKnotX[i] - x) < VERY_SMALL)
-				notAddedFlag = FALSE;
+                return;
 		}
-		if (notAddedFlag) {
-			vecKnotX.push_back(x);
-			vecKnotY.push_back(y);
-			++iKnotNum;
-		}
+        vecKnotX.push_back(x);
+        vecKnotY.push_back(y);
+        ++iKnotNum;
 	}
 
 	void Curve::updateCurve() {
@@ -379,28 +383,33 @@ namespace solim {
 		// for continuous value
 		if (iKnotNum < 3) return 0;
 		double result;
-		if (envValue < vecKnotX[0]) result = vecDY[0] * (envValue - vecKnotX[0]) + vecKnotY[0];
-		else if (envValue > vecKnotX[iKnotNum - 1]) result = vecDY[iKnotNum - 1] * (envValue - vecKnotX[iKnotNum - 1]) + vecKnotY[iKnotNum - 1];
-		else {
-			int i = 0;
-			while (envValue>vecKnotX[i + 1])
-				i = i + 1;
-			double h0, h1;
-			h1 = (vecKnotX[i + 1] - envValue) / vecS[i];
-			h0 = h1*h1;
-			result = (3.0*h0 - 2.0*h0*h1)*vecKnotY[i];
-			result += vecS[i] * (h0 - h0*h1)*vecDY[i];
-			h1 = (envValue - vecKnotX[i]) / vecS[i];
-			h0 = h1*h1;
-			result += (3.0*h0 - 2.0*h0*h1)*vecKnotY[i + 1];
-			result -= vecS[i] * (h0 - h0*h1)*vecDY[i + 1];
-		}
-		if (result>1)
-			result = 1;
-		else if (result<0)
-			result = 0;
-		return result;
-
+        if (envValue < vecKnotX[0]){
+            if(vecKnotY[0]<VERY_SMALL || fabs(vecKnotY[0]-1) < VERY_SMALL) return vecKnotY[0];
+            result = vecDY[0] * (envValue - vecKnotX[0]) + vecKnotY[0];
+        }
+        else if (envValue > vecKnotX[iKnotNum - 1]){
+            if(vecKnotY[iKnotNum - 1]<VERY_SMALL || fabs(vecKnotY[iKnotNum - 1]-1) < VERY_SMALL) return vecKnotY[iKnotNum - 1];
+            result = vecDY[iKnotNum - 1] * (envValue - vecKnotX[iKnotNum - 1]) + vecKnotY[iKnotNum - 1];
+        }
+        else {
+            int i = 0;
+            while (envValue>vecKnotX[i + 1])
+                i = i + 1;
+            double h0, h1;
+            h1 = (vecKnotX[i + 1] - envValue) / vecS[i];
+            h0 = h1*h1;
+            result = (3.0*h0 - 2.0*h0*h1)*vecKnotY[i];
+            result += vecS[i] * (h0 - h0*h1)*vecDY[i];
+            h1 = (envValue - vecKnotX[i]) / vecS[i];
+            h0 = h1*h1;
+            result += (3.0*h0 - 2.0*h0*h1)*vecKnotY[i + 1];
+            result -= vecS[i] * (h0 - h0*h1)*vecDY[i + 1];
+        }
+        if (result>1)
+            result = 1;
+        else if (result<0)
+            result = 0;
+        return result;
 	}
 
 	int Curve::getKnotNum() {
@@ -413,7 +422,6 @@ namespace solim {
 		if (iKnotNum != vecKnotY.size())
 			throw invalid_argument("Error: inconsistent knotX number and knotY number.");
 		string coords = "";
-		if (iKnotNum == 0) return coords;
 		for (int i = 0; i < iKnotNum; ++i) {
 			string tmp;
 			if (i == iKnotNum - 1)

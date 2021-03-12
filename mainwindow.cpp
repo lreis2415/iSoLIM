@@ -246,7 +246,7 @@ void MainWindow::onEditStudyArea(){
 void MainWindow::onSoilInferenceFromPrototypes(){
     updateGisDataFromTree();
     if(proj){
-        inference *infer= new inference(proj);
+        mapInference *infer= new mapInference(proj);
         infer->show();
         connect(infer,SIGNAL(finished(int)),this,SLOT(onInferResults()));
     }
@@ -778,7 +778,7 @@ void MainWindow::drawLayer(string filename){
     string imagename = filename+".png";
     img = new QImage(imagename.c_str());
     lyr = new BaseIO(filename);
-    if(!lyr->openSuccess) return;
+    if(!lyr->isOpened()) return;
     imgMax = lyr->getDataMax();
     imgMin = lyr->getDataMin();
     if(img->isNull()){

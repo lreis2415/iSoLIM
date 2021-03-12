@@ -41,7 +41,7 @@ public:
 public:
     EnvDataset();
 	
-	EnvDataset(vector<string> &envLayerFilenames, vector<string> &datatypes, vector<string>& layernames = vector<string>(), double ramEfficent = 1);
+    EnvDataset(vector<string> &envLayerFilenames, vector<string> &datatypes, vector<string>& layernames/* = vector<string>()*/, double ramEfficent = 1);
 
     ~EnvDataset();
 

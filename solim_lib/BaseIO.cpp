@@ -407,7 +407,7 @@ void BaseIO::write(long xStart, long yStart, long numRows, long numCols, float *
 				if (index == 0 || index
 					== 6) {  // .tiff files.  Need to explicity indicate BIGTIFF.  See http://www.gdal.org/frmt_gtiff.html.
 					papszOptions = CSLSetNameValue(papszOptions, "BIGTIFF", "YES");
-					printf("Setting BIGTIFF, File: %s, Anticipated size (GB):%.2f\n", fileName, fileGB);
+                    //printf("Setting BIGTIFF, File: %s, Anticipated size (GB):%.2f\n", fileName, fileGB);
 				}
 			}
 			if (eBDataType == GDT_Unknown) eBDataType = GDT_Float32;
@@ -551,11 +551,11 @@ void BaseIO::blockCopy(BaseIO *ref) {
 	}
 }
 void BaseIO::blockNull(){
-	blockRows = ySize;
-	blockSize = 1;
-	blockX = xSize;
-	blockY = ySize;
-	blockIsInitialized = true;
+    blockRows = ySize;
+    blockSize = 1;
+    blockX = xSize;
+    blockY = ySize;
+    blockIsInitialized = true;
 }
 bool BaseIO::compareIO(BaseIO *layer) {
 	if (xSize != layer->xSize || ySize != layer->ySize) {

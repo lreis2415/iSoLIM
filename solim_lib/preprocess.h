@@ -31,8 +31,6 @@ string ConvertToString(double value);
  */
 void ParseStr(const string& str, char c, vector<string>& tokens);
 
-char* FindImageTypeGDAL(char* fileName);
-
 void Stretch(EnvLayer* lyr, double smax, double smin, double max, double min);
 
 vector<double>* Neighborhood(EnvLayer* lyr, int pos, int radius);

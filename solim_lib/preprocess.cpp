@@ -31,18 +31,6 @@ void ParseStr(const string& str, char c, vector<string>& tokens) {
     }
 }
 
-char* FindImageTypeGDAL(char* fileName) {
-    char* dstExtension = strlwr(strrchr(fileName, '.') + 1);
-    char* Gtype = NULL;
-    if (0 == strcmp(dstExtension, "bmp")) Gtype = "BMP";
-    else if (0 == strcmp(dstExtension, "jpg")) Gtype = "JPEG";
-    else if (0 == strcmp(dstExtension, "png")) Gtype = "PNG";
-    else if (0 == strcmp(dstExtension, "tif")) Gtype = "GTiff";
-    else if (0 == strcmp(dstExtension, "gif")) Gtype = "GIF";
-
-    return Gtype;
-}
-
 void Stretch(EnvLayer* lyr, double smax, double smin, double max, double min) {
     for (int i = 0; i < lyr->XSize * lyr->YSize; i++) {
         double val = lyr->EnvData[i];

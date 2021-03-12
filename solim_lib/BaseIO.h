@@ -58,7 +58,7 @@ private:
 	double xLeftEdge;
 	double yTopEdge;
 	double dxA, dyA;
-	bool openSuccess;
+    bool openSuccess;
 
 	//int parallelX, parallelY;
 	int blockX, blockY;
@@ -85,8 +85,8 @@ public:
 	BaseIO(string filename);
 	~BaseIO();
 	//void parallelInit(MPI_Datatype MPIt);
-	void blockInit(double divide);
-	void blockNull();
+    void blockInit(double divide=1);
+    void blockNull();
 	void blockCopy(BaseIO *ref);
 	void read(long xStart, long yStart, long numRows, long numCols, float *dest);
 	void write(long xStart, long yStart, long numRows, long numCols, float *source, string writeFilename="");
@@ -132,9 +132,11 @@ public:
 	int getBlockSize() { return blockSize; }
 	int getBlockRows() { return blockRows; }
 
-	void setFileName(string name) { fileName = name; }
+    string getFilename() { return fileName; }
+    void setFileName(string name) { fileName = name; }
 	void setNodataValue(double nodata) { noDataValue = nodata; }
 	void writeInit() { isFileInititialized = false; }
+    bool isOpened() {return openSuccess;}
 };
 
 #endif //BASEIO_H

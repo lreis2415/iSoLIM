@@ -47,6 +47,8 @@ enum ExceptionType {
 	EXCLUSION
 };
 
+static const char* DataTypeEnum_str[]={"CATEGORICAL","CONTINUOUS","OTHER"};
+static const char* PrototypeSource_str[] = {"SAMPLE","EXPERT","MAP","UNKNOW"};
 static DataTypeEnum getDatatypeFromString(string sDatatype) {
 	for (int i = 0; i<sDatatype.length(); i++)
 		putchar(toupper(sDatatype[i]));
@@ -63,6 +65,18 @@ static string getDatatypeInString(DataTypeEnum datatype) {
 		return "OTHER";
 	else
 		return "CONTINUOUS";
+}
+static PrototypeSource getSourceFromString(string source_str) {
+    for (int i = 0; i<source_str.length(); i++)
+        source_str[i] = toupper(source_str[i]);
+    if (source_str == "SAMPLE")
+        return SAMPLE;
+    else if(source_str=="EXPERT")
+        return EXPERT;
+    else if(source_str=="MAP")
+        return MAP;
+    else
+        return UNKNOWN;
 }
 }
 

@@ -20,18 +20,19 @@ SOURCES += \
     addrule.cpp \
     changecovname.cpp \
     editprototypebases.cpp \
-    inference.cpp \
     main.cpp \
     mainwindow.cpp \
+    mapinference.cpp \
     mygraphicsview.cpp \
     newprojectdialog.cpp \
     simpledialog.cpp \
-    solim-lib-forqt.cpp \
     solim_lib/BaseIO.cpp \
     solim_lib/Curve.cpp \
     solim_lib/EnvDataset.cpp \
     solim_lib/EnvLayer.cpp \
     solim_lib/Prototype.cpp \
+    solim_lib/inference.cpp \
+    solim_lib/io.cpp \
     solim_lib/preprocess.cpp \
     third_party/tinystr.cpp \
     third_party/tinyxml.cpp \
@@ -43,14 +44,12 @@ HEADERS += \
     addrule.h \
     changecovname.h \
     editprototypebases.h \
-    inference.h \
     mainwindow.h \
+    mapinference.h \
     mygraphicsview.h \
     newprojectdialog.h \
     project.h \
     simpledialog.h \
-    solim-lib-forQt_global.h \
-    solim-lib-forqt.h \
     solim_lib/BaseIO.h \
     solim_lib/BasicSetting.h \
     solim_lib/Curve.h \
@@ -61,6 +60,7 @@ HEADERS += \
     solim_lib/Location.h \
     solim_lib/Prototype.h \
     solim_lib/inference.h \
+    solim_lib/io.h \
     solim_lib/preprocess.h \
     third_party/tinystr.h \
     third_party/tinyxml.h
@@ -70,8 +70,8 @@ FORMS += \
     addrule.ui \
     changecovname.ui \
     editprototypebases.ui \
-    inference.ui \
     mainwindow.ui \
+    mapinference.ui \
     newprojectdialog.ui \
     simpledialog.ui
 

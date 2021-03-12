@@ -3,7 +3,7 @@
 
 #include <QDialog>
 #include <QLineEdit>
-#include "solim-lib-forqt.h"
+#include "solim_lib/Prototype.h"
 
 namespace Ui {
 class changeCovName;

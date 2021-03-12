@@ -1,9 +1,9 @@
-#include "inference.h"
-#include "ui_inference.h"
+#include "mapinference.h"
+#include "ui_mapinference.h"
 
-inference::inference(SoLIMProject *proj, QWidget *parent) :
+mapInference::mapInference(SoLIMProject *proj, QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::inference),
+    ui(new Ui::mapInference),
     project(proj)
 {
     setWindowFlags(Qt::Window
@@ -77,12 +77,12 @@ inference::inference(SoLIMProject *proj, QWidget *parent) :
     }
 }
 
-inference::~inference()
+mapInference::~mapInference()
 {
     delete ui;
 }
 
-void inference::on_SoilFileCreate_btn_clicked()
+void mapInference::on_SoilFileCreate_btn_clicked()
 {
     QString soilFile = QFileDialog::getSaveFileName(this,
                                                     tr("Save output soil file"),
@@ -96,7 +96,7 @@ void inference::on_SoilFileCreate_btn_clicked()
     ui->OutputUncerFile_lineEdit->setText(uncerFile.c_str());
 }
 
-void inference::on_Inference_OK_btn_clicked()
+void mapInference::on_Inference_OK_btn_clicked()
 {
     if(ui->prototypeBaseName_lineEdit->text().isEmpty()){
         QMessageBox warn;
@@ -165,12 +165,12 @@ void inference::on_Inference_OK_btn_clicked()
     this->close();
 }
 
-void inference::on_cancel_btn_clicked()
+void mapInference::on_cancel_btn_clicked()
 {
     this->close();
 }
 
-void inference::on_editPrototypeBase_btn_clicked()
+void mapInference::on_editPrototypeBase_btn_clicked()
 {
     //todo
     QStringList names;
@@ -181,7 +181,7 @@ void inference::on_editPrototypeBase_btn_clicked()
     ui->prototypeBaseName_lineEdit->setText(editDialog.selectedNames);
 }
 
-void inference::tableItemClicked(int row,int col){
+void mapInference::tableItemClicked(int row,int col){
     if(col == 0){
         SimpleDialog addGisData(SimpleDialog::MODIFYGISDATA,project, this);
         addGisData.exec();

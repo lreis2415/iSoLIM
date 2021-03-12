@@ -8,7 +8,7 @@
 #include <string>
 #include <QStandardItemModel>
 #include <QStandardItem>
-#include <solim-lib-forqt.h>
+#include "solim_lib/Curve.h"
 class MyGraphicsView:public QGraphicsView
 {
     Q_OBJECT

@@ -10,7 +10,6 @@
 #include <QThread>
 #include <QtConcurrent/QtConcurrent>
 #include "project.h"
-#include "solim-lib-forqt.h"
 #include "simpledialog.h"
 using solim::Prototype;
 namespace Ui {

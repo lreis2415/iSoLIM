@@ -225,7 +225,7 @@ void AddRule::on_comboBox_cov_activated(const QString &arg1)
             ui->comboBox_datatype->setEnabled(true);
             if(QFileInfo(proj->filenames[i].c_str()).exists()){
                 BaseIO *lyr = new BaseIO(proj->filenames[i]);
-                if(lyr->openSuccess){
+                if(lyr->isOpened()){
                     ui->lineEdit_max_cov->setText(QString::number(lyr->getDataMax()));
                     ui->lineEdit_min_cov->setText(QString::number(lyr->getDataMin()));
                     ui->lineEdit_filename->setReadOnly(true);

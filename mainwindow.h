@@ -15,8 +15,7 @@
 #include <QTableView>
 #include <QHeaderView>
 #include <QToolBar>
-#include "inference.h"
-#include "project.h"
+#include "mapinference.h"
 #include "addprototypebase.h"
 #include "addrule.h"
 #include "mygraphicsview.h"

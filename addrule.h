@@ -9,7 +9,6 @@
 #include "mygraphicsview.h"
 #include "project.h"
 #include "simpledialog.h"
-#include "solim-lib-forqt.h"
 
 namespace Ui {
 class AddRule;

@@ -5,7 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <numeric>
-#include <tixml\tinyxml.h>
+#include <third_party/tinyxml.h>
 #include "DataTypeEnum.h"
 #include "EnvLayer.h"
 #include "preprocess.h"
@@ -20,7 +20,7 @@ namespace solim {
 	struct SoilProperty {
 		string propertyName;
 		double propertyValue;
-		//DataTypeEnum soilPropertyType;
+        DataTypeEnum soilPropertyType;
 	};
 
 	class Curve {
@@ -28,9 +28,10 @@ namespace solim {
 		string covariateName;
 		DataTypeEnum dataType;
 		double typicalValue;
-	private:
-		vector <double> vecKnotX;
-		vector <double> vecKnotY;
+        double range;
+        vector <double> vecKnotX;
+    private:
+        vector <double> vecKnotY;
 		vector <double> vecDY;
 		vector <double> vecDDY;
 		vector <double> vecS;
@@ -38,9 +39,9 @@ namespace solim {
 	public:
 		Curve();
 		Curve(string covName, DataTypeEnum type);
-		Curve(string covName, DataTypeEnum type, int knotNum, string coords);
+        Curve(string covName, DataTypeEnum type, int knotNum, string coords, double valueRange=0);
 		Curve(string covName, DataTypeEnum type, vector<double> *x, vector<double> *y);	// freehand rule
-		Curve(string covName, double lowUnity, double highUnity, double lowCross, double highCross, double lowRange, double highRange, CurveTypeEnum curveType);	// range rule
+        Curve(string covName, double lowUnity, double highUnity, double lowCross, double highCross, CurveTypeEnum curveType);	// range rule
 		Curve(string covName, double xcoord, double ycoord, EnvLayer *layer);	// point rule
 		Curve(string covName, vector<float> *values);	// data mining continuous
 		Curve(string covName, vector<int> *values);		// data mining categorical
