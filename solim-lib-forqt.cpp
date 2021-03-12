@@ -1,6 +1,6 @@
 #include "solim-lib-forqt.h"
 
-BaseIO::BaseIO(string filename, FileDataType newFileDataType) {
+BaseIO::BaseIO(string filename) {
     fileName=filename;
     if (strcmp(strrchr(filename.c_str(), '.'), ".3dr") == 0) {
         is3dr = TRUE;
@@ -130,6 +130,7 @@ BaseIO::BaseIO(string filename, FileDataType newFileDataType) {
         fh = GDALOpen(filename.c_str(), GA_ReadOnly);
         if (fh == NULL) {
             cout << "Error opening file " << filename << endl;
+            openSuccess=false;
             return;
         }
         hDriver = GDALGetDatasetDriver(fh);
@@ -183,7 +184,11 @@ BaseIO::BaseIO(string filename, FileDataType newFileDataType) {
         dxA = fabs(dxc[ySize / 2]);
         dyA = fabs(dyc[ySize / 2]);
 
-        fileDataType = newFileDataType;
+        eBDataType = GDALGetRasterDataType(bandh);
+        if (eBDataType == GDT_Unknown) eBDataType = GDT_Float32;
+        if (eBDataType == GDT_UInt16 || eBDataType == GDT_Int16) fileDataType = SHORT_TYPE;
+        if (eBDataType == GDT_UInt32 || eBDataType == GDT_Int32) fileDataType = LONG_TYPE;
+        if (eBDataType == GDT_Float32 || eBDataType == GDT_Float64) fileDataType = FLOAT_TYPE;
         noDataValue = GDALGetRasterNoDataValue(bandh, NULL);
         // calculate max, min
         int fGotMax = 0;
@@ -224,17 +229,6 @@ void BaseIO::read(long xStart, long yStart, long numRows, long numCols, float *d
         fclose(threeDRfp);
     }
     else {
-        GDALDataType eBDataType = GDT_Float32;
-        if (fileDataType == FLOAT_TYPE) {
-            eBDataType = GDT_Float32;
-        }
-        else if (fileDataType == SHORT_TYPE) {
-            eBDataType = GDT_Int16;
-        }
-        else if (fileDataType == LONG_TYPE) {
-            eBDataType = GDT_Int32;
-        }
-
         CPLErr result = GDALRasterIO(bandh, GF_Read, xStart, yStart, numCols, numRows,
             dest, numCols, numRows, eBDataType, 0, 0);
         if (result != CE_None) {
@@ -333,7 +327,6 @@ void BaseIO::write(long xStart, long yStart, long numRows, long numCols, float *
         strcpy(cFileName, fileName.c_str());
 
         fflush(stdout);
-        char **papszMetadata;
         char **papszOptions = NULL;
         const char
             *extension_list[6] = { ".tif", ".img", ".sdat", ".bil", ".bin", ".tiff" };  // extension list --can add more
@@ -350,7 +343,6 @@ void BaseIO::write(long xStart, long yStart, long numRows, long numCols, float *
             index = 0;
         }
         else {
-
             //  convert to lower case for matching
             for (int i = 0; ext[i]; i++) {
                 ext[i] = tolower(ext[i]);
@@ -403,28 +395,14 @@ void BaseIO::write(long xStart, long yStart, long numRows, long numCols, float *
                 }
             }
 
-            GDALDataType eBDataType = GDT_Float32;
-            if (fileDataType == FLOAT_TYPE) {
-                eBDataType = GDT_Float32;
-            }
-            else if (fileDataType == SHORT_TYPE) {
-                eBDataType = GDT_Int16;
-            }
-            else if (fileDataType == LONG_TYPE) {
-                eBDataType = GDT_Int32;
-            }
-
             char *pszProjection;
             pszProjection = (char *)GDALGetProjectionRef(fh);
-
-            fh = GDALCreate(hDriver, fileName.c_str(), xSize, ySize, 1, GDT_Float32, NULL);
-
+            if (eBDataType==GDT_Unknown) eBDataType=GDT_Float32;
+            fh = GDALCreate(hDriver, fileName.c_str(), xSize, ySize, 1, eBDataType, NULL);
             GDALSetProjection(fh, pszProjection);
             GDALSetGeoTransform(fh, adfGeoTransform);
-
             bandh = GDALGetRasterBand(fh, 1);
             GDALSetRasterNoDataValue(bandh, noDataValue);  // noDatarefactor 11/18/17
-
             isFileInititialized = true;
         }
         else {
@@ -433,20 +411,12 @@ void BaseIO::write(long xStart, long yStart, long numRows, long numCols, float *
             bandh = GDALGetRasterBand(fh, 1);
         }
         //  Now write the data from rank 0 and close the file
-        GDALDataType eBDataType;
-        if (fileDataType == FLOAT_TYPE)
-            eBDataType = GDT_Float32;
-        else if (fileDataType == SHORT_TYPE)
-            eBDataType = GDT_Int16;
-        else if (fileDataType == LONG_TYPE)
-            eBDataType = GDT_Int32;
-
+        if (eBDataType==GDT_Unknown) eBDataType=GDT_Float32;
         CPLErr result = GDALRasterIO(bandh, GF_Write, xStart, yStart, numCols, numRows,
-            source, numCols, numRows, GDT_Float32, 0, 0);
+            source, numCols, numRows, eBDataType, 0, 0);
         if (result != CE_None) {
             cout << "RaterIO trouble: " << CPLGetLastErrorMsg() << endl;
         }
-
         GDALFlushCache(fh);  //  DGT effort get large files properly written
         GDALClose(fh);
 
@@ -595,7 +565,7 @@ namespace solim {
 
     EnvLayer::EnvLayer(const int layerId, string layerName, const string& filename, const DataTypeEnum dataType, BaseIO *ref) :
         LayerId(layerId), LayerName(layerName), DataType(dataType) {
-        baseRef = new BaseIO(filename, FLOAT_TYPE);
+        baseRef = new BaseIO(filename);
         //baseRef->parallelInit(MPI_FLOAT);
         //baseRef->blockInit();
         baseRef->blockCopy(ref);
@@ -697,7 +667,7 @@ namespace solim {
             return;
         }
         // Step 1. Read the header information of the first environment layer (as reference for comparison) using tiffIO
-        LayerRef = new BaseIO(envLayerFilenames[0], FLOAT_TYPE);
+        LayerRef = new BaseIO(envLayerFilenames[0]);
         TotalX = LayerRef->getXSize();
         TotalY = LayerRef->getYSize();
         CellSize = LayerRef->getDxA();

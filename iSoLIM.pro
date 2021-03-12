@@ -27,6 +27,12 @@ SOURCES += \
     newprojectdialog.cpp \
     simpledialog.cpp \
     solim-lib-forqt.cpp \
+    solim_lib/BaseIO.cpp \
+    solim_lib/Curve.cpp \
+    solim_lib/EnvDataset.cpp \
+    solim_lib/EnvLayer.cpp \
+    solim_lib/Prototype.cpp \
+    solim_lib/preprocess.cpp \
     third_party/tinystr.cpp \
     third_party/tinyxml.cpp \
     third_party/tinyxmlerror.cpp \
@@ -45,6 +51,17 @@ HEADERS += \
     simpledialog.h \
     solim-lib-forQt_global.h \
     solim-lib-forqt.h \
+    solim_lib/BaseIO.h \
+    solim_lib/BasicSetting.h \
+    solim_lib/Curve.h \
+    solim_lib/DataTypeEnum.h \
+    solim_lib/EnvDataset.h \
+    solim_lib/EnvLayer.h \
+    solim_lib/EnvUnit.h \
+    solim_lib/Location.h \
+    solim_lib/Prototype.h \
+    solim_lib/inference.h \
+    solim_lib/preprocess.h \
     third_party/tinystr.h \
     third_party/tinyxml.h
 

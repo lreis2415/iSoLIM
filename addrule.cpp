@@ -23,9 +23,6 @@ AddRule::AddRule(SoLIMProject *proj, int protoNum, string currentBaseName, QWidg
     for(int i = 0;i<proj->layernames.size();i++){
         gisLayers.append(proj->layernames[i].c_str());
     }
-    for(int i = 0;i<proj->noFileLayers.size();i++){
-        gisLayers.append(proj->noFileLayers[i].c_str());
-    }
     gisLayers.append("[New covariate]");
     QFont f = ui->label_add_property->font();
     f.setBold(true);
@@ -222,26 +219,23 @@ void AddRule::on_comboBox_cov_activated(const QString &arg1)
             ui->lineEdit_filename->setText(proj->filenames[i].c_str());
             if(proj->layertypes[i]=="CONTINUOUS")   ui->comboBox_datatype->setCurrentIndex(0);
             else ui->comboBox_datatype->setCurrentIndex(1);
-            BaseIO *lyr = new BaseIO(proj->filenames[i]);
-            ui->lineEdit_max_cov->setText(QString::number(lyr->getDataMax()));
-            ui->lineEdit_min_cov->setText(QString::number(lyr->getDataMin()));
-            delete lyr;
-            ui->lineEdit_filename->setReadOnly(true);
-            ui->lineEdit_max_cov->setReadOnly(true);
-            ui->lineEdit_min_cov->setReadOnly(true);
-            ui->comboBox_datatype->setDisabled(true);
-            return;
-        }
-    }
-    for(int i = 0;i<proj->noFileLayers.size();i++){
-        if(proj->noFileLayers[i]==ui->comboBox_cov->currentText().toStdString()){
-            ui->lineEdit_filename->setText("NA");
-            if(proj->noFileDatatypes[i]=="CONTINUOUS")   ui->comboBox_datatype->setCurrentIndex(0);
-            else ui->comboBox_datatype->setCurrentIndex(1);
             ui->lineEdit_filename->setReadOnly(false);
             ui->lineEdit_max_cov->setReadOnly(false);
             ui->lineEdit_min_cov->setReadOnly(false);
             ui->comboBox_datatype->setEnabled(true);
+            if(QFileInfo(proj->filenames[i].c_str()).exists()){
+                BaseIO *lyr = new BaseIO(proj->filenames[i]);
+                if(lyr->openSuccess){
+                    ui->lineEdit_max_cov->setText(QString::number(lyr->getDataMax()));
+                    ui->lineEdit_min_cov->setText(QString::number(lyr->getDataMin()));
+                    ui->lineEdit_filename->setReadOnly(true);
+                    ui->lineEdit_max_cov->setReadOnly(true);
+                    ui->lineEdit_min_cov->setReadOnly(true);
+                    ui->comboBox_datatype->setDisabled(true);
+                }
+                delete lyr;
+            }
+            return;
         }
     }
     ui->radioButton_enum->setEnabled(true);

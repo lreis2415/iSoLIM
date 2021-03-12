@@ -143,8 +143,7 @@ void SimpleDialog::on_ok_btn_clicked()
         covariate=ui->lineEdit_2->text();
         if(ui->checkBox->isChecked()) datatype="CATEGORICAL";
         else datatype="CONTINUOUS";
-        QFile f(filename);
-        if(f.exists()){
+        if(QFileInfo(filename).exists()){
             close();
         } else {
             QMessageBox warn;
@@ -153,8 +152,7 @@ void SimpleDialog::on_ok_btn_clicked()
         }
     } else if(mode==MODIFYGISDATA){
         filename = ui->lineEdit_1->text();
-        QFile f(filename);
-        if(f.exists()){
+        if(QFileInfo(filename).exists()){
             close();
         } else {
             QMessageBox warn;
@@ -167,8 +165,7 @@ void SimpleDialog::on_ok_btn_clicked()
         if(ui->checkBox->isChecked()) datatype="CATEGORICAL";
         else datatype="CONTINUOUS";
         if(!filename.isEmpty()){
-            QFile f(filename);
-            if(!f.exists()) filename="";
+            if(!QFileInfo(filename).exists()) filename="";
         }
         close();
     } else if(mode==ADDPROTOTYPEBASE){

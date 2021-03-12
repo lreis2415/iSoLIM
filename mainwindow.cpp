@@ -127,12 +127,6 @@ void MainWindow::onProjectSave(){
         TiXmlText *layer_text = new TiXmlText(proj->filenames[i].c_str());
         layer_node->LinkEndChild(layer_text);
     }
-    for (size_t i = 0; i<proj->noFileLayers.size();i++) {
-        TiXmlElement *layer_node = new TiXmlElement("NoFileLayer");
-        layer_node->SetAttribute("Name",proj->layernames[i].c_str());
-        layer_node->SetAttribute("Type",proj->layertypes[i].c_str());
-        gisData_node->LinkEndChild(layer_node);
-    }
     for(size_t i =0; i<proj->prototypeBaseNames.size();i++){
         TiXmlElement *prototypeBase_node = new TiXmlElement("PrototypeBase");
             prototypeBase_node->SetAttribute("Basename",proj->prototypeBaseNames[i].c_str());
@@ -219,11 +213,6 @@ void MainWindow::onProjectOpen(){
         }
     }
     onGetGisData();
-    for(TiXmlElement* layer = gisDataHandle.FirstChildElement("NoFileLayer").ToElement();
-        layer; layer = layer->NextSiblingElement("Layer")){
-        proj->noFileLayers.push_back(layer->Attribute("Name"));
-        proj->noFileDatatypes.push_back(layer->Attribute("Type"));
-    }
     // add prototypes
     string tmpBaseName;
     TiXmlHandle prototypesHandle = projectHandle.FirstChildElement("Prototypes");
@@ -350,14 +339,6 @@ void MainWindow::onAddGisData(){
             warning.setText("This covariate already exists in GIS data. Please rename the covariate.");
             warning.exec();
             return;
-        }
-    }
-    for(size_t i = 0;i<proj->noFileLayers.size();i++){
-        if(proj->noFileLayers[i]==addGisData.covariate.toStdString()){
-            proj->noFileLayers.erase(proj->noFileLayers.begin()+i);
-            proj->noFileLayers.shrink_to_fit();
-            proj->noFileDatatypes.erase(proj->noFileDatatypes.begin()+i);
-            proj->noFileDatatypes.shrink_to_fit();
         }
     }
     proj->filenames.push_back(addGisData.filename.toStdString());

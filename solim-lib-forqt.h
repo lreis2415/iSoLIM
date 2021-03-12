@@ -5,7 +5,6 @@
 #include "QApplication"
 #include "QException"
 #include "QDebug"
-#include "solim-lib-forQt_global.h"
 #include <algorithm>
 #include <numeric>
 #include <gdal.h>
@@ -63,6 +62,7 @@ private:
     double noDataValue;
     double dx, dy;
     FileDataType fileDataType;
+    GDALDataType eBDataType;
     double dataMax;
     double dataMin;
     double dataRange;
@@ -96,7 +96,7 @@ private:
     int dataEndLoc;
 
 public:
-    BaseIO(string filename, FileDataType newFileDataType = FLOAT_TYPE);
+    BaseIO(string filename);
     ~BaseIO();
     //void parallelInit(MPI_Datatype MPIt);
     string getFilename() { return fileName; }

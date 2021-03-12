@@ -96,15 +96,7 @@ void AddPrototypeBase::on_addCovariate_btn_clicked()
             return;
         }
     }
-    /*for(int i = 0;i<project->noFileLayers.size();i++){
-        if(project->noFileLayers[i]==addGisData.covariate.toStdString()){
-            project->noFileLayers.erase(project->noFileLayers.begin()+i);
-            project->noFileLayers.shrink_to_fit();
-            project->noFileDatatypes.erase(project->noFileDatatypes.begin()+i);
-            project->noFileDatatypes.shrink_to_fit();
-        }
-    }
-    project->layertypes.push_back(addGisData.datatype);
+    /*project->layertypes.push_back(addGisData.datatype);
     project->layernames.push_back(addGisData.covariate.toStdString());
     project->filenames.push_back(addGisData.filename.toStdString());*/
     ui->covariate_tableWidget->insertRow(ui->covariate_tableWidget->rowCount());
