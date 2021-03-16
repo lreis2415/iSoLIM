@@ -86,6 +86,8 @@ private slots:
     void onDeleteGisLayer();
     void onModifyCovFile();
 
+    void on_actionResample_triggered();
+
 private:
     Ui::MainWindow *ui;
     QTreeView *projectView;

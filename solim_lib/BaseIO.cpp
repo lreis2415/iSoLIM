@@ -6,8 +6,6 @@ BaseIO::BaseIO(string filename) {
 		is3dr = true;
 		fileName = filename;
 		char utilityString[50];
-		float utilityFloat = 0;
-		int utilityInt = 0;
 		inCurLoc = 0;
 		if ((threeDRfp = fopen(filename.c_str(), "r")) == NULL) {
 			cout << "Cannot open inputFile for reading header." << endl;
@@ -54,6 +52,8 @@ BaseIO::BaseIO(string filename) {
 			}
 			else if (strcmp(utilityString, "CellSize:") == 0) {
 				fscanf(threeDRfp, "%lf", &cellSize);
+                dx = cellSize;
+                dy = cellSize;
 				getGeo += 1;
 			}
 			else if (strcmp(utilityString, "Neighborhood:") == 0) {
@@ -130,17 +130,15 @@ BaseIO::BaseIO(string filename) {
 	else {
 		is3dr = false;
 		GDALAllRegister();
-		fh = GDALOpen(filename.c_str(), GA_ReadOnly);
-		if (fh == NULL) {
-			cout << "Error opening file " << filename << endl;
-			openSuccess = false;
-			return;
-		}
-		hDriver = GDALGetDatasetDriver(fh);
+        ds = (GDALDataset*)GDALOpen(filename.c_str(), GA_ReadOnly);
+        if (ds == NULL) {
+            cout << "Error opening file " << filename << endl;
+            openSuccess = false;
+            return;
+        }
 
 		//OGRSpatialReferenceH  hSRS;
-		char *pszProjection;
-		pszProjection = (char *)GDALGetProjectionRef(fh);
+        const char *pszProjection = ds->GetProjectionRef();//(char *)GDALGetProjectionRef(fh);
 		srs = OGRSpatialReference(pszProjection);
 		isGeographic = srs.IsGeographic();
 		if (isGeographic == 0) {
@@ -150,19 +148,17 @@ BaseIO::BaseIO(string filename) {
 			cout << "Input file " << filename << " has geographic coordinate system." << endl;
 		// cout<<getproj<<endl; // for test
 
-		bandh = GDALGetRasterBand(fh, 1);
+        band = ds->GetRasterBand(1);//GDALGetRasterBand(fh, 1);
 
-		xSize = GDALGetRasterXSize(fh);
-		ySize = GDALGetRasterYSize(fh);
-		GDALGetGeoTransform(fh, adfGeoTransform);
+        xSize = ds->GetRasterXSize();//GDALGetRasterXSize(fh);
+        ySize = ds->GetRasterYSize();//GDALGetRasterYSize(fh);
+        ds->GetGeoTransform(adfGeoTransform);//GDALGetGeoTransform(fh, adfGeoTransform);
 		dx = abs(adfGeoTransform[1]);
 		dy = abs(adfGeoTransform[5]);
-		dlon = abs(adfGeoTransform[1]);
-		dlat = abs(adfGeoTransform[5]);
 		xLeftEdge = adfGeoTransform[0];
 		yTopEdge = adfGeoTransform[3];
-		xllCenter = xLeftEdge + dlon / 2.;
-		yllCenter = yTopEdge - (ySize * dlat) - dlat / 2.;
+        xllCenter = xLeftEdge + dx / 2.;
+        yllCenter = yTopEdge - (ySize * dy) - dy / 2.;
 
 		double xp[2];
 
@@ -171,53 +167,113 @@ BaseIO::BaseIO(string filename) {
 		if (isGeographic == 1) {
 			for (int j = 0; j < ySize; ++j) {
 				// latitude corresponding to row
-				float rowlat = yllCenter + (ySize - j - 1) * dlat;
-				geoToLength(dlon, dlat, rowlat, xp);
+                float rowlat = yllCenter + (ySize - j - 1) * dy;
+                geoToLength(dx, dy, rowlat, xp);
 				dxc[j] = xp[0];
 				dyc[j] = xp[1];
 			}
 		}
 		else {
 			for (int j = 0; j < ySize; ++j) {
-				dxc[j] = dlon;
-				dyc[j] = dlat;
+                dxc[j] = dx;
+                dyc[j] = dy;
 			}
 		}
 
 		dxA = fabs(dxc[ySize / 2]);
 		dyA = fabs(dyc[ySize / 2]);
-		eBDataType = GDALGetRasterDataType(bandh);
+        eBDataType = band->GetRasterDataType();//GDALGetRasterDataType(bandh);
 		if (eBDataType == GDT_Unknown) eBDataType = GDT_Float32;
 		if (eBDataType == GDT_UInt16 || eBDataType == GDT_Int16) fileDataType = SHORT_TYPE;
 		if (eBDataType == GDT_UInt32 || eBDataType == GDT_Int32) fileDataType = LONG_TYPE;
 		if (eBDataType == GDT_Float32 || eBDataType == GDT_Float64) fileDataType = FLOAT_TYPE;
-		noDataValue = GDALGetRasterNoDataValue(bandh, NULL);
+        int success=-1;
+        noDataValue = band->GetNoDataValue(&success);//GDALGetRasterNoDataValue(bandh, NULL);
+        if(!success){
+            cout << "Cannot get Nodata Value from Input file " << filename << endl;
+        }
 		// calculate max, min
 		int fGotMax = 0;
 		int fGotMin = 0;
-		dataMax = GDALGetRasterMaximum(bandh, &fGotMax);
-		dataMin = GDALGetRasterMinimum(bandh, &fGotMin);
+        dataMax = band->GetMaximum(&fGotMax);//GDALGetRasterMaximum(bandh, &fGotMax);
+        dataMin = band->GetMinimum(&fGotMin);//GDALGetRasterMinimum(bandh, &fGotMin);
 		if (!(fGotMax&&fGotMin)) {
 			double adfMinMax[2];
-			GDALComputeRasterMinMax(bandh, TRUE, adfMinMax);
-			dataMin = adfMinMax[0];
-			dataMax = adfMinMax[1];
+            int result = band->ComputeRasterMinMax(TRUE, adfMinMax);//GDALComputeRasterMinMax(bandh, TRUE, adfMinMax);
+            if(result){
+                dataMin = adfMinMax[0];
+                dataMax = adfMinMax[1];
+            }
 		}
 		dataRange = dataMax - dataMin;
 		dataMax += dataRange / 100;
 		dataMin -= dataRange / 100;
 		
 	}
+    blockRows = ySize;
+    blockSize = 1;
+    blockX = xSize;
+    blockY = ySize;
 	blockIsInitialized = false;
 	isFileInititialized = false;
 }
 
+BaseIO::BaseIO(BaseIO *lyr){
+    if(lyr->is3dr){
+        threeDRfp = lyr->threeDRfp;
+        is3dr = true;
+        inCurLoc = lyr->inCurLoc;
+        unexpectedFieldFlag = lyr->unexpectedFieldFlag;
+        NumberOfRecords = lyr->NumberOfRecords;
+        dataMean = lyr->dataMean;
+        dataStd = lyr->dataStd;
+        firstDataByte = lyr->firstDataByte;
+        dataEndLoc = lyr->dataEndLoc;
+        cellSize = lyr->cellSize;	// raster location info: cell size of raster layer
+    } else {
+        ds = lyr->ds;            // gdal file handle
+        band = lyr->band;
+        dxA = lyr->dxA;
+        dyA = lyr->dyA;
+        eBDataType = lyr->eBDataType;
+        for(int i = 0; i< 6;i++){
+            adfGeoTransform[i] = lyr->adfGeoTransform[i];
+        }
+        srs = lyr->srs;
+    }
+    dx = lyr->dx;
+    dy = lyr->dy;
+    isFileInititialized = false;
+    fileName = lyr->fileName;
+    xSize = lyr->xSize;
+    ySize = lyr->ySize;
+    noDataValue = lyr->noDataValue;
+    fileDataType = lyr->fileDataType;
+    dataMax = lyr->dataMax;
+    dataMin = lyr->dataMin;
+    dataRange = lyr->dataRange;
+    xllCenter = lyr->xllCenter;
+    yllCenter = lyr->yllCenter;
+    xLeftEdge = lyr->xLeftEdge;
+    yTopEdge = lyr->yTopEdge;
+    openSuccess = lyr->openSuccess;
+
+    //int parallelX, parallelY;
+    blockX = lyr->blockX;
+    blockY = lyr->blockY;
+    blockSize = lyr->blockSize;	// the number of block parts for block processing
+    blockRows = lyr->blockRows;	// the row number of one block
+    blockIsInitialized = lyr->blockIsInitialized;
+    isGeographic = lyr->isGeographic;
+
+    }
 BaseIO::~BaseIO() {
 	if (is3dr) {
 		fclose(threeDRfp);
 	}
 	else {
-		GDALClose((GDALDatasetH)fh);
+        if( ds != NULL )
+            GDALClose(ds);
 	}
 }
 
@@ -231,7 +287,7 @@ void BaseIO::read(long xStart, long yStart, long numRows, long numCols, float *d
 		fclose(threeDRfp);
 	}
 	else {
-		CPLErr result = GDALRasterIO(bandh, GF_Read, xStart, yStart, numCols, numRows,
+        CPLErr result = band->RasterIO(GF_Read, xStart, yStart, numCols, numRows,//GDALRasterIO(bandh, GF_Read, xStart, yStart, numCols, numRows,
 			dest, numCols, numRows, eBDataType, 0, 0);
 		if (result != CE_None) {
 			cout << "RaterIO trouble: " << CPLGetLastErrorMsg() << endl;
@@ -278,19 +334,6 @@ void BaseIO::write(long xStart, long yStart, long numRows, long numCols, float *
 				cout << "Number of rows of outputFile is less than 1. Stop writing." << endl;
 				return;	//Number of rows of outputFile is less than 1. Stop writing.
 			}
-			/*if (strlen(FileType)>0) {
-				fprintf(fp, "%s %s\n", "FileType: ", FileType);
-				NumberOfRecords++;
-			}
-			if (strlen(GridUnits)>0) {
-				fprintf(fp, "%s %s\n", "GridUnits: ", GridUnits);
-				NumberOfRecords++;
-			}
-			if (strlen(DataUnits)>0) {
-				fprintf(fp, "%s %s\n", "DataUnits: ", DataUnits);
-				NumberOfRecords++;
-			}
-			*/
 
 			if (xLeftEdge > noDataValue && yllCenter > noDataValue && cellSize > noDataValue) {
 				fprintf(threeDRfp, "%s %lf\n", "Xmin: ", xLeftEdge);
@@ -321,15 +364,12 @@ void BaseIO::write(long xStart, long yStart, long numRows, long numCols, float *
 			fprintf(threeDRfp, "%s %d\n", "NumberOfRecords: ", NumberOfRecords);
 			fprintf(threeDRfp, "%s %d\n", "NumberOfColumns: ", xSize);
 			fprintf(threeDRfp, "%s %d\n", "NumberOfRows: ", ySize);
-			//if (strlen(FileType) > 0)	fprintf(fp, "%s %s\n", "FileType: ", FileType);
-			//if (strlen(GridUnits) > 0)		fprintf(fp, "%s %s\n", "GridUnits: ", GridUnits);
-			if (xLeftEdge > noDataValue && yllCenter > noDataValue && cellSize > noDataValue) {
+            if (xLeftEdge > noDataValue && yllCenter > noDataValue && cellSize > noDataValue) {
 				fprintf(threeDRfp, "%s %lf\n", "Xmin: ", xLeftEdge);
 				fprintf(threeDRfp, "%s %lf\n", "Ymin: ", yllCenter - cellSize / 2.0);
 				fprintf(threeDRfp, "%s %lf\n", "CellSize: ", cellSize);
 			}
-			//if (strlen(DataUnits) > 0)		fprintf(fp, "%s %s\n", "DataUnits: ", DataUnits);
-			if (dataMin > noDataValue)	fprintf(threeDRfp, "%s %f\n", "DataMin: ", dataMin);
+            if (dataMin > noDataValue)	fprintf(threeDRfp, "%s %f\n", "DataMin: ", dataMin);
 			if (dataMax > noDataValue)	fprintf(threeDRfp, "%s %f\n", "DataMax: ", dataMax);
 			fprintf(threeDRfp, "%s %lf\n", "NoData: ", noDataValue);
 			fprintf(threeDRfp, "%s %d\n", "FirstDataByte: ", firstDataByte);
@@ -386,8 +426,8 @@ void BaseIO::write(long xStart, long yStart, long numRows, long numCols, float *
 		}
 
 		if (!isFileInititialized) {
-			hDriver = GDALGetDriverByName(driver_code[index]);
-			if (hDriver == NULL) {
+            GDALDriver *driver=GetGDALDriverManager()->GetDriverByName(driver_code[index]);//hDriver = GDALGetDriverByName(driver_code[index]);
+            if (driver == NULL) {
 				printf("GDAL driver is not available\n");
 				fflush(stdout);
 				return;
@@ -410,61 +450,39 @@ void BaseIO::write(long xStart, long yStart, long numRows, long numCols, float *
                     //printf("Setting BIGTIFF, File: %s, Anticipated size (GB):%.2f\n", fileName, fileGB);
 				}
 			}
-			if (eBDataType == GDT_Unknown) eBDataType = GDT_Float32;
-			fh = GDALCreate(hDriver, fileName.c_str(), xSize, ySize, 1, eBDataType, NULL);
-			GDALSetProjection(fh, GDALGetProjectionRef(fh));
-			GDALSetGeoTransform(fh, adfGeoTransform);
-			bandh = GDALGetRasterBand(fh, 1);
-			GDALSetRasterNoDataValue(bandh, noDataValue);  // noDatarefactor 11/18/17
+            const char*projection = ds->GetProjectionRef();
+            ds=driver->Create(fileName.c_str(), xSize, ySize, 1, eBDataType, NULL);//fh = GDALCreate(hDriver, fileName.c_str(), xSize, ySize, 1, eBDataType, NULL);
+            ds->SetProjection(projection);//GDALSetProjection(fh, GDALGetProjectionRef(fh));
+            ds->SetGeoTransform(adfGeoTransform);//GDALSetGeoTransform(fh, adfGeoTransform);
+            band = ds->GetRasterBand(1);//bandh = GDALGetRasterBand(fh, 1);
+            band->SetNoDataValue(noDataValue);//GDALSetRasterNoDataValue(bandh, noDataValue);  // noDatarefactor 11/18/17
 			isFileInititialized = true;
 		}
 		else {
 			// Open file if it has already been initialized
-			fh = GDALOpen(fileName.c_str(), GA_Update);
-			bandh = GDALGetRasterBand(fh, 1);
+            ds = (GDALDataset *) GDALOpen(fileName.c_str(), GA_Update );//fh = GDALOpen(fileName.c_str(), GA_Update);
+            band = ds->GetRasterBand(1);//bandh = GDALGetRasterBand(fh, 1);
 		}
 		//  Now write the data from rank 0 and close the file
-		if (eBDataType == GDT_Unknown) eBDataType = GDT_Float32;
-		CPLErr result = GDALRasterIO(bandh, GF_Write, xStart, yStart, numCols, numRows,
-			source, numCols, numRows, eBDataType, 0, 0);
+        CPLErr result = band->RasterIO(GF_Write, xStart, yStart, numCols, numRows,//GDALRasterIO(bandh, GF_Write, xStart, yStart, numCols, numRows,
+            source, numCols, numRows, GDT_Float32, 0, 0);
 		if (result != CE_None) {
 			cout << "RaterIO trouble: " << CPLGetLastErrorMsg() << endl;
 		}
-		GDALFlushCache(fh);  //  DGT effort get large files properly written
-		GDALClose(fh);
+        GDALFlushCache(ds);  //  DGT effort get large files properly written
+        GDALClose(ds);
 
 	}
 }
 
 void BaseIO::geoToGlobalXY(double geoX, double geoY, int &globalX, int &globalY) {
-	double dlon, dlat;
-	if (is3dr) {
-		dlon = cellSize;
-		dlat = cellSize;
-	}
-	else {
-		dlon = abs(adfGeoTransform[1]);
-		dlat = abs(adfGeoTransform[5]);
-	}
-
-	globalX = (int)((geoX - xLeftEdge) / dlon);
-	globalY = (int)((yTopEdge - geoY) / dlat);
+    globalX = (int)((geoX - xLeftEdge) / dx);
+    globalY = (int)((yTopEdge - geoY) / dy);
 }
 void BaseIO::globalXYToGeo(long globalX, long globalY, double &geoX, double &geoY) {
-	double dlon, dlat;
-	if (is3dr) {
-		dlon = cellSize;
-		dlat = cellSize;
-	}
-	else {
-		dlon = abs(adfGeoTransform[1]);
-		dlat = abs(adfGeoTransform[5]);
-	}
-
-	geoX = xLeftEdge + dlon / 2. + globalX * dlon;
-	geoY = yTopEdge - dlat / 2. - globalY * dlat;
+    geoX = xLeftEdge + dx / 2. + globalX * dx;
+    geoY = yTopEdge - dy / 2. - globalY * dy;
 }
-
 
 bool BaseIO::isInPartition(int x, int y) {
 	if (x > 0 && x < blockX &&y>0 && y < blockY) {
@@ -512,7 +530,6 @@ void BaseIO::blockInit(double divide) {
 	} else {
 		MEMORYSTATUSEX statusex;
 		unsigned long long avl = 0;
-		unsigned long long memoryForOneBlock=0;
 		statusex.dwLength = sizeof(statusex);
 		if (GlobalMemoryStatusEx(&statusex)) {
 			avl = statusex.ullAvailPhys; // available memory in kb
@@ -558,24 +575,136 @@ void BaseIO::blockNull(){
     blockIsInitialized = true;
 }
 bool BaseIO::compareIO(BaseIO *layer) {
-	if (xSize != layer->xSize || ySize != layer->ySize) {
-		cout << "Columns or Rows do not match" << endl;
-		return false;
-	}
-	if (abs(dxA - layer->dxA) > VERY_SMALL || abs(dyA - layer->dyA)> VERY_SMALL) {
-		cout << "dx or dy do not match" << endl;
-		return false;
-	}
-	
-	if (abs(xLeftEdge - layer->xLeftEdge) > VERY_SMALL) {
-		cout << "Warning! Left edge does not match exactly" << endl;
-		cout << xLeftEdge << " in file " << fileName << endl;
-		cout << layer->xLeftEdge << " in file " << layer->fileName << endl;
-	}
-	if (abs(yTopEdge - layer->yTopEdge) > VERY_SMALL) {
-		cout << "Warning! Left edge does not match exactly" << endl;
-		cout << yTopEdge << " in file " << fileName << endl;
-		cout << layer->yTopEdge << " in file " << layer->fileName << endl;
-	}
-	return true;
+    if (xSize != layer->xSize || ySize != layer->ySize) {
+        cout << "Columns or Rows do not match" << endl;
+        return false;
+    }
+    if (abs(dx - layer->dx) > VERY_SMALL || abs(dy - layer->dy)> VERY_SMALL) {
+        cout << "dx or dy do not match" << endl;
+        return false;
+    }
+    if (abs(xLeftEdge - layer->xLeftEdge) > dx||abs(yTopEdge - layer->yTopEdge) > dy) {
+        cout << "Extent coordinate does not match exactly" << endl;
+        return false;
+    }
+    if(is3dr||layer->is3dr){
+        if(getXMin()>layer->getXMax()||getXMax()<layer->getXMin()||
+           getYMin()>layer->getYMax()||getYMax()<layer->getYMin()){
+            cout << "Layer extent does not overlay";
+            return false;
+        }
+    }
+    if(!is3dr&&(!layer->is3dr)){
+        const char *srcWKT = ds->GetProjectionRef();
+        const char *refWKT = layer->ds->GetProjectionRef();
+        if(strcmp(srcWKT,refWKT)!=0){
+            cout << "Warning! Projection does not match" << endl;
+        } else if(getXMin()>layer->getXMax()||getXMax()<layer->getXMin()||
+          getYMin()>layer->getYMax()||getYMax()<layer->getYMin()){
+            cout << "Layer extent does not overlay";
+            return false;
+        }
+    }
+    return true;
+}
+bool BaseIO::resample(BaseIO *dstProjectionRefLyr, string destFile){
+    if(destFile.empty()) return false;
+    if(compareIO(dstProjectionRefLyr)==true) return false;
+    BaseIO destLyr(dstProjectionRefLyr);
+    destLyr.fileName=destFile;
+    destLyr.writeInit();
+    destLyr.noDataValue = noDataValue;
+    if(is3dr||dstProjectionRefLyr->is3dr){
+        if(getXMin()>dstProjectionRefLyr->getXMax()||getXMax()<dstProjectionRefLyr->getXMin()||
+           getYMin()>dstProjectionRefLyr->getYMax()||getYMax()<dstProjectionRefLyr->getYMin()){
+            cout << "Layer extent does not overlay";
+            return false;
+        } else {
+            long cellCounts = dstProjectionRefLyr->xSize*dstProjectionRefLyr->ySize;
+            float*pData = new float[cellCounts];
+            float*pSrcData = new float[xSize*ySize];
+            read(0, 0, ySize, xSize, pSrcData);
+            for(long i = 0; i<cellCounts;i++){
+                int globalx = i%dstProjectionRefLyr->xSize;
+                int globaly = i/dstProjectionRefLyr->xSize;
+                double x,y;
+                globalXYToGeo(globalx,globaly,x,y);
+                dstProjectionRefLyr->geoToGlobalXY(x,y,globalx,globaly);
+                if(globalx<0||globaly<0||globalx>(xSize-1)||globaly>(ySize-1))
+                    pData[i]=noDataValue;
+                else
+                    pData[i] = pSrcData[globaly*xSize+globalx];
+            }
+            destLyr.write(0,0,destLyr.ySize,destLyr.xSize,pData);
+            delete[] pData;
+            delete[] pSrcData;
+            return true;
+        }
+    } else {
+        destLyr.eBDataType = eBDataType;
+        char *cFileName = new char[destFile.length() + 1];
+        strcpy(cFileName, destFile.c_str());
+        const char *extension_list[6] = { ".tif", ".img", ".sdat", ".bil", ".bin", ".tiff" };  // extension list --can add more
+        const char *driver_code[6] = { "GTiff", "HFA", "SAGA", "EHdr", "ENVI", "GTiff" };   //  code list -- can add more
+        size_t extension_num = 6;
+        char *ext;
+        int index = -1;
+        // get extension  of the file
+        ext = strrchr(cFileName, '.');
+        if (!ext) {
+            strcat(cFileName, ".tif");
+            index = 0;
+        }
+        else {
+            //  convert to lower case for matching
+            for (int i = 0; ext[i]; i++) {
+                ext[i] = tolower(ext[i]);
+            }
+            // if extension matches then set driver
+            for (size_t i = 0; i < extension_num; i++) {
+                if (strcmp(ext, extension_list[i]) == 0) {
+                    index = i; //get the index where extension of the outputfile matches with the extensionlist
+                    break;
+                }
+            }
+            if (index < 0)  // Extension not matched so set it to tif
+            {
+                char filename_withoutext[MAXLN]; // layer name is file name without extension
+                size_t len = strlen(cFileName);
+                size_t len1 = strlen(ext + 1);
+                memcpy(filename_withoutext, cFileName, len - len1);
+                filename_withoutext[len - len1] = 0;
+                strcpy(cFileName, filename_withoutext);
+                strcat(cFileName, "tif");
+                index = 0;
+                destLyr.fileName=cFileName;
+            }
+        }
+        destLyr.ds = GetGDALDriverManager()->GetDriverByName(driver_code[index])->Create(cFileName,
+            dstProjectionRefLyr->xSize, dstProjectionRefLyr->ySize, 1,
+            band->GetRasterDataType(), NULL);
+        destLyr.band = destLyr.ds->GetRasterBand(1);
+        destLyr.band->SetColorInterpretation(band->GetColorInterpretation());
+        int success = -1;
+        double noDataValue = NODATA;
+        noDataValue = band->GetNoDataValue(&success);
+        if (!success)
+        {
+            return false;
+        }
+        destLyr.band->SetNoDataValue(noDataValue);
+        GDALColorTable* colorTable = band->GetColorTable();
+        if (colorTable)
+        {
+            destLyr.band->SetColorTable(colorTable);
+        }
+        destLyr.ds->SetProjection(dstProjectionRefLyr->ds->GetProjectionRef());
+        destLyr.ds->SetGeoTransform(dstProjectionRefLyr->adfGeoTransform);
+
+        CPLErr result = GDALReprojectImage(ds, NULL, destLyr.ds, NULL, GRA_NearestNeighbour, 0.0, 0.0, NULL, NULL, NULL);
+        if (result == CE_Failure) {
+            return false;
+        }
+        return true;
+    }
 }

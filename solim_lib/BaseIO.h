@@ -8,6 +8,8 @@ BaseIO: base structure for block io
 
 #pragma once
 #include <gdal.h>
+#include <gdal_priv.h>
+#include <gdalwarper.h>
 #include <ogr_spatialref.h>
 #include <iostream>
 #include <string>
@@ -36,10 +38,9 @@ const double boa = elipb / elipa;
 class BaseIO {
 private:
 	//int size, rank;				// MPI parameters
-	GDALDatasetH fh;            // gdal file handle
+    GDALDataset *ds;            // gdal file handle
 	bool isFileInititialized;
-	GDALDriverH hDriver;
-	GDALRasterBandH bandh;
+    GDALRasterBand *band;
 	string fileName;
 	int xSize;
 	int ySize;
@@ -52,7 +53,6 @@ private:
 	double dataMin;
 	double dataRange;
 	double adfGeoTransform[6];
-	double dlon, dlat;
 	double xllCenter;
 	double yllCenter;
 	double xLeftEdge;
@@ -74,8 +74,8 @@ private:
 	int inCurLoc;
 	bool unexpectedFieldFlag;
 	int NumberOfRecords;
-	char fileType[FN_LEN];
-	char gridUnits[FN_LEN];
+    char fileType[FN_LEN];
+    char gridUnits[FN_LEN];
 	double dataMean;
 	double dataStd;
 	int firstDataByte;
@@ -83,6 +83,7 @@ private:
 
 public:
 	BaseIO(string filename);
+    BaseIO(BaseIO *lyr);
 	~BaseIO();
 	//void parallelInit(MPI_Datatype MPIt);
     void blockInit(double divide=1);
@@ -137,6 +138,7 @@ public:
 	void setNodataValue(double nodata) { noDataValue = nodata; }
 	void writeInit() { isFileInititialized = false; }
     bool isOpened() {return openSuccess;}
+    bool resample(BaseIO *dstProjectionRefLyr, string destFile);
 };
 
 #endif //BASEIO_H

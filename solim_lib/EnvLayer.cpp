@@ -69,6 +69,9 @@ EnvLayer::EnvLayer(const int layerId, string layerName, const string& filename, 
 
 EnvLayer::~EnvLayer(void) {
 	delete[]EnvData;
+    delete[]MembershipData;
+    delete[]upperBorder;
+    delete[]lowerBorder;
 }
 
 void EnvLayer::WriteoutMembership(const string& filename, int blockRank) {

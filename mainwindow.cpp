@@ -1397,3 +1397,27 @@ void MainWindow::on_actionAdd_Covariates_triggered() {
         onAddGisData();
     }
 }
+
+void MainWindow::on_actionResample_triggered()
+{
+    SoLIMProject *project = new SoLIMProject;
+    project->workingDir = workingDir;
+    SimpleDialog resample(SimpleDialog::RESAMPLE, project, this);
+    resample.exec();
+    QString inputFile = resample.filename;
+    QString outputFile = resample.lineEdit2;
+    QString referFile = resample.lineEdit3;
+    if(inputFile.isEmpty()||outputFile.isEmpty()||referFile.isEmpty())
+        return;
+    BaseIO *inputLayer = new BaseIO(inputFile.toStdString());
+    BaseIO *refLayer = new BaseIO(referFile.toStdString());
+    bool consist = refLayer->compareIO(inputLayer);
+    if(consist) return;
+    else {
+        inputLayer->resample(refLayer, outputFile.toStdString());
+        consist = BaseIO(outputFile.toStdString()).compareIO(refLayer);
+    }
+    delete inputLayer;
+    workingDir = project->workingDir;
+    delete project;
+}

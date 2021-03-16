@@ -57,6 +57,7 @@
      <string>Utilities</string>
     </property>
     <addaction name="actionView_Data"/>
+    <addaction name="actionResample"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -140,6 +141,11 @@
   <action name="actionAdd_Covariates">
    <property name="text">
     <string>Add Covariates</string>
+   </property>
+  </action>
+  <action name="actionResample">
+   <property name="text">
+    <string>Resample</string>
    </property>
   </action>
  </widget>

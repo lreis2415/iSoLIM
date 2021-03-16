@@ -16,13 +16,14 @@ class SimpleDialog : public QDialog
     Q_OBJECT
 
 public:
-    enum simpleDialogMode{ADDGISDATA,ADDCOVARIATE,ADDPROTOTYPEBASE,EDITSTUDYAREA,MODIFYGISDATA};
+    enum simpleDialogMode{ADDGISDATA,ADDCOVARIATE,ADDPROTOTYPEBASE,EDITSTUDYAREA,MODIFYGISDATA,RESAMPLE};
     explicit SimpleDialog(int mode, SoLIMProject *proj, QWidget *parent = nullptr);
     ~SimpleDialog();
     QString filename;
     QString covariate;
     std::string datatype;
     QString lineEdit2;
+    QString lineEdit3;
     bool nextFlag;
     QString workingDir;
     SoLIMProject *project;
@@ -44,6 +45,8 @@ private slots:
         QWidget::resizeEvent(event);
         layout()->setSizeConstraint(QLayout::SetMinAndMaxSize);
     };
+
+    void on_btn_3_clicked();
 
 private:
     Ui::SimpleDialog *ui;
