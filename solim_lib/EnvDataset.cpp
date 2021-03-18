@@ -6,6 +6,26 @@ namespace solim {
 		YMin(-9999.), YMax(-9999.), XStart(0), YStart(0), TotalX(0), TotalY(0), CalcArea(0) {
 	}
 
+    EnvDataset::EnvDataset(vector<string> &envLayerFilenames, vector<string> &datatypes){
+        LayerNames.clear();
+        LayerNames.shrink_to_fit();
+        for (size_t i = 0; i < envLayerFilenames.size(); i++) {
+            string layername = "";
+            string filename = envLayerFilenames[i];
+            if (!filename.empty()) {
+                std::size_t first = filename.find_last_of('/');
+                if (first == std::string::npos) {
+                    first = filename.find_last_of('\\');
+                }
+                std::size_t end = filename.find_last_of('.');
+                if (end == std::string::npos) end = filename.size();
+                layername = filename.substr(first + 1, end - first - 1).c_str();
+            }
+            LayerNames.push_back(layername);
+        }
+        ReadinLayers(envLayerFilenames, datatypes, 1);
+    }
+
 	EnvDataset::EnvDataset(vector<string>& envLayerFilenames, vector<string>& datatypes, vector<string>& layernames, double ramEfficent)
 		: LayerRef(nullptr), CellSize(-9999.), CellSizeY(-9999.), XMin(-9999.), XMax(-9999.),
 		YMin(-9999.), YMax(-9999.), XStart(0), YStart(0), TotalX(0), TotalY(0), CalcArea(0) {
@@ -24,8 +44,8 @@ namespace solim {
 				}
 				layernames.push_back(layername);
 			}
-			this->LayerNames = layernames;
-		}
+        }
+        this->LayerNames = layernames;
 		ReadinLayers(envLayerFilenames, datatypes, ramEfficent);
 	}
 
@@ -76,23 +96,29 @@ namespace solim {
 		for (int i = 0; i < layerNum; ++i) {
 			string datatype = datatypes[i];
 			transform(datatype.begin(), datatype.end(), datatype.begin(), ::toupper);
-			EnvLayer *newLayer = nullptr;
-			if (datatype == "CATEGORICAL") {
-				newLayer = new EnvLayer(i, LayerNames[i], envLayerFilenames[i].c_str(), CATEGORICAL, LayerRef);
-			}
-			else if (datatype == "CONTINUOUS") {
-				newLayer = new EnvLayer(i, LayerNames[i], envLayerFilenames[i].c_str(), CONTINUOUS, LayerRef);
-			}
-			else {
-				newLayer = new EnvLayer(i, LayerNames[i], envLayerFilenames[i].c_str(), CONTINUOUS, LayerRef);
-			}
+            EnvLayer *newLayer = new EnvLayer(i, LayerNames[i], envLayerFilenames[i].c_str(), getDatatypeFromString(datatype), LayerRef);
 			if (i == 0) {
 				AddLayer(newLayer);
 			}
 			else {
 				if (!LayerRef->compareIO(newLayer->baseRef)) {
-					cout << "File size do not match: " << envLayerFilenames[i] << endl;
-					return;
+                    cout << "Warning: File size do not match: " << envLayerFilenames[i] << endl;
+                    vector<string> nameparts;
+                    ParseStr(envLayerFilenames[i],'.',nameparts);
+                    string resampleFile = "";
+                    for(size_t k = 0; k < nameparts.size() - 1; k++){
+                        resampleFile +=nameparts[k];
+                    }
+                    if(nameparts.size()>2)
+                        resampleFile = resampleFile+"_resampleForSoLIM."+nameparts[nameparts.size()-1];
+                    else
+                        resampleFile = envLayerFilenames[i]+"_resampleForSoLIM.tif";
+                    bool success = newLayer->baseRef->resample(LayerRef,resampleFile);
+                    delete newLayer;
+                    if(success){
+                        newLayer = new EnvLayer(i, LayerNames[i], resampleFile, getDatatypeFromString(datatype), LayerRef);
+                        AddLayer(newLayer);
+                    } else return;
 				}
 				else {
 					AddLayer(newLayer);

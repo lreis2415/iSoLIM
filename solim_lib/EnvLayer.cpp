@@ -26,7 +26,9 @@ EnvLayer::EnvLayer(const int layerId, string layerName, const string& filename, 
 	for (int i = 0; i < XSize * YSize; ++i) {
 		EnvData[i] = 0.0;
 	}
-	if (BlockSize > 1) {
+    upperBorder = nullptr;
+    lowerBorder = nullptr;
+    if (BlockSize > 1) {
 		upperBorder = new float[YSize];
 		lowerBorder = new float[YSize];
 		for (int i = 0; i < YSize; ++i) {
@@ -52,14 +54,16 @@ EnvLayer::EnvLayer(const int layerId, string layerName, const string& filename, 
 	for (int i = 0; i < XSize * YSize; ++i) {
 		EnvData[i] = 0.0;
 	}
-	if (BlockSize > 1) {
+    upperBorder = nullptr;
+    lowerBorder = nullptr;
+    if (BlockSize > 1) {
 		upperBorder = new float[YSize];
 		lowerBorder = new float[YSize];
 		for (int i = 0; i < YSize; ++i) {
 			upperBorder[i] = 0.0;
 			lowerBorder[i] = 0.0;
 		}
-	}
+    }
 	Data_Min = baseRef->getDataMin();
 	Data_Max = baseRef->getDataMax();
 	Data_Range = baseRef->getDataRange();
@@ -68,10 +72,12 @@ EnvLayer::EnvLayer(const int layerId, string layerName, const string& filename, 
 }
 
 EnvLayer::~EnvLayer(void) {
-	delete[]EnvData;
-    delete[]MembershipData;
-    delete[]upperBorder;
-    delete[]lowerBorder;
+    if(EnvData) delete[]EnvData;
+    //if(MembershipData) delete[]MembershipData;
+    if(upperBorder != nullptr)
+        delete[]upperBorder;
+    if(lowerBorder != nullptr)
+        delete[]lowerBorder;
 }
 
 void EnvLayer::WriteoutMembership(const string& filename, int blockRank) {

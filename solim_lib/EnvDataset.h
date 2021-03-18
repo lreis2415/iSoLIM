@@ -9,7 +9,8 @@
 #define ENVDATASET_HPP_
 #include <vector>
 #include <algorithm>
-
+#include <filesystem>
+#include "preprocess.h"
 #include "EnvLayer.h"
 #include "EnvUnit.h"
 
@@ -41,7 +42,9 @@ public:
 public:
     EnvDataset();
 	
-    EnvDataset(vector<string> &envLayerFilenames, vector<string> &datatypes, vector<string>& layernames/* = vector<string>()*/, double ramEfficent = 1);
+    EnvDataset(vector<string> &envLayerFilenames, vector<string> &datatypes, vector<string>& layernames, double ramEfficent = 1);
+
+    EnvDataset(vector<string> &envLayerFilenames, vector<string> &datatypes);
 
     ~EnvDataset();
 

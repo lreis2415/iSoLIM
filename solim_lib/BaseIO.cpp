@@ -2,10 +2,10 @@
 #define MAXLN 4096
 BaseIO::BaseIO(string filename) {
 	openSuccess = true;
-	if (strcmp(strrchr(filename.c_str(), '.'), ".3dr") == 0) {
+    fileName = filename;
+    if (strcmp(strrchr(filename.c_str(), '.'), ".3dr") == 0) {
 		is3dr = true;
-		fileName = filename;
-		char utilityString[50];
+        char utilityString[50];
 		inCurLoc = 0;
 		if ((threeDRfp = fopen(filename.c_str(), "r")) == NULL) {
 			cout << "Cannot open inputFile for reading header." << endl;
@@ -288,7 +288,7 @@ void BaseIO::read(long xStart, long yStart, long numRows, long numCols, float *d
 	}
 	else {
         CPLErr result = band->RasterIO(GF_Read, xStart, yStart, numCols, numRows,//GDALRasterIO(bandh, GF_Read, xStart, yStart, numCols, numRows,
-			dest, numCols, numRows, eBDataType, 0, 0);
+            dest, numCols, numRows, GDT_Float32, 0, 0);
 		if (result != CE_None) {
 			cout << "RaterIO trouble: " << CPLGetLastErrorMsg() << endl;
 		}

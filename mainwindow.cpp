@@ -855,6 +855,7 @@ void MainWindow::createImg(){
             }
         }
     }
+    float tmp = pafScanline[int((ysize/2)*xsize+xsize/2)];
     float range = 254.0/(imgMax-imgMin);
     for(int i = 0; i<xsize*ysize;i++){
         float value = pafScanline[i];
@@ -1412,10 +1413,24 @@ void MainWindow::on_actionResample_triggered()
     BaseIO *inputLayer = new BaseIO(inputFile.toStdString());
     BaseIO *refLayer = new BaseIO(referFile.toStdString());
     bool consist = refLayer->compareIO(inputLayer);
-    if(consist) return;
+    if(consist) {
+        QMessageBox warning;
+        warning.setText("The number of rows and columns, the projection, and the extent coordinates in two files are consistent, No need for resampling.");
+        warning.exec();
+        return;
+    }
     else {
-        inputLayer->resample(refLayer, outputFile.toStdString());
-        consist = BaseIO(outputFile.toStdString()).compareIO(refLayer);
+        if(inputLayer->resample(refLayer, outputFile.toStdString())){
+            QMessageBox msg;
+            msg.setText("Resampling succeeded!");
+            msg.exec();
+            return;
+        } else {
+            QMessageBox msg;
+            msg.setText("Resampling failed! Please check if the input files are readable, and if the output file is writable.");
+            msg.exec();
+            return;
+        }
     }
     delete inputLayer;
     workingDir = project->workingDir;
