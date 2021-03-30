@@ -102,7 +102,7 @@ namespace solim {
 			}
 			else {
 				if (!LayerRef->compareIO(newLayer->baseRef)) {
-                    cout << "Warning: File size do not match: " << envLayerFilenames[i] << endl;
+                    cout << "Warning: File need to be reprojected: " << envLayerFilenames[i] << endl;
                     vector<string> nameparts;
                     ParseStr(envLayerFilenames[i],'.',nameparts);
                     string resampleFile = "";

@@ -51,7 +51,7 @@ static const char* DataTypeEnum_str[]={"CATEGORICAL","CONTINUOUS","OTHER"};
 static const char* PrototypeSource_str[] = {"SAMPLE","EXPERT","MAP","UNKNOW"};
 static DataTypeEnum getDatatypeFromString(string sDatatype) {
 	for (int i = 0; i<sDatatype.length(); i++)
-		putchar(toupper(sDatatype[i]));
+        toupper(sDatatype[i]);
 
 	if (sDatatype == "CATEGORICAL")
 		return CATEGORICAL;

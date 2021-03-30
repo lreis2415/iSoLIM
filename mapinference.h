@@ -36,9 +36,16 @@ private slots:
 
     void tableItemClicked(int,int);
 
+    void on_InferedProperty_comboBox_currentTextChanged(const QString &arg1);
+
+    void on_OutputSoilFile_lineEdit_textEdited(const QString &arg1);
+
+    void on_OutputUncerFile_lineEdit_textEdited(const QString &arg1);
+
 private:
     Ui::mapInference *ui;
     SoLIMProject *project;
+    bool outputAutoFill;
     void warn(QString msg){
         QMessageBox qb;
         qb.setText(msg);

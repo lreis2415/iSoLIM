@@ -57,8 +57,8 @@ namespace solim {
 			EnvUnit* e = eds->GetEnvUnit(x, y);
             if(e==nullptr) continue;
             for (size_t i = 0; i < e->EnvValues.size(); ++i) {
-				if (fabs(e->EnvValues.at(i) - eds->Layers.at(i)->NoDataValue) < VERY_SMALL) {
-					nullSample = true;
+                if (fabs(e->EnvValues.at(i) - eds->Layers.at(i)->NoDataValue) < VERY_SMALL||e->EnvValues.at(i)<NODATA) {
+                    nullSample = true;
 					break;
 				}
 			}
@@ -66,10 +66,14 @@ namespace solim {
 				Prototype pt;
 				pt.source=SAMPLE;
                 for (size_t i = 0; i < eds->Layers.size(); ++i) {
-					EnvLayer *layer = eds->Layers[i];
-					Curve *condition = new Curve(layer->LayerName, x, y, layer);
-					pt.envConditions.push_back(*condition);
-					++(pt.envConditionSize);
+					EnvLayer *layer = eds->Layers[i];     
+                    try {
+                        Curve *condition = new Curve(layer->LayerName, x, y, layer);
+                        pt.envConditions.push_back(*condition);
+                        ++(pt.envConditionSize);
+                    } catch (invalid_argument msg){
+                        cout << "Exception in create membership function";
+                    }
 				}
 				for (int i = 0; i < values.size(); ++i) {
 					if (i == pos_X || i == pos_Y || i == pos_idName) continue;

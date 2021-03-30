@@ -42,5 +42,23 @@ public:
         filenames.push_back(filename);
         return true;
     }
+    bool addResult(string filename){
+        bool fileExist = false;
+        for(size_t i = 0; i< results.size(); i++){
+            if(results[i]==filename){
+                fileExist = true;
+                string tmpImg = filename+".png";
+                QFile tmpImgFile(tmpImg.c_str());
+                if(tmpImgFile.exists()){
+                    tmpImgFile.remove();
+                }
+                return false;
+            }
+        }
+        if(!fileExist){
+            results.push_back(filename);
+            return true;
+        }
+    }
 };
 #endif // PROJECT_H

@@ -7,6 +7,7 @@ AddPrototypeBase::AddPrototypeBase(addPrototypeBaseMode mode,SoLIMProject *proj,
 {
     ui->setupUi(this);
     project = proj;
+    addedLayer = 0;
     ui->progressBar->setVisible(false);
     ui->progressBar->setMinimum(0);
     ui->progressBar->setMaximum(2);
@@ -218,10 +219,10 @@ void AddPrototypeBase::on_ok_btn_clicked()
     ui->ok_btn->setEnabled(false);
     ui->progressBar->setVisible(true);
     ui->progressBar->setValue(0);
+
     vector<string> envFileNames;
     vector<string> layernames;
     vector<string> datatypes;
-
     for(int i = 0; i<ui->covariate_tableWidget->rowCount();i++){
         envFileNames.push_back(ui->covariate_tableWidget->item(i,0)->text().toStdString());
         layernames.push_back(ui->covariate_tableWidget->item(i,1)->text().toStdString());
@@ -253,6 +254,33 @@ void AddPrototypeBase::on_ok_btn_clicked()
         layernames = newLayernames;
         datatypes = newDatatypes;
     }
+    // update filename in envFilenames
+    for(size_t i = 0; i<eds->Layers.size(); i++){
+        for(size_t j = 0; j<envFileNames.size(); j++){
+            if(eds->Layers.at(i)->LayerName==layernames[j]){
+                if(eds->Layers.at(i)->baseRef->getFilename()!=envFileNames[j])
+                    envFileNames[j] = eds->Layers.at(i)->baseRef->getFilename();
+            }
+        }
+    }
+    // update covariates and filename in project
+    for(size_t i = 0; i<envFileNames.size(); i++){
+        bool exist = false;
+        for(size_t j = 0; j<project->layernames.size(); j++){
+            if(layernames[i]==project->layernames[j]){
+                project->filenames[j] = envFileNames[i];
+                project->layertypes[j] = datatypes[i];
+                exist = true;
+            }
+        }
+        if(!exist){
+            project->filenames.push_back(envFileNames[i]);
+            project->layernames.push_back(layernames[i]);
+            project->layertypes.push_back(datatypes[i]);
+            addedLayer++;
+        }
+    }
+
     if(mode == AddPrototypeBase::SAMPLE){
         ui->progressBar->setValue(1);
         //ui->progressBar->setRange(0,0);

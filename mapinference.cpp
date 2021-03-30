@@ -11,6 +11,7 @@ mapInference::mapInference(SoLIMProject *proj, QWidget *parent) :
         | Qt::WindowMaximizeButtonHint);
     show();
     setWindowIcon(QIcon("./imgs/solim.jpg"));
+    outputAutoFill = true;
     if(proj==nullptr){
         QMessageBox alertMsg;
         alertMsg.setText("Please create a project first!");
@@ -86,9 +87,10 @@ void mapInference::on_SoilFileCreate_btn_clicked()
 {
     QString soilFile = QFileDialog::getSaveFileName(this,
                                                     tr("Save output soil file"),
-                                                    "./",
+                                                    project->workingDir,
                                                     tr("Output soil file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
     if(soilFile.isEmpty()) return;
+    else workingDir=QFileInfo(soilFile).absoluteDir().absolutePath();
     ui->OutputSoilFile_lineEdit->setText(soilFile);
     string uncerFile = soilFile.toStdString();
     std::size_t end = uncerFile.find_last_of('.');
@@ -152,6 +154,15 @@ void mapInference::on_Inference_OK_btn_clicked()
     ui->cancel_btn->setEnabled(false);
     ui->Inference_OK_btn->setEnabled(false);
     solim::EnvDataset *eds = new solim::EnvDataset(envFileNames,datatypes,layernames,ramEfficient);
+    // update filename
+    for(size_t i = 0; i<eds->Layers.size(); i++){
+        for(size_t j = 0; j<project->filenames.size(); j++){
+            if(eds->Layers.at(i)->LayerName==project->layernames[j]){
+                if(eds->Layers.at(i)->baseRef->getFilename()!=project->filenames[j])
+                    project->filenames[j] = eds->Layers.at(i)->baseRef->getFilename();
+            }
+        }
+    }
     vector<solim::Prototype> *prototypes = new vector<solim::Prototype>;
     for(size_t i = 0;i<project->prototypes.size();i++){
         //if(project->prototypes[i].prototypeBaseName == ui->prototypeBaseName_lineEdit->text().toStdString())
@@ -160,8 +171,8 @@ void mapInference::on_Inference_OK_btn_clicked()
     }
     solim::Inference::inferMap(eds, &(project->prototypes), targetName, threshold, outSoil, outUncer,ui->progressBar);
 
-    project->results.push_back(outSoil);
-    project->results.push_back(outUncer);;
+    project->addResult(outSoil);
+    project->addResult(outUncer);
     this->close();
 }
 
@@ -189,4 +200,61 @@ void mapInference::tableItemClicked(int row,int col){
                                                 0,
                                                 new QTableWidgetItem(addGisData.filename));
     }
+}
+
+void mapInference::on_InferedProperty_comboBox_currentTextChanged(const QString &arg1)
+{
+    if(outputAutoFill){
+        QString dir = project->workingDir;
+        if(dir.indexOf("/")>-1){
+            QString soilFile = dir+"/"+arg1+".tif";
+            QFileInfo soilFileInfo(soilFile);
+            int i = 1;
+            while(soilFileInfo.exists()){
+                soilFile = dir+"/"+arg1+"("+QString::number(i)+").tif";
+                soilFileInfo.setFile(soilFile);
+                i++;
+            }
+            ui->OutputSoilFile_lineEdit->setText(soilFile);
+            QString uncerFile = dir+"/"+arg1+"_uncer.tif";
+            QFileInfo uncerFileInfo(uncerFile);
+            i = 1;
+            while(uncerFileInfo.exists()){
+                uncerFile = dir+"/"+arg1+"_uncer("+QString::number(i)+").tif";
+                uncerFileInfo.setFile(uncerFile);
+                i++;
+            }
+            ui->OutputUncerFile_lineEdit->setText(uncerFile);
+        }
+        if(workingDir.indexOf("\\")>-1){
+            QString soilFile = dir+"\\"+arg1+".tif";
+            QFileInfo soilFileInfo(soilFile);
+            int i = 1;
+            while(soilFileInfo.exists()){
+                soilFile = dir+"\\"+arg1+"("+QString::number(i)+").tif";
+                soilFileInfo.setFile(soilFile);
+                i++;
+            }
+            ui->OutputSoilFile_lineEdit->setText(soilFile);
+            QString uncerFile = dir+"\\"+arg1+"_uncer.tif";
+            QFileInfo uncerFileInfo(uncerFile);
+            i = 1;
+            while(uncerFileInfo.exists()){
+                uncerFile = dir+"\\"+arg1+"_uncer("+QString::number(i)+").tif";
+                uncerFileInfo.setFile(uncerFile);
+                i++;
+            }
+            ui->OutputUncerFile_lineEdit->setText(uncerFile);
+        }
+    }
+}
+
+void mapInference::on_OutputSoilFile_lineEdit_textEdited(const QString &arg1)
+{
+    outputAutoFill = false;
+}
+
+void mapInference::on_OutputUncerFile_lineEdit_textEdited(const QString &arg1)
+{
+    outputAutoFill = false;
 }

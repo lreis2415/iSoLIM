@@ -157,10 +157,19 @@ void MainWindow::onProjectSaveAs(){
     if(!proj) return;
     QString filename = QFileDialog::getSaveFileName(this,
                                                     tr("Save project as"),
-                                                    tr("*.slp"),
-                                                    workingDir);
+                                                    workingDir,
+                                                    tr("*.slp"));
     proj->projFilename=filename.toStdString();
+    if(!filename.isEmpty()){
+        std::size_t first = filename.lastIndexOf('/');
+        if (first==std::string::npos){
+            first = filename.lastIndexOf('\\');
+        }
+        std::size_t end = filename.lastIndexOf('.');
+        proj->projName = filename.mid(first+1,end-first-1).toStdString();
+    }
     workingDir=QFileInfo(filename).absoluteDir().absolutePath();
+    model->setData(model->index(0,0), proj->projName.c_str());
     onProjectSave();
 }
 
@@ -354,6 +363,7 @@ void MainWindow::onAddPrototypeBaseFromSamples(){
     // show prototypes
     //connect(getPrototype,SIGNAL(finished(int)),this,SLOT(onGetPrototype()));
     onGetPrototype();
+    if(getPrototype->addedLayer>0) onGetGisData();
     workingDir=proj->workingDir;
     projectSaved = false;
 }

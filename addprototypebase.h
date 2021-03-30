@@ -22,6 +22,7 @@ class AddPrototypeBase : public QDialog
 
 public:
     enum addPrototypeBaseMode{SAMPLE, MAP};
+    int addedLayer;
     explicit AddPrototypeBase(addPrototypeBaseMode mode, SoLIMProject *proj, QWidget *parent = nullptr);
     ~AddPrototypeBase();
 

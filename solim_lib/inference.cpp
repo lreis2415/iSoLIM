@@ -18,12 +18,12 @@ void Inference::inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string 
     float *uncertaintyValue, *predictedValue;
     uncertaintyValue = new float[nx*ny];
     predictedValue = new float[nx*ny];
-    BaseIO *outSoilMap = new BaseIO(*(eds->LayerRef));
+    BaseIO *outSoilMap = new BaseIO(eds->LayerRef);
     outSoilMap->setFileName(outSoilFile);
     outSoilMap->setNodataValue(NODATA);
-    BaseIO *outUncerMap = new BaseIO(*(eds->LayerRef));
+    BaseIO *outUncerMap = new BaseIO(eds->LayerRef);
     outUncerMap->setFileName(outUncerFile);
-    outUncerMap->setNodataValue(NODATA);
+    outUncerMap->setNodataValue(-1);
     double *envValues = new double[MAXLN_LAYERS];
     double *nodata = new double[MAXLN_LAYERS];
     for (int k = 0; k < eds->Layers.size(); k++) {
@@ -44,32 +44,28 @@ void Inference::inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string 
         for (int k = 0; k < eds->Layers.size(); ++k) {
             eds->Layers.at(k)->ReadByBlock(i);
         }
+        long long int pixelCount = nx*ny;
 #pragma omp parallel for schedule(dynamic)
         for (int n = 0; n < nx*ny; ++n) {
             // for each unit in the block, calculate their predicted value and uncertainty
             bool validEnvUnitFlag = TRUE;
 
-            long long int pixelCount = nx*ny;
             double progressPara = 100.0/pixelCount;
             if (n % int(pixelCount*0.01)==0 && n > 0) {
-                qInfo()<<predictedValue[n-1] << uncertaintyValue[n-1];
                 if(omp_get_thread_num()==0)
                     progressBar->setValue(n*progressPara+i*100);
-                //cout <<n<<" "<<nx*ny<<" "<<omp_get_thread_num()<<endl;
             }
-            //e = new EnvUnit();
             for (int k = 0; k < eds->Layers.size(); ++k) {
                 // get the values at all layers for the unit
                 float value = eds->Layers.at(k)->EnvData[n];
-                if (fabs(value - nodata[k]) < VERY_SMALL || value<nodata[k]) {
+                if (fabs(value - nodata[k]) < VERY_SMALL || value<NODATA) {
                     validEnvUnitFlag = FALSE;
                     break;
                 }
                 envValues[k] = value;
-                //e->AddEnvValue(value);
             }
             if (!validEnvUnitFlag) {
-                uncertaintyValue[n] = NODATA;
+                uncertaintyValue[n] = -1;
                 predictedValue[n] = NODATA;
                 //delete e;
                 continue;
@@ -96,12 +92,13 @@ void Inference::inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string 
                 }
             }
             if (fabs(weightSum) < VERY_SMALL) {
-                uncertaintyValue[n] = NODATA;
+                uncertaintyValue[n] = -1;
                 predictedValue[n] = NODATA;
             }
             else {
                 predictedValue[n] = valueSum / weightSum;
                 uncertaintyValue[n] = 1 - maxSimi;
+                float tmp = uncertaintyValue[n];
             }
         }
 

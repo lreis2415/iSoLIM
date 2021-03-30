@@ -146,7 +146,6 @@ BaseIO::BaseIO(string filename) {
 		}
 		else
 			cout << "Input file " << filename << " has geographic coordinate system." << endl;
-		// cout<<getproj<<endl; // for test
 
         band = ds->GetRasterBand(1);//GDALGetRasterBand(fh, 1);
 
@@ -199,8 +198,8 @@ BaseIO::BaseIO(string filename) {
         dataMin = band->GetMinimum(&fGotMin);//GDALGetRasterMinimum(bandh, &fGotMin);
 		if (!(fGotMax&&fGotMin)) {
 			double adfMinMax[2];
-            int result = band->ComputeRasterMinMax(TRUE, adfMinMax);//GDALComputeRasterMinMax(bandh, TRUE, adfMinMax);
-            if(result){
+            CPLErr result = band->ComputeRasterMinMax(TRUE, adfMinMax);//GDALComputeRasterMinMax(bandh, TRUE, adfMinMax);
+            if(result == CE_None){
                 dataMin = adfMinMax[0];
                 dataMax = adfMinMax[1];
             }
@@ -219,6 +218,7 @@ BaseIO::BaseIO(string filename) {
 }
 
 BaseIO::BaseIO(BaseIO *lyr){
+    is3dr = lyr->is3dr;
     if(lyr->is3dr){
         threeDRfp = lyr->threeDRfp;
         is3dr = true;
@@ -269,7 +269,8 @@ BaseIO::BaseIO(BaseIO *lyr){
     }
 BaseIO::~BaseIO() {
 	if (is3dr) {
-		fclose(threeDRfp);
+        if(threeDRfp)
+            fclose(threeDRfp);
 	}
 	else {
         if( ds != NULL )
@@ -354,9 +355,6 @@ void BaseIO::write(long xStart, long yStart, long numRows, long numCols, float *
 
 			fprintf(threeDRfp, "%s %d\n", "FirstDataByte: ", 999);
 			NumberOfRecords++;
-
-
-
 
 			firstDataByte = ftell(threeDRfp); //get the offset location.
 			rewind(threeDRfp);
@@ -451,7 +449,7 @@ void BaseIO::write(long xStart, long yStart, long numRows, long numCols, float *
 				}
 			}
             const char*projection = ds->GetProjectionRef();
-            ds=driver->Create(fileName.c_str(), xSize, ySize, 1, eBDataType, NULL);//fh = GDALCreate(hDriver, fileName.c_str(), xSize, ySize, 1, eBDataType, NULL);
+            ds=driver->Create(fileName.c_str(), xSize, ySize, 1, GDT_Float32, NULL);//fh = GDALCreate(hDriver, fileName.c_str(), xSize, ySize, 1, eBDataType, NULL);
             ds->SetProjection(projection);//GDALSetProjection(fh, GDALGetProjectionRef(fh));
             ds->SetGeoTransform(adfGeoTransform);//GDALSetGeoTransform(fh, adfGeoTransform);
             band = ds->GetRasterBand(1);//bandh = GDALGetRasterBand(fh, 1);
@@ -464,6 +462,10 @@ void BaseIO::write(long xStart, long yStart, long numRows, long numCols, float *
             band = ds->GetRasterBand(1);//bandh = GDALGetRasterBand(fh, 1);
 		}
 		//  Now write the data from rank 0 and close the file
+        for(int i =90050;i<100000;i++){
+            double tmp = source[i];
+            cout<<tmp;
+        }
         CPLErr result = band->RasterIO(GF_Write, xStart, yStart, numCols, numRows,//GDALRasterIO(bandh, GF_Write, xStart, yStart, numCols, numRows,
             source, numCols, numRows, GDT_Float32, 0, 0);
 		if (result != CE_None) {
