@@ -85,6 +85,18 @@ SimpleDialog::SimpleDialog(int mode, SoLIMProject *proj, QWidget *parent) :
         ui->label_hint->setVisible(false);
         ui->next_btn->setVisible(false);
         break;
+    case RESETRANGE:
+        this->setWindowTitle("Reset range for membership function display");
+        ui->label_1->setText("Lower range: ");
+        ui->btn_1->setVisible(false);
+        ui->btn_2->setVisible(false);
+        ui->label_2->setText("Upper range: ");
+        ui->checkBox->setVisible(false);
+        ui->label_hint->setVisible(false);
+        ui->label_3->setVisible(false);
+        ui->lineEdit_3->setVisible(false);
+        ui->btn_3->setVisible(false);
+        ui->next_btn->setVisible(false);
     }
     filename="";
     covariate="";
@@ -239,6 +251,25 @@ void SimpleDialog::on_ok_btn_clicked()
         } else {
             QMessageBox warn;
             warn.setText("Input File or Reference File does not exist.");
+            warn.exec();
+            return;
+        }
+        close();
+    } else if(mode==RESETRANGE){
+        lineEdit1 = ui->lineEdit_1->text();
+        lineEdit2 = ui->lineEdit_2->text();
+        bool max_ok, min_ok;
+        float max = lineEdit2.toFloat(&max_ok);
+        float min = lineEdit1.toFloat(&min_ok);
+        if(!max_ok||!min_ok){
+            QMessageBox warn;
+            warn.setText("Input must be value.");
+            warn.exec();
+            return;
+        }
+        if(max<min||(max-min)<VERY_SMALL){
+            QMessageBox warn;
+            warn.setText("Upper range must be bigger than lower range.");
             warn.exec();
             return;
         }

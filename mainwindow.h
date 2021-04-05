@@ -85,7 +85,7 @@ private slots:
     void finishedCreateImg();
     void onDeleteGisLayer();
     void onModifyCovFile();
-
+    void onResetRange();
     void on_actionResample_triggered();
 
 private:
@@ -100,6 +100,7 @@ private:
     QImage *img;    // store pointer for current showing image
     string imgFilename; // store current showing image filename
     QToolBar *zoomToolBar;
+    QToolBar *resetRangeToolBar;
     string currentBaseName;
     string currentProtoName;
     string currentLayerName;
@@ -116,7 +117,7 @@ private:
     void updateGisDataFromTree();
     void readPrototype(TiXmlElement*prototypesElement);
     void drawLayer(string filename);
-    void drawMembershipFunction(string basename, string idname, string covName);
+    void drawMembershipFunction(string basename, string idname, string covName, float max = NODATA, float min = NODATA);
     void warn(QString msg){
         QMessageBox qb;
         qb.setText(msg);

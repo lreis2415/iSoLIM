@@ -55,6 +55,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(zoomOutAct, SIGNAL(triggered()), this, SLOT(onZoomout()));
     zoomToolBar->addAction(zoomOutAct);
     zoomToolBar->setVisible(false);
+    resetRangeToolBar = addToolBar(tr("reset membership function range"));
+    QAction *resetRangeAct = new QAction("reset range", this);
+    connect(resetRangeAct, SIGNAL(triggered()),this,SLOT(onResetRange()));
+    resetRangeToolBar->addAction(resetRangeAct);
+    resetRangeToolBar->setVisible(false);
     resultChild = nullptr;
     prototypeChild = nullptr;
     gisDataChild = nullptr;
@@ -800,6 +805,7 @@ void MainWindow::drawLayer(string filename){
         myGraphicsView->showImage = true;
         myGraphicsView->showMembership=false;
         zoomToolBar->setVisible(true);
+        resetRangeToolBar->setVisible(false);
         myGraphicsView->getScene()->clear();
         ui->statusBar->showMessage("coordinate: ("+QString::number(lyr->getXMin())+", "
                                    +QString::number(lyr->getYMin())+") (TopLeft)");
@@ -890,6 +896,7 @@ void MainWindow::finishedCreateImg(){
     myGraphicsView->showImage = true;
     myGraphicsView->showMembership=false;
     zoomToolBar->setVisible(true);
+    resetRangeToolBar->setVisible(false);
     myGraphicsView->getScene()->clear();
     int viewHeight = myGraphicsView->height();
     int viewWidth = myGraphicsView->width();
@@ -914,9 +921,25 @@ void MainWindow::finishedCreateImg(){
     ui->statusBar->clearMessage();
 }
 
-void MainWindow::drawMembershipFunction(string basename, string idname, string covName){
+void MainWindow::onResetRange(){
+    SimpleDialog resetRangeDialog(SimpleDialog::RESETRANGE,proj,this);\
+    resetRangeDialog.exec();
+    bool max_ok, min_ok;
+    float max = resetRangeDialog.lineEdit2.toFloat(&max_ok);
+    float min = resetRangeDialog.lineEdit1.toFloat(&min_ok);
+    if(max_ok && min_ok) drawMembershipFunction(currentBaseName,currentProtoName,currentLayerName,max,min);
+}
+
+void MainWindow::drawMembershipFunction(string basename, string idname, string covName,float max, float min){
+    currentBaseName = basename;
+    currentProtoName = idname;
+    currentLayerName = covName;
+    bool predefined_range = false;
+    if((max-NODATA)>VERY_SMALL && (min-NODATA)>VERY_SMALL)
+        predefined_range=true;
     graphicFilename="";
     zoomToolBar->setVisible(false);
+    resetRangeToolBar->setVisible(true);
     myGraphicsView->showImage = false;
     myGraphicsView->dataDetailsView->setModel(new QStandardItemModel(myGraphicsView->dataDetailsView));
     myGraphicsView->getScene()->clear();
@@ -997,7 +1020,27 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
     yaxis0->setFont(QFont("Times", 10, QFont::Bold));
     yaxis0->setPos(0.45*sceneWidth-5,0.85*sceneHeight);
 
-    if(xmin*xmax<0||xmax<VERY_SMALL){
+    if(predefined_range) {
+        myGraphicsView->getScene()->addLine(0.10*sceneWidth,0.85*sceneHeight,0.10*sceneWidth,0.1*sceneHeight,axisPen);
+        myGraphicsView->getScene()->addLine(0.10*sceneWidth,0.1*sceneHeight,0.10*sceneWidth-3,0.1*sceneHeight+3,axisPen);
+        myGraphicsView->getScene()->addLine(0.10*sceneWidth,0.1*sceneHeight,0.10*sceneWidth+3,0.1*sceneHeight+3,axisPen);
+        myGraphicsView->getScene()->addLine(0.10*sceneWidth,0.15*sceneHeight,0.10*sceneWidth+3,0.15*sceneHeight,axisPen);
+        yaxis1->setPos(0.10*sceneWidth-15,0.15*sceneHeight-10);
+        yaxis0->setPos(0.10*sceneWidth-5,0.85*sceneHeight);
+        covNameText->setPos(0.9*sceneWidth-100, 0.02*sceneHeight);
+        covSourceText->setPos(0.9*sceneWidth-100, 0.02*sceneHeight+20);
+        typicalValueText->setPos(0.9*sceneWidth-100, 0.02*sceneHeight+40);
+        yaxisName->setPos(0.10*sceneWidth, 0.1*sceneHeight-20);
+        yaxis0->setPos(0.10*sceneWidth-20,0.85*sceneHeight-20);
+        QGraphicsTextItem *xaxis0 = myGraphicsView->getScene()->addText(QString::number(min));
+        xaxis0->setFont(QFont("Times", 10, QFont::Bold));
+        xaxis0->setPos(0.10*sceneWidth-4*xaxis0->toPlainText().size(),0.85*sceneHeight);
+        QGraphicsTextItem *xaxis1 = myGraphicsView->getScene()->addText(QString::number(max));
+        xaxis1->setFont(QFont("Times", 10, QFont::Bold));
+        xaxis1->setPos(0.80*sceneWidth-4*xaxis1->toPlainText().size(),0.85*sceneHeight);
+        myGraphicsView->curveXMin=min;
+        myGraphicsView->curveXMax=max;
+    } else if(xmin*xmax<0||xmax<VERY_SMALL){
         // set axis
         myGraphicsView->getScene()->addLine(0.45*sceneWidth,0.85*sceneHeight,0.45*sceneWidth,0.1*sceneHeight,axisPen);
         myGraphicsView->getScene()->addLine(0.45*sceneWidth,0.1*sceneHeight,0.45*sceneWidth-3,0.1*sceneHeight+3,axisPen);
@@ -1012,8 +1055,7 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
         xaxis0->setPos(0.10*sceneWidth-4*xaxis0->toPlainText().size(),0.85*sceneHeight);
         myGraphicsView->curveXMin=-margin;
         myGraphicsView->curveXMax=margin;
-    }
-    else {
+    } else if(!predefined_range) {
         myGraphicsView->getScene()->addLine(0.10*sceneWidth,0.85*sceneHeight,0.10*sceneWidth,0.1*sceneHeight,axisPen);
         myGraphicsView->getScene()->addLine(0.10*sceneWidth,0.1*sceneHeight,0.10*sceneWidth-3,0.1*sceneHeight+3,axisPen);
         myGraphicsView->getScene()->addLine(0.10*sceneWidth,0.1*sceneHeight,0.10*sceneWidth+3,0.1*sceneHeight+3,axisPen);
@@ -1050,12 +1092,19 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
 
     double previousx,previousy;
     double range_min,interval;
-    if(xmin*xmax<0||xmax<VERY_SMALL){
+    if(predefined_range){
+        previousx = min;
+        previousy = proj->prototypes[protoPos].envConditions[covPos].getOptimality(min);
+        interval = (max-min)/100.0;
+        range_min = previousx;
+        scale = max-min;
+    }
+    else if(xmin*xmax<0||xmax<VERY_SMALL){
         previousy = proj->prototypes[protoPos].envConditions[covPos].getOptimality(0-margin);
         previousx = -margin;
         interval = 2*margin/100.0;
         range_min = previousx;
-    } else if(xmin>xmax-xmin&&xmin>10){
+    } else if((xmin>xmax-xmin&&xmin>10) || margin-xmax>xmax-xmin){
         previousx = int(xmin/10)*10;
         previousy = proj->prototypes[protoPos].envConditions[covPos].getOptimality(previousx);
         interval = double(margin-previousx)/100.0;

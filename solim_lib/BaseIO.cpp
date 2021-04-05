@@ -462,10 +462,6 @@ void BaseIO::write(long xStart, long yStart, long numRows, long numCols, float *
             band = ds->GetRasterBand(1);//bandh = GDALGetRasterBand(fh, 1);
 		}
 		//  Now write the data from rank 0 and close the file
-        for(int i =90050;i<100000;i++){
-            double tmp = source[i];
-            cout<<tmp;
-        }
         CPLErr result = band->RasterIO(GF_Write, xStart, yStart, numCols, numRows,//GDALRasterIO(bandh, GF_Write, xStart, yStart, numCols, numRows,
             source, numCols, numRows, GDT_Float32, 0, 0);
 		if (result != CE_None) {

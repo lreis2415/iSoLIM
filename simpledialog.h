@@ -16,12 +16,13 @@ class SimpleDialog : public QDialog
     Q_OBJECT
 
 public:
-    enum simpleDialogMode{ADDGISDATA,ADDCOVARIATE,ADDPROTOTYPEBASE,EDITSTUDYAREA,MODIFYGISDATA,RESAMPLE};
+    enum simpleDialogMode{ADDGISDATA,ADDCOVARIATE,ADDPROTOTYPEBASE,EDITSTUDYAREA,MODIFYGISDATA,RESAMPLE,RESETRANGE};
     explicit SimpleDialog(int mode, SoLIMProject *proj, QWidget *parent = nullptr);
     ~SimpleDialog();
     QString filename;
     QString covariate;
     std::string datatype;
+    QString lineEdit1;
     QString lineEdit2;
     QString lineEdit3;
     bool nextFlag;
