@@ -132,7 +132,11 @@ void AddPrototypeBase::on_browseSampleFile_btn_clicked()
         ui->sampleFile_lineEdit->setText(filename);
         project->workingDir=QFileInfo(filename).absoluteDir().absolutePath();
         ifstream file(filename.toStdString()); // declare file stream:
-        if(!file.is_open()) return;
+        if(!file.is_open()){
+            warn("Cannot open sample file");
+            ui->sampleFile_lineEdit->clear();
+            return;
+        }
         string line;
         getline(file, line);
         vector<string> names;

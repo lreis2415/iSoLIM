@@ -134,14 +134,12 @@ void EnvLayer::ReadByBlock(int blockRank) {
 	}
 	baseRef->read(globalx, globaly, ny, nx, EnvData);
 	if (BlockSize > 1) {
-		baseRef->read(globalx + nx - 1, globaly, 1, nx, lowerBorder);
-		baseRef->read(globalx, globaly, 1, nx, upperBorder);
-		if (blockRank > 0) {
-			baseRef->read(globalx + nx, globaly, 1, nx, lowerBorder);
-		}
-		if (blockRank < BlockSize - 1) {
-			baseRef->read(globalx - 1, globaly, 1, nx, upperBorder);
-		}
+        if (blockRank > 0) {
+            //baseRef->read(globalx, globaly-1, 1, nx, upperBorder);
+        }
+        if (blockRank < BlockSize - 1) {
+            //baseRef->read(globalx, globaly+ny, 1, nx, lowerBorder);
+        }
 	}
 }
 };

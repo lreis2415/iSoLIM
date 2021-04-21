@@ -14,10 +14,6 @@ using std::ofstream;
 using std::ifstream;
 
 namespace solim {
-bool ReadinEnvLayers(EnvDataset* eds, vector<string> envLayerFilenames, vector<string> datatypes) {
-    eds->ReadinLayers(envLayerFilenames, datatypes);
-    return true;
-}
 
 bool WriteoutRaster(EnvLayer* envLayer, string filename, string type, GDALDataset* srcDs) {
     envLayer->Writeout(filename);

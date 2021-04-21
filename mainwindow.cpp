@@ -188,11 +188,14 @@ void MainWindow::onProjectOpen(){
     if(projectFile.isEmpty()){
         return;
     }
-    workingDir=QFileInfo(projectFile).absoluteDir().absolutePath();
-    TiXmlDocument doc(projectFile.toStdString().c_str());
+   workingDir=QFileInfo(projectFile).absoluteDir().absolutePath();
+   TiXmlDocument doc(projectFile.toStdString().c_str());
     bool loadOK = doc.LoadFile();
     if (!loadOK) {
-        throw invalid_argument("Failed to read xml file");
+        QMessageBox msg;
+        msg.setText("Failed to open project file. Please make sure the filename and path to file does not contain non-English characters.");
+        msg.exec();
+        return;
     }
     TiXmlHandle docHandle(&doc);
     TiXmlHandle projectHandle = docHandle.FirstChildElement("Project");
@@ -273,7 +276,12 @@ void MainWindow::onViewData(){
                                                    tr("Raster file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)")).toStdString();
     if(!filename.empty()){
         workingDir=QFileInfo(filename.c_str()).absoluteDir().absolutePath();
-        drawLayer(filename);
+        bool opened = drawLayer(filename);
+        if(!opened){
+            QMessageBox warn;
+            warn.setText("File open failed! Please make sure the filename and path to file does not contain non-English characters.");
+            warn.exec();
+        }
     }
 }
 
@@ -784,16 +792,16 @@ void MainWindow::onInferResults(){
 }
 
 //=========================== Main Graphics View function===============================
-void MainWindow::drawLayer(string filename){
+bool MainWindow::drawLayer(string filename){
     graphicFilename=filename;
-    if(filename.empty()) return;
+    if(filename.empty()) return false;
     QFileInfo fileinfo(filename.c_str());
-    if(!fileinfo.exists()) return;
+    if(!fileinfo.exists()) return false;
     imgFilename = filename;
     string imagename = filename+".png";
     img = new QImage(imagename.c_str());
     lyr = new BaseIO(filename);
-    if(!lyr->isOpened()) return;
+    if(!lyr->isOpened()) return false;
     imgMax = lyr->getDataMax();
     imgMin = lyr->getDataMin();
     if(img->isNull()){
@@ -832,7 +840,7 @@ void MainWindow::drawLayer(string filename){
         myGraphicsView->imgMin = imgMin;
         myGraphicsView->range = (imgMax-imgMin)/254.0;
     }
-
+    return true;
 }
 
 void MainWindow::createImg(){

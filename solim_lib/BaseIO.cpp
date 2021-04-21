@@ -6,20 +6,20 @@ BaseIO::BaseIO(string filename) {
     if (strcmp(strrchr(filename.c_str(), '.'), ".3dr") == 0) {
 		is3dr = true;
         char utilityString[50];
-		inCurLoc = 0;
-		if ((threeDRfp = fopen(filename.c_str(), "r")) == NULL) {
+        inCurLoc = 0;
+        if ((threeDRfp = fopen(filename.c_str(),"r")) == NULL) {
 			cout << "Cannot open inputFile for reading header." << endl;
 			openSuccess = false;
 			return;	//Cannot open inputFile for reading header.
 		}
-		fscanf(threeDRfp, "%s", utilityString);
+        fscanf(threeDRfp, "%s", utilityString);
 		if (strcmp(utilityString, "NumberOfRecords:") != 0) {
 			openSuccess = false;
 			return;	//File format of inputFile has error(s).
 		}
-		else fscanf(threeDRfp, "%d", &NumberOfRecords);
+        else fscanf(threeDRfp, "%d", &NumberOfRecords);
 		int getMaxMin = 0;
-		int getGeo = 0;
+        int getGeo = 0;
 		for (int nl = 0; nl < NumberOfRecords; nl++) {
 			fscanf(threeDRfp, "%s", utilityString);
 			if (strcmp(utilityString, "NumberOfColumns:") == 0) {

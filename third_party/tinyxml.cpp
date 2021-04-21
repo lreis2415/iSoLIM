@@ -22,7 +22,9 @@ must not be misrepresented as being the original software.
 distribution.
 */
 
-#include <ctype.h>
+#include <fstream>
+#include <sstream>
+#include <codecvt>
 
 #ifdef TIXML_USE_STL
 #include <sstream>
@@ -38,15 +40,15 @@ bool TiXmlBase::condenseWhiteSpace = true;
 // Microsoft compiler security
 FILE* TiXmlFOpen( const char* filename, const char* mode )
 {
-	#if defined(_MSC_VER) && (_MSC_VER >= 1400 )
+    #if defined(_MSC_VER) && (_MSC_VER >= 1400 )
 		FILE* fp = 0;
-		errno_t err = fopen_s( &fp, filename, mode );
+        errno_t err = fopen_s( &fp, filename, mode );
 		if ( !err && fp )
 			return fp;
 		return 0;
-	#else
-		return fopen( filename, mode );
-	#endif
+    #else
+        return fopen( filename, mode );
+    #endif
 }
 
 void TiXmlBase::EncodeString( const TIXML_STRING& str, TIXML_STRING* outString )
@@ -968,7 +970,7 @@ bool TiXmlDocument::LoadFile( const char* _filename, TiXmlEncoding encoding )
 	value = filename;
 
 	// reading in binary mode so that tinyxml can normalize the EOL
-	FILE* file = TiXmlFOpen( value.c_str (), "rb" );	
+    FILE* file = TiXmlFOpen( value.c_str (), "rb" );
 
 	if ( file )
 	{

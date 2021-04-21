@@ -73,8 +73,8 @@
     <addaction name="actionAdd_prototypes_from_Data_Mining"/>
    </widget>
    <addaction name="menuProjects"/>
-   <addaction name="menuPrototypes"/>
    <addaction name="menuCovariates"/>
+   <addaction name="menuPrototypes"/>
    <addaction name="menuSoil_Inference"/>
    <addaction name="menuUtilities"/>
    <addaction name="menuHelp"/>

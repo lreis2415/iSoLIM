@@ -54,7 +54,7 @@ public:
 
     void RemoveAllLayers();
 
-    void ReadinLayers(vector<string> &envLayerFilenames, const vector<string> &datatypes, double ramEfficient = 1);
+    void ReadinLayers(vector<string> &envLayerFilenames, const vector<string> &datatypes,vector<string>& layernames, double ramEfficient = 1);
 
 	EnvLayer* getDEM();
 

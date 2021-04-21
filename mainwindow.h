@@ -15,6 +15,7 @@
 #include <QTableView>
 #include <QHeaderView>
 #include <QToolBar>
+#include <QTextCodec>
 #include "mapinference.h"
 #include "addprototypebase.h"
 #include "addrule.h"
@@ -116,7 +117,7 @@ private:
     bool baseExistsWarning(string basename);
     void updateGisDataFromTree();
     void readPrototype(TiXmlElement*prototypesElement);
-    void drawLayer(string filename);
+    bool drawLayer(string filename);
     void drawMembershipFunction(string basename, string idname, string covName, float max = NODATA, float min = NODATA);
     void warn(QString msg){
         QMessageBox qb;

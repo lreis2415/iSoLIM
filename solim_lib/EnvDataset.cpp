@@ -7,8 +7,9 @@ namespace solim {
 	}
 
     EnvDataset::EnvDataset(vector<string> &envLayerFilenames, vector<string> &datatypes){
-        LayerNames.clear();
-        LayerNames.shrink_to_fit();
+        vector<string> layernames;
+        //LayerNames.clear();
+        //LayerNames.shrink_to_fit();
         for (size_t i = 0; i < envLayerFilenames.size(); i++) {
             string layername = "";
             string filename = envLayerFilenames[i];
@@ -21,9 +22,9 @@ namespace solim {
                 if (end == std::string::npos) end = filename.size();
                 layername = filename.substr(first + 1, end - first - 1).c_str();
             }
-            LayerNames.push_back(layername);
+            layernames.push_back(layername);
         }
-        ReadinLayers(envLayerFilenames, datatypes, 1);
+        ReadinLayers(envLayerFilenames, datatypes, layernames, 1);
     }
 
 	EnvDataset::EnvDataset(vector<string>& envLayerFilenames, vector<string>& datatypes, vector<string>& layernames, double ramEfficent)
@@ -45,8 +46,7 @@ namespace solim {
 				layernames.push_back(layername);
 			}
         }
-        this->LayerNames = layernames;
-		ReadinLayers(envLayerFilenames, datatypes, ramEfficent);
+        ReadinLayers(envLayerFilenames, datatypes, layernames, ramEfficent);
 	}
 
 	EnvDataset::~EnvDataset() {
@@ -57,8 +57,11 @@ namespace solim {
 		Layers.clear();
 	}
 
-	void EnvDataset::ReadinLayers(vector<string>& envLayerFilenames, const vector<string>& datatypes, double ramEfficent) {
-		if (envLayerFilenames.empty() || datatypes.empty()) {
+    void EnvDataset::ReadinLayers(vector<string>& envLayerFilenames, const vector<string>& datatypes, vector<string>& layernames, double ramEfficent) {
+        LayerNames.clear();
+        LayerNames.shrink_to_fit();
+
+        if (envLayerFilenames.empty() || datatypes.empty()) {
 			// Print some error information and return.
 			return;
 		}
@@ -96,9 +99,10 @@ namespace solim {
 		for (int i = 0; i < layerNum; ++i) {
 			string datatype = datatypes[i];
 			transform(datatype.begin(), datatype.end(), datatype.begin(), ::toupper);
-            EnvLayer *newLayer = new EnvLayer(i, LayerNames[i], envLayerFilenames[i].c_str(), getDatatypeFromString(datatype), LayerRef);
+            EnvLayer *newLayer = new EnvLayer(i, layernames[i], envLayerFilenames[i].c_str(), getDatatypeFromString(datatype), LayerRef);
 			if (i == 0) {
 				AddLayer(newLayer);
+                LayerNames.push_back(layernames[i]);
 			}
 			else {
 				if (!LayerRef->compareIO(newLayer->baseRef)) {
@@ -116,8 +120,9 @@ namespace solim {
                     bool success = newLayer->baseRef->resample(LayerRef,resampleFile);
                     delete newLayer;
                     if(success){
-                        newLayer = new EnvLayer(i, LayerNames[i], resampleFile, getDatatypeFromString(datatype), LayerRef);
+                        newLayer = new EnvLayer(i, layernames[i], resampleFile, getDatatypeFromString(datatype), LayerRef);
                         AddLayer(newLayer);
+                        LayerNames.push_back(layernames[i]);
                     } else return;
 				}
 				else {
