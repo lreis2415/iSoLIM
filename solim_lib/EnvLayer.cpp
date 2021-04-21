@@ -29,9 +29,9 @@ EnvLayer::EnvLayer(const int layerId, string layerName, const string& filename, 
     upperBorder = nullptr;
     lowerBorder = nullptr;
     if (BlockSize > 1) {
-		upperBorder = new float[YSize];
-		lowerBorder = new float[YSize];
-		for (int i = 0; i < YSize; ++i) {
+        upperBorder = new float[XSize];
+        lowerBorder = new float[XSize];
+        for (int i = 0; i < XSize; ++i) {
 			upperBorder[i] = 0.0;
 			lowerBorder[i] = 0.0;
 		}
@@ -57,9 +57,9 @@ EnvLayer::EnvLayer(const int layerId, string layerName, const string& filename, 
     upperBorder = nullptr;
     lowerBorder = nullptr;
     if (BlockSize > 1) {
-		upperBorder = new float[YSize];
-		lowerBorder = new float[YSize];
-		for (int i = 0; i < YSize; ++i) {
+        upperBorder = new float[XSize];
+        lowerBorder = new float[XSize];
+        for (int i = 0; i < XSize; ++i) {
 			upperBorder[i] = 0.0;
 			lowerBorder[i] = 0.0;
 		}
@@ -135,10 +135,10 @@ void EnvLayer::ReadByBlock(int blockRank) {
 	baseRef->read(globalx, globaly, ny, nx, EnvData);
 	if (BlockSize > 1) {
         if (blockRank > 0) {
-            //baseRef->read(globalx, globaly-1, 1, nx, upperBorder);
+            baseRef->read(globalx, globaly-1, 1, nx, upperBorder);
         }
         if (blockRank < BlockSize - 1) {
-            //baseRef->read(globalx, globaly+ny, 1, nx, lowerBorder);
+            baseRef->read(globalx, globaly+ny, 1, nx, lowerBorder);
         }
 	}
 }

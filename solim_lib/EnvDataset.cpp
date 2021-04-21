@@ -4,9 +4,13 @@ namespace solim {
 	EnvDataset::EnvDataset()
 		: LayerRef(nullptr), CellSize(-9999.), CellSizeY(-9999.), XMin(-9999.), XMax(-9999.),
 		YMin(-9999.), YMax(-9999.), XStart(0), YStart(0), TotalX(0), TotalY(0), CalcArea(0) {
+        LayerNames.clear();
+        LayerNames.shrink_to_fit();
 	}
 
     EnvDataset::EnvDataset(vector<string> &envLayerFilenames, vector<string> &datatypes){
+        LayerNames.clear();
+        LayerNames.shrink_to_fit();
         vector<string> layernames;
         //LayerNames.clear();
         //LayerNames.shrink_to_fit();
@@ -30,6 +34,8 @@ namespace solim {
 	EnvDataset::EnvDataset(vector<string>& envLayerFilenames, vector<string>& datatypes, vector<string>& layernames, double ramEfficent)
 		: LayerRef(nullptr), CellSize(-9999.), CellSizeY(-9999.), XMin(-9999.), XMax(-9999.),
 		YMin(-9999.), YMax(-9999.), XStart(0), YStart(0), TotalX(0), TotalY(0), CalcArea(0) {
+        LayerNames.clear();
+        LayerNames.shrink_to_fit();
 		if (layernames.size() == 0) {
 			for (size_t i = 0; i < envLayerFilenames.size(); i++) {
 				string layername = "";
@@ -58,9 +64,6 @@ namespace solim {
 	}
 
     void EnvDataset::ReadinLayers(vector<string>& envLayerFilenames, const vector<string>& datatypes, vector<string>& layernames, double ramEfficent) {
-        LayerNames.clear();
-        LayerNames.shrink_to_fit();
-
         if (envLayerFilenames.empty() || datatypes.empty()) {
 			// Print some error information and return.
 			return;
