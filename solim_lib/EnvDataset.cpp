@@ -130,6 +130,7 @@ namespace solim {
 				}
 				else {
 					AddLayer(newLayer);
+                    LayerNames.push_back(layernames[i]);
 				}
 			}
 		}

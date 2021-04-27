@@ -257,7 +257,9 @@ void MainWindow::onEditStudyArea(){
     editStudyArea.exec();
     workingDir=proj->workingDir;
     proj->studyArea = editStudyArea.lineEdit2.toStdString();
-    model->item(0,0)->setChild(0,0, new QStandardItem(("Study area: "+proj->studyArea).c_str()));
+    QStandardItem *studyarea = new QStandardItem(("Study area: "+proj->studyArea).c_str());
+    studyarea->setFlags(studyarea->flags() ^ Qt::ItemIsEditable);
+    model->item(0,0)->setChild(0,0, studyarea);
     projectSaved = false;
 }
 void MainWindow::onSoilInferenceFromPrototypes(){
@@ -396,7 +398,9 @@ void MainWindow::onAddPrototypeBaseFromExpert(){
             }
         }
         proj->prototypeBaseNames.push_back(basename.toStdString());
-        prototypeChild->setChild(prototypeChild->rowCount(),0,new QStandardItem("Prototype Base: "+basename));
+        QStandardItem* protobase = new QStandardItem("Prototype Base: "+basename);
+        protobase->setFlags(protobase->flags() ^ Qt::ItemIsEditable);
+        prototypeChild->setChild(prototypeChild->rowCount(),0,protobase);
         projectView->expand(prototypeChild->index());
         if(addPrototypeBase->nextFlag){
             currentBaseName=basename.toStdString();
@@ -458,11 +462,15 @@ void MainWindow::onUpdatePrototypeFromExpert(const Prototype*prop){
             for(int j =0;j<editExpertBase->rowCount();j++){
                 if(editExpertBase->child(j,0)->text().mid(14).toStdString()==prop->prototypeID){
                     QStandardItem*prototype=editExpertBase->child(j,0);
+                    prototype->setFlags(prototype->flags() ^ Qt::ItemIsEditable);
                     prototype->setRowCount(0);
                     prototype->setColumnCount(1);
-                    prototype->setChild(0,0,new QStandardItem("Source: EXPERT"));
+                    QStandardItem* source = new QStandardItem("Source: EXPERT");
+                    source->setFlags(source->flags() ^ Qt::ItemIsEditable);
+                    prototype->setChild(0,0,source);
                     if(prop->properties.size()>0){
                         QStandardItem*properties=new QStandardItem("Properties");
+                        properties->setFlags(properties->flags() ^ Qt::ItemIsEditable);
                         prototype->setChild(prototype->rowCount(),0,properties);
                         for(size_t k = 0;k<prop->properties.size();k++) {
                             string property = prop->properties[k].propertyName;
@@ -470,26 +478,34 @@ void MainWindow::onUpdatePrototypeFromExpert(const Prototype*prop){
                                 property += " (category): " + to_string(int(prop->properties[k].propertyValue));
                             } else
                                 property += " (property): " + to_string(prop->properties[k].propertyValue);
-                            properties->setChild(properties->rowCount(),0,new QStandardItem(property.c_str()));
+                            QStandardItem*property_item=new QStandardItem(property.c_str());
+                            property_item->setFlags(property_item->flags() ^ Qt::ItemIsEditable);
+                            properties->setChild(properties->rowCount(),0,property_item);
                         }
                     }
                     if(prop->envConditionSize>0){
                         QStandardItem* covariates = new QStandardItem("Covariates");
+                        covariates->setFlags(covariates->flags() ^ Qt::ItemIsEditable);
                         prototype->setChild(prototype->rowCount(),0,covariates);
                         covariates->setColumnCount(1);
                         for(int j = 0; j<prop->envConditionSize;j++){
                             string cov = "Covariate: " + prop->envConditions[j].covariateName;
                             covariates->setRowCount(covariates->rowCount()+1);
                             QStandardItem *covItem = new QStandardItem(cov.c_str());
+                            covItem->setFlags(covItem->flags() ^ Qt::ItemIsEditable);
                             covariates->setChild(covariates->rowCount()-1,0,covItem);
                             covItem->setColumnCount(1);
                             double typicalValue = prop->envConditions[j].typicalValue;
                             if(fabs(typicalValue-NODATA)>VERY_SMALL){
                                 string typicalV = "Typical value: "+to_string(typicalValue);
-                                covItem->setChild(covItem->rowCount(),0,new QStandardItem(typicalV.c_str()));
+                                QStandardItem *typicalV_item = new QStandardItem(typicalV.c_str());
+                                typicalV_item->setFlags(typicalV_item->flags() ^ Qt::ItemIsEditable);
+                                covItem->setChild(covItem->rowCount(),0,typicalV_item);
                             }
                             // set membership function
-                            covItem->setChild(covItem->rowCount(),0,new QStandardItem("Membership Function"));
+                            QStandardItem *membershipf = new QStandardItem("Membership Function");
+                            membershipf->setFlags(membershipf->flags() ^ Qt::ItemIsEditable);
+                            covItem->setChild(covItem->rowCount(),0,membershipf);
                         }
                     }
                 }
@@ -715,14 +731,21 @@ void MainWindow::onExportPrototypeBase(){
 void MainWindow::onGetGisData(){
     gisDataChild->setColumnCount(1);
     gisDataChild->setRowCount(proj->layernames.size());
+    QStandardItem *item;
     for(size_t i = 0;i<proj->filenames.size();i++){
         gisDataChild->setChild(i,0,new QStandardItem(proj->layernames[i].c_str()));
         gisDataChild->setRowCount(proj->filenames.size());
         if(proj->filenames[i]!=""){
-            gisDataChild->child(i)->setChild(0,0,new QStandardItem(("Filename: "+proj->filenames[i]).c_str()));
-            gisDataChild->child(i)->setChild(1,0,new QStandardItem(("Type: "+proj->layertypes[i]).c_str()));
+            item = new QStandardItem(("Filename: "+proj->filenames[i]).c_str());
+            item->setFlags(item->flags()^Qt::ItemIsEditable);
+            gisDataChild->child(i)->setChild(0,0,item);
+            item = new QStandardItem(("Type: "+proj->layertypes[i]).c_str());
+            item->setFlags(item->flags()^Qt::ItemIsEditable);
+            gisDataChild->child(i)->setChild(1,0,item);
         } else {
-            gisDataChild->child(i)->setChild(0,0,new QStandardItem(("Type: "+proj->layertypes[i]).c_str()));
+            item = new QStandardItem(("Type: "+proj->layertypes[i]).c_str());
+            item->setFlags(item->flags()^Qt::ItemIsEditable);
+            gisDataChild->child(i)->setChild(1,0,item);
         }
     }
 }
@@ -733,14 +756,17 @@ void MainWindow::onGetPrototype(){
     for(size_t i =0;i<proj->prototypeBaseNames.size();i++){
         string prototypebase = proj->prototypeBaseNames[i];
         QStandardItem *prototypeBase = new QStandardItem(("Prototype Base: "+prototypebase).c_str());
+        prototypeBase->setFlags(prototypeBase->flags()^Qt::ItemIsEditable);
         prototypeChild->setChild(i,0,prototypeBase);
         for(vector<Prototype>::iterator it = proj->prototypes.begin(); it!=proj->prototypes.end();it++){
             if((*it).prototypeBaseName==prototypebase){
                 QStandardItem* prototype = new QStandardItem(("Prototype ID: "+(*it).prototypeID).c_str());
+                prototype->setFlags(prototype->flags()^Qt::ItemIsEditable);
                 prototypeBase->setChild(prototypeBase->rowCount(),0,prototype);
                 prototype->setColumnCount(1);
                 prototype->setChild(0,0,new QStandardItem(("Source: "+string(solim::PrototypeSource_str[(*it).source])).c_str()));
                 QStandardItem* properties = new QStandardItem("Properties");
+                properties->setFlags(properties->flags()^Qt::ItemIsEditable);
                 prototype->setChild(1,0,properties);
                 properties->setColumnCount(1);
                 for(size_t i = 0;i<(*it).properties.size();i++) {
@@ -750,24 +776,32 @@ void MainWindow::onGetPrototype(){
                     } else
                         property += " (property): " + to_string((*it).properties[i].propertyValue);
                     properties->setRowCount(properties->rowCount()+1);
-                    properties->setChild(properties->rowCount()-1,0,new QStandardItem(property.c_str()));
+                    QStandardItem *property_item = new QStandardItem(property.c_str());
+                    property_item->setFlags(property_item->flags()^Qt::ItemIsEditable);
+                    properties->setChild(properties->rowCount()-1,0,property_item);
                 }
                 QStandardItem* covariates = new QStandardItem("Covariates");
+                covariates->setFlags(covariates->flags()^Qt::ItemIsEditable);
                 prototype->setChild(2,0,covariates);
                 covariates->setColumnCount(1);
                 for(int j = 0; j<(*it).envConditionSize;j++){
                     string cov = "Covariate: " + (*it).envConditions[j].covariateName;
                     covariates->setRowCount(covariates->rowCount()+1);
                     QStandardItem *covItem = new QStandardItem(cov.c_str());
+                    covItem->setFlags(covItem->flags()^Qt::ItemIsEditable);
                     covariates->setChild(covariates->rowCount()-1,0,covItem);
                     covItem->setColumnCount(1);
                     double typicalValue = (*it).envConditions[j].typicalValue;
                     if(fabs(typicalValue-NODATA)>VERY_SMALL){
                         string typicalV = "Typical value: "+to_string(typicalValue);
-                        covItem->setChild(covItem->rowCount(),0,new QStandardItem(typicalV.c_str()));
+                        QStandardItem * typ_v = new QStandardItem(typicalV.c_str());
+                        typ_v->setFlags(typ_v->flags()^Qt::ItemIsEditable);
+                        covItem->setChild(covItem->rowCount(),0,typ_v);
                     }
                     // set membership function
-                    covItem->setChild(covItem->rowCount(),0,new QStandardItem("Membership Function"));
+                    QStandardItem * mem_f = new QStandardItem("Membership Function");
+                    mem_f->setFlags(mem_f->flags()^Qt::ItemIsEditable);
+                    covItem->setChild(covItem->rowCount(),0,mem_f);
                 }
             }
         }
@@ -785,7 +819,9 @@ void MainWindow::onInferResults(){
     resultChild->setRowCount(0);
     for(size_t i = 0; i<proj->results.size();i++){
         resultChild->setRowCount(resultChild->rowCount()+1);
-        resultChild->setChild(resultChild->rowCount()-1,0,new QStandardItem(proj->results[i].c_str()));
+        QStandardItem * res = new QStandardItem(proj->results[i].c_str());
+        res->setFlags(res->flags()^Qt::ItemIsEditable);
+        resultChild->setChild(resultChild->rowCount()-1,0,res);
     }
     projectView->expand(resultChild->index());
     projectSaved = false;
@@ -1241,18 +1277,27 @@ void MainWindow::initModel(){
     model = new QStandardItemModel(this);
     model->setColumnCount(1);
     model->setRowCount(1);
-    model->setData(model->index(0,0), proj->projName.c_str());
-    model->item(0,0)->setChild(0,0, new QStandardItem(("Study area: "+proj->studyArea).c_str()));
+    model->setData(model->index(0,0), proj->projName.c_str(),Qt::DisplayRole);
+    QStandardItem *projectname = model->itemFromIndex(model->index(0,0));
+    projectname->setFlags(projectname->flags() ^ Qt::ItemIsEditable);
+    QStandardItem *studyarea = new QStandardItem(("Study area: "+proj->studyArea).c_str());
+    studyarea->setFlags(studyarea->flags() ^ Qt::ItemIsEditable);
+    model->item(0,0)->setChild(0,0, studyarea);
     gisDataChild = new QStandardItem("GIS Data");
+    gisDataChild->setFlags(gisDataChild->flags() ^ Qt::ItemIsEditable);
     gisDataChild->setIcon(QIcon("./imgs/gisdata.svg"));
     model->item(0,0)->setChild(model->item(0,0)->rowCount(),0,gisDataChild);
     prototypeChild = new QStandardItem("Prototypes");
+    prototypeChild->setFlags(prototypeChild->flags() ^ Qt::ItemIsEditable);
     prototypeChild->setIcon(QIcon("./imgs/prototype.svg"));
     model->item(0,0)->setChild(model->item(0,0)->rowCount(),0,prototypeChild);
     resultChild = new QStandardItem("Results");
+    resultChild->setFlags(resultChild->flags() ^ Qt::ItemIsEditable);
     resultChild->setIcon(QIcon("./imgs/result.svg"));
     model->item(0,0)->setChild(model->item(0,0)->rowCount(),0,resultChild);
-    model->setHorizontalHeaderItem( 0, new QStandardItem("Projects") );
+    QStandardItem *projects = new QStandardItem("Projects");
+    projects->setFlags(projects->flags() ^ Qt::ItemIsEditable);
+    model->setHorizontalHeaderItem( 0, projects );
 
     projectView->setModel(model);
     projectView->expand(model->item(0,0)->index());
@@ -1421,7 +1466,7 @@ bool MainWindow::baseExistsWarning(string basename){
 
 void MainWindow::initParas(){
     bool validFile=false;
-    QFile setting("./setting.txt");
+    QFile setting("./bin/setting.txt");
     if(setting.exists()){
         if(setting.open(QIODevice::ReadWrite)){
             QTextStream in(&setting);
@@ -1444,7 +1489,7 @@ void MainWindow::initParas(){
 }
 
 void MainWindow::saveSetting(){
-    QFile setting("./setting.txt");
+    QFile setting("./bin/setting.txt");
     if(setting.open(QIODevice::WriteOnly)){
         QTextStream out(&setting);
         out<<"WorkingDir="+workingDir<<endl;

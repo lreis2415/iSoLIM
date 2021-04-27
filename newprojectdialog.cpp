@@ -9,7 +9,7 @@ NewProjectDialog::NewProjectDialog(QString workDir, QWidget *parent) :
     ui->studyArea_lineEdit->setVisible(false);
     ui->studyArea_label->setVisible(false);
     QFileInfo dir(workingDir);
-    if(dir.exists()&&dir.isDir()) ui->projPath_lineEdit->setText(workingDir);
+    if(dir.exists()&&dir.isDir()) ui->projPath_lineEdit->setText(dir.absoluteDir().absolutePath());
     else ui->projPath_lineEdit->setText(QDir::currentPath());
     ui->ok_btn->setEnabled(false);
 }
