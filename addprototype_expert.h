@@ -11,16 +11,16 @@
 #include "simpledialog.h"
 
 namespace Ui {
-class AddRule;
+class AddPrototype_Expert;
 }
 
-class AddRule : public QDialog
+class AddPrototype_Expert : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit AddRule(SoLIMProject *proj, int protoNum, string currentBaseName="", QWidget *parent = nullptr);
-    ~AddRule();
+    explicit AddPrototype_Expert(SoLIMProject *proj, int protoNum, string currentBaseName="", QWidget *parent = nullptr);
+    ~AddPrototype_Expert();
 signals:
     void addlayer();
     void updatePrototype();
@@ -61,8 +61,18 @@ private slots:
     };
     void on_btn_create_clicked();
 
+    void on_lineEdit_lc_textChanged(const QString &arg1);
+
+    void on_lineEdit_lu_textChanged(const QString &arg1);
+
+    void on_lineEdit_hu_textChanged(const QString &arg1);
+
+    void on_lineEdit_hc_textChanged(const QString &arg1);
+
+    void on_comboBox_curve_activated(int index);
+
 private:
-    Ui::AddRule *ui;
+    Ui::AddPrototype_Expert *ui;
     QStringList prototypeNames;
     QString basename;
     SoLIMProject *proj;
@@ -76,7 +86,6 @@ private:
     vector<double> *freeKnotY;
     string currentBasename;
     void drawMembershipFunction(solim::Curve *c);
-    void addSuccess(QString content);
     void drawEnumRange();
     bool getPointRule(solim::Curve &c);
     void warn(QString msg){

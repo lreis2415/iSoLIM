@@ -49,12 +49,12 @@ SimpleDialog::SimpleDialog(int mode, SoLIMProject *proj, QWidget *parent) :
         ui->btn_3->setVisible(false);
         break;
     case ADDPROTOTYPEBASE:
-        this->setWindowTitle("Create Prototype Base");
+        this->setWindowTitle("Add Prototype Base from Expert");
         ui->label_1->setVisible(false);
         ui->lineEdit_1->setVisible(false);
         ui->btn_1->setVisible(false);
         ui->btn_2->setVisible(false);
-        ui->label_2->setText("Create Prototype Base");
+        ui->label_2->setText("Prototype Base Name");
         ui->checkBox->setVisible(false);  
         ui->label_hint->setVisible(false);
         ui->label_3->setVisible(false);
@@ -97,6 +97,36 @@ SimpleDialog::SimpleDialog(int mode, SoLIMProject *proj, QWidget *parent) :
         ui->lineEdit_3->setVisible(false);
         ui->btn_3->setVisible(false);
         ui->next_btn->setVisible(false);
+        break;
+    case CHANGEBASENAME:
+        this->setWindowTitle("Change prototype base name to");
+        ui->label_1->setText("Current name: ");
+        ui->lineEdit_1->setText(proj->currentBaseName.c_str());
+        ui->lineEdit_1->setEnabled(false);
+        ui->btn_1->setVisible(false);
+        ui->btn_2->setVisible(false);
+        ui->label_2->setText("New name: ");
+        ui->checkBox->setVisible(false);
+        ui->label_hint->setVisible(false);
+        ui->label_3->setVisible(false);
+        ui->lineEdit_3->setVisible(false);
+        ui->btn_3->setVisible(false);
+        ui->next_btn->setVisible(false);
+        break;
+    case MODIFYLAYERNAME:
+        this->setWindowTitle("Change the covariate name");
+        ui->label_1->setText("New name: ");
+        ui->btn_1->setVisible(false);
+        ui->btn_2->setVisible(false);
+        ui->label_2->setVisible(false);
+        ui->lineEdit_2->setVisible(false);
+        ui->checkBox->setVisible(false);
+        ui->label_hint->setVisible(false);
+        ui->label_3->setVisible(false);
+        ui->lineEdit_3->setVisible(false);
+        ui->btn_3->setVisible(false);
+        ui->next_btn->setVisible(false);
+        break;
     }
     filename="";
     covariate="";
@@ -272,6 +302,29 @@ void SimpleDialog::on_ok_btn_clicked()
             warn.setText("Upper range must be bigger than lower range.");
             warn.exec();
             return;
+        }
+        close();
+    } else if (mode == CHANGEBASENAME){
+        lineEdit2=ui->lineEdit_2->text();
+        if(project->currentBaseName==lineEdit2.toStdString()) close();
+        for(size_t i =0; i<project->prototypeBaseNames.size();i++){
+            if(lineEdit2.toStdString()==project->prototypeBaseNames[i]){
+                QMessageBox warn;
+                warn.setText("Prototype base with this name already exists. Please change name!");
+                warn.exec();
+                return;
+            }
+        }
+        close();
+    } else if (mode == MODIFYLAYERNAME) {
+        covariate=ui->lineEdit_1->text();
+        for(size_t i =0; i<project->layernames.size();i++){
+            if(covariate.toStdString()==project->layernames[i]){
+                QMessageBox warn;
+                warn.setText("This name has been used in current covariates.");
+                warn.exec();
+                return;
+            }
         }
         close();
     }

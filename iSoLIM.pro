@@ -16,8 +16,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    addprototype_expert.cpp \
     addprototypebase.cpp \
-    addrule.cpp \
     changecovname.cpp \
     editprototypebases.cpp \
     main.cpp \
@@ -40,8 +40,8 @@ SOURCES += \
     third_party/tinyxmlparser.cpp
 
 HEADERS += \
+    addprototype_expert.h \
     addprototypebase.h \
-    addrule.h \
     changecovname.h \
     editprototypebases.h \
     mainwindow.h \
@@ -66,8 +66,8 @@ HEADERS += \
     third_party/tinyxml.h
 
 FORMS += \
+    addprototype_expert.ui \
     addprototypebase.ui \
-    addrule.ui \
     changecovname.ui \
     editprototypebases.ui \
     mainwindow.ui \

@@ -121,7 +121,6 @@ void MainWindow::onProjectSave(){
     root_node->LinkEndChild(gisData_node);
     TiXmlElement *prototypes_node = new TiXmlElement("Prototypes");
     root_node->LinkEndChild(prototypes_node);
-    updateGisDataFromTree();
     for (size_t i = 0; i<proj->filenames.size();i++) {
         // add layer to GISData
         TiXmlElement *layer_node = new TiXmlElement("Layer");
@@ -135,6 +134,7 @@ void MainWindow::onProjectSave(){
     for(size_t i =0; i<proj->prototypeBaseNames.size();i++){
         TiXmlElement *prototypeBase_node = new TiXmlElement("PrototypeBase");
             prototypeBase_node->SetAttribute("Basename",proj->prototypeBaseNames[i].c_str());
+            prototypeBase_node->SetAttribute("Source", proj->prototypeBaseTypes[i].c_str());
         prototypes_node->LinkEndChild(prototypeBase_node);
         for(vector<solim::Prototype>::iterator it = proj->prototypes.begin();it!=proj->prototypes.end();it++){
             if((*it).prototypeBaseName==proj->prototypeBaseNames[i])
@@ -237,6 +237,7 @@ void MainWindow::onProjectOpen(){
     for(TiXmlElement* prototypeBase = prototypesHandle.FirstChildElement("PrototypeBase").ToElement();
         prototypeBase; prototypeBase = prototypeBase->NextSiblingElement()){
         proj->prototypeBaseNames.push_back(prototypeBase->Attribute("Basename"));
+        proj->prototypeBaseTypes.push_back(prototypeBase->Attribute("Source"));
         readPrototype(prototypeBase);
     }
     onGetPrototype();
@@ -263,7 +264,6 @@ void MainWindow::onEditStudyArea(){
     projectSaved = false;
 }
 void MainWindow::onSoilInferenceFromPrototypes(){
-    updateGisDataFromTree();
     if(proj){
         mapInference *infer= new mapInference(proj);
         infer->show();
@@ -305,7 +305,7 @@ void MainWindow::onSelectionChanged(const QItemSelection& current,const QItemSel
         }
         drawLayer(filename);
     }
-    else if(index.isValid()&&index.parent().data().toString().compare("GIS Data")==0){
+    else if(index.isValid()&&index.parent().data().toString().compare("Covariates")==0){
         string filename = index.child(0,0).data().toString().midRef(10).toString().toStdString();
         drawLayer(filename);
     }
@@ -326,15 +326,25 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
     if(index.isValid()&&index.data().toString().compare("Prototypes")==0){
         prototypesMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
-    else if(index.isValid()&&index.data().toString().compare("GIS Data")==0){
+    else if(index.isValid()&&index.data().toString().compare("Covariates")==0){
         gisDataMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
-    else if (index.isValid()&&index.parent().data().toString().compare("GIS Data")==0){
+    else if (index.isValid()&&index.parent().data().toString().compare("Covariates")==0){
         currentLayerName=index.data().toString().toStdString();
         gisLayerMenu->exec(projectView->viewport()->mapToGlobal(point));
 }
     else if(index.isValid()&&index.parent().data().toString().compare("Prototypes")==0){
         currentBaseName=index.data().toString().mid(16).toStdString();
+        size_t i = 0;
+        while(i < proj->prototypeBaseNames.size()){
+            if(proj->prototypeBaseNames[i]==currentBaseName)
+                break;
+            i++;
+        }
+        if(proj->prototypeBaseTypes[i]=="EXPERT")
+            addProtoExpert->setEnabled(true);
+        else
+            addProtoExpert->setEnabled(false);
         prototypeBaseMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
     else if(index.isValid()&&index.data().toString().startsWith("Prototype ID:")){
@@ -354,13 +364,13 @@ void MainWindow::onAddGisData(){
     for(size_t i = 0;i<proj->filenames.size();i++){
         if(proj->filenames[i]==addGisData.filename.toStdString()){
             QMessageBox warning;
-            warning.setText("This file already exists in GIS data.");
+            warning.setText("This file already exists in covariates.");
             warning.exec();
             return;
         }
         if(proj->layernames[i]==addGisData.covariate.toStdString()){
             QMessageBox warning;
-            warning.setText("This covariate already exists in GIS data. Please rename the covariate.");
+            warning.setText("This covariate name already exists. Please rename the covariate.");
             warning.exec();
             return;
         }
@@ -398,6 +408,7 @@ void MainWindow::onAddPrototypeBaseFromExpert(){
             }
         }
         proj->prototypeBaseNames.push_back(basename.toStdString());
+        proj->prototypeBaseTypes.push_back("EXPERT");
         QStandardItem* protobase = new QStandardItem("Prototype Base: "+basename);
         protobase->setFlags(protobase->flags() ^ Qt::ItemIsEditable);
         prototypeChild->setChild(prototypeChild->rowCount(),0,protobase);
@@ -410,8 +421,18 @@ void MainWindow::onAddPrototypeBaseFromExpert(){
 }
 
 void MainWindow::onCreatePrototypeFromExpert(){
+    for (size_t i = 0;i<proj->prototypeBaseNames.size();i++){
+        if(proj->prototypeBaseNames[i]==currentBaseName){
+            if(proj->prototypeBaseTypes[i]!="EXPERT"){
+                QMessageBox warn;
+                warn.setText("Prototype from expert cannot be added into prototype bases created from samples or data mining.");
+                warn.exec();
+                return;
+            }
+        }
+    }
     if(addRule){ addRule->close(); delete addRule;}
-    addRule = new AddRule(proj,-1,currentBaseName,this);
+    addRule = new AddPrototype_Expert(proj,-1,currentBaseName,this);
     addRule->show();
     connect(addRule,SIGNAL(addlayer()),this,SLOT(onGetGisData()));
     connect(addRule,SIGNAL(updatePrototype()),this,SLOT(onGetPrototype()));
@@ -422,7 +443,7 @@ void MainWindow::onAddRules(){
         if(proj->prototypes[i].prototypeBaseName==currentBaseName
                 &&proj->prototypes[i].prototypeID==currentProtoName){
             if(addRule){ addRule->close(); delete addRule;}
-            addRule = new AddRule(proj,i,"",this);
+            addRule = new AddPrototype_Expert(proj,i,"",this);
             addRule->show();
             connect(addRule,SIGNAL(addlayer()),this,SLOT(onGetGisData()));
             connect(addRule,SIGNAL(updatePrototype()),this,SLOT(onGetPrototype()));
@@ -438,10 +459,15 @@ void MainWindow::onDeletePrototypeBase(){
         } else ++it;
     }
     vector<string>::iterator it_base = proj->prototypeBaseNames.begin();
+    vector<string>::iterator it_type = proj->prototypeBaseTypes.begin();
     while(it_base!=proj->prototypeBaseNames.end()){
         if((*it_base)==currentBaseName){
             it_base=proj->prototypeBaseNames.erase(it_base);
-        } else ++it_base;
+            it_type=proj->prototypeBaseTypes.erase(it_type);
+        } else {
+            ++it_base;
+            ++it_type;
+        }
     }
     onGetPrototype();
 }
@@ -541,6 +567,7 @@ void MainWindow::onImportPrototypeBase(){
         proj->prototypeBaseNames.push_back(basename);
         if(basenames[2]!="source"){ warn("Wrong file format"); return; }
         string source = basenames[3].toStdString();
+        proj->prototypeBaseTypes.push_back(source);
         solim::PrototypeSource protoSource = solim::getSourceFromString(source);
 
         for(int i =1;i<lines.size();i++){
@@ -595,9 +622,29 @@ void MainWindow::onImportPrototypeBase(){
         string basename=prototypeBaseHandle.ToElement()->Attribute("Basename");
         if(baseExistsWarning(basename)) return;
         proj->prototypeBaseNames.push_back(basename);
+        proj->prototypeBaseNames.push_back(prototypeBaseHandle.ToElement()->Attribute("Source"));
         readPrototype(prototypeBaseHandle.ToElement());
         onGetPrototype();
         projectSaved=false;
+    }
+}
+
+void MainWindow::onRenamePrototypeBase(){
+    proj->currentBaseName = currentBaseName;
+    SimpleDialog *changeBaseName = new SimpleDialog(SimpleDialog::CHANGEBASENAME,proj,this);
+    changeBaseName->exec();
+    string newname = changeBaseName->lineEdit2.toStdString();
+    for(size_t i =0; i<proj->prototypeBaseNames.size();i++){
+        if(currentBaseName==proj->prototypeBaseNames[i]){
+            proj->prototypeBaseNames[i]=newname;
+            for(int i =0; i<prototypeChild->rowCount();i++){
+                if(prototypeChild->child(i,0)->text().endsWith(currentBaseName.c_str())){
+                    QStandardItem *editExpertBase=prototypeChild->child(i,0);
+                    editExpertBase->setText(("Prototype Base: "+newname).c_str());
+                }
+            }
+            return;
+        }
     }
 }
 
@@ -657,6 +704,24 @@ void MainWindow::onModifyCovFile() {
     onGetGisData();
 }
 
+void MainWindow::onModifyCovName(){
+    for(size_t i = 0;i<proj->layernames.size();i++){
+        if(currentLayerName==proj->layernames[i]){
+            SimpleDialog modifyGisName(SimpleDialog::MODIFYLAYERNAME,proj, this);
+            modifyGisName.exec();
+            workingDir=proj->workingDir;
+            if(modifyGisName.covariate.isEmpty()){
+                return;
+            } else {
+               proj->layernames[i]=modifyGisName.covariate.toStdString();
+               projectSaved = false;
+            }
+            break;
+        }
+    }
+    onGetGisData();
+}
+
 void MainWindow::onSavePrototypeBase(){
     QString filename = QFileDialog::getSaveFileName(this,
                                                     tr("Save prototype base as"),
@@ -668,6 +733,11 @@ void MainWindow::onSavePrototypeBase(){
     doc->LinkEndChild(pDeclaration);
     TiXmlElement *prototypes_node = new TiXmlElement("PrototypeBase");
     prototypes_node->SetAttribute("Basename",currentBaseName.c_str());
+    for(size_t i = 0; i< proj->prototypeBaseNames.size();i++){
+        if(proj->prototypeBaseNames[i]==currentBaseName){
+            prototypes_node->SetAttribute("Source", proj->prototypeBaseTypes[i].c_str());
+        }
+    }
     doc->LinkEndChild(prototypes_node);
     for(vector<solim::Prototype>::iterator it = proj->prototypes.begin();it!=proj->prototypes.end();it++){
         if((*it).prototypeBaseName==currentBaseName)
@@ -733,7 +803,9 @@ void MainWindow::onGetGisData(){
     gisDataChild->setRowCount(proj->layernames.size());
     QStandardItem *item;
     for(size_t i = 0;i<proj->filenames.size();i++){
-        gisDataChild->setChild(i,0,new QStandardItem(proj->layernames[i].c_str()));
+        item = new QStandardItem(proj->layernames[i].c_str());
+        item->setFlags(item->flags()^Qt::ItemIsEditable);
+        gisDataChild->setChild(i,0,item);
         gisDataChild->setRowCount(proj->filenames.size());
         if(proj->filenames[i]!=""){
             item = new QStandardItem(("Filename: "+proj->filenames[i]).c_str());
@@ -764,7 +836,9 @@ void MainWindow::onGetPrototype(){
                 prototype->setFlags(prototype->flags()^Qt::ItemIsEditable);
                 prototypeBase->setChild(prototypeBase->rowCount(),0,prototype);
                 prototype->setColumnCount(1);
-                prototype->setChild(0,0,new QStandardItem(("Source: "+string(solim::PrototypeSource_str[(*it).source])).c_str()));
+                QStandardItem *source = new QStandardItem(("Source: "+string(solim::PrototypeSource_str[(*it).source])).c_str());
+                source->setFlags(source->flags() ^ Qt::ItemIsEditable);
+                prototype->setChild(0,0,source);
                 QStandardItem* properties = new QStandardItem("Properties");
                 properties->setFlags(properties->flags()^Qt::ItemIsEditable);
                 prototype->setChild(1,0,properties);
@@ -1255,13 +1329,6 @@ void MainWindow::onZoomout()
 }
 
 //=========================== non-slot functions ============================================
-void MainWindow::updateGisDataFromTree(){
-    proj->layernames.clear();
-    for (int i = 0; i<gisDataChild->rowCount();i++) {
-        proj->layernames.push_back(gisDataChild->child(i,0)->text().toStdString());
-    }
-}
-
 void MainWindow::initDataDetailsView(){
     dataDetailsDock = new QDockWidget(tr("Data details"), this);
     dataDetailsView = new QTableView(dataDetailsDock);
@@ -1283,7 +1350,7 @@ void MainWindow::initModel(){
     QStandardItem *studyarea = new QStandardItem(("Study area: "+proj->studyArea).c_str());
     studyarea->setFlags(studyarea->flags() ^ Qt::ItemIsEditable);
     model->item(0,0)->setChild(0,0, studyarea);
-    gisDataChild = new QStandardItem("GIS Data");
+    gisDataChild = new QStandardItem("Covariates");
     gisDataChild->setFlags(gisDataChild->flags() ^ Qt::ItemIsEditable);
     gisDataChild->setIcon(QIcon("./imgs/gisdata.svg"));
     model->item(0,0)->setChild(model->item(0,0)->rowCount(),0,gisDataChild);
@@ -1328,72 +1395,102 @@ void MainWindow::initialProjectView(){
     //myGraphicsView->dataDetailsView = dataDetailsView;
     projectView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(projectView,SIGNAL(customContextMenuRequested(const QPoint &)),this,SLOT(onCustomContextMenu(const QPoint &)));
+    projectView->horizontalScrollBar()->setEnabled(true);
+    projectView->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    projectView->header()->setStretchLastSection(true);
+    connect(projectView, SIGNAL(expanded(QModelIndex)), this, SLOT(onExpanded(QModelIndex)));
+    connect(projectView, SIGNAL(collapsed(QModelIndex)), this, SLOT(onExpanded(QModelIndex)));
     // prototype menu
     prototypesMenu = new QMenu(projectView);
-    QAction *prototypesFromSamples = new QAction("Create new prototype base from samples",prototypesMenu);
+    QAction *prototypesFromSamples = new QAction("Add new prototype base from samples",prototypesMenu);
     prototypesMenu->addAction(prototypesFromSamples);
     projectView->addAction(prototypesFromSamples);
-    QAction *prototypesFromExpert = new QAction("Create new prototype base from expert",prototypesMenu);
+    connect(prototypesFromSamples,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromSamples()));
+    QAction *prototypesFromExpert = new QAction("Add new prototype base from expert",prototypesMenu);
     prototypesMenu->addAction(prototypesFromExpert);
     projectView->addAction(prototypesFromExpert);
-    QAction *prototypesFromMining = new QAction("Create new prototype base from data mining",prototypesMenu);
+    connect(prototypesFromExpert,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromExpert()));
+    QAction *prototypesFromMining = new QAction("Add new prototype base from data mining",prototypesMenu);
     prototypesMenu->addAction(prototypesFromMining);
     projectView->addAction(prototypesFromMining);
+    connect(prototypesFromMining,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromMining()));
     QAction *importPrototypeBase = new QAction("Import prototype base from file",prototypesMenu);
     prototypesMenu->addAction(importPrototypeBase);
     projectView->addAction(importPrototypeBase);
-    connect(prototypesFromSamples,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromSamples()));
-    connect(prototypesFromExpert,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromExpert()));
-    connect(prototypesFromMining,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromMining()));
     connect(importPrototypeBase,SIGNAL(triggered()),this,SLOT(onImportPrototypeBase()));
-    // gis data menu
+    // Covariates menu
     gisDataMenu = new QMenu(projectView);
-    QAction *addGisData = new QAction("Add GIS Data", gisDataMenu);
+    QAction *addGisData = new QAction("Add Covariates", gisDataMenu);
     gisDataMenu->addAction(addGisData);
     projectView->addAction(addGisData);
     connect(addGisData,SIGNAL(triggered()),this,SLOT(onAddGisData()));
     // gis layer menu
     gisLayerMenu = new QMenu(projectView);
-    QAction *deleteGisLayer = new QAction("Delete this layer", gisLayerMenu);
+    // delete this layer
+    QAction *deleteGisLayer = new QAction("Delete this covariate", gisLayerMenu);
     gisLayerMenu->addAction(deleteGisLayer);
     projectView->addAction(deleteGisLayer);
+    connect(deleteGisLayer,SIGNAL(triggered()),this,SLOT(onDeleteGisLayer()));
+    // modify covariate name
+    QAction *modifyCovName = new QAction("Modify covariate name", gisLayerMenu);
+    gisLayerMenu->addAction(modifyCovName);
+    projectView->addAction(modifyCovName);
+    connect(modifyCovName,SIGNAL(triggered()),this,SLOT(onModifyCovName()));
+    // modify covariate file
     QAction *modifyCovFile = new QAction("Modify covariate file", gisLayerMenu);
     gisLayerMenu->addAction(modifyCovFile);
     projectView->addAction(modifyCovFile);
-    connect(deleteGisLayer,SIGNAL(triggered()),this,SLOT(onDeleteGisLayer()));
     connect(modifyCovFile,SIGNAL(triggered()),this,SLOT(onModifyCovFile()));
     // prototype base menu
     prototypeBaseMenu = new QMenu(projectView);
-    QAction *addProtoExpert = new QAction("Add prototype from expert",prototypeBaseMenu);
+    // rename prototype base
+    QAction *renamePrototypeBase = new QAction("Rename prtotype base",prototypeBaseMenu);
+    prototypeBaseMenu->addAction(renamePrototypeBase);
+    projectView->addAction(renamePrototypeBase);
+    connect(renamePrototypeBase,SIGNAL(triggered()),this,SLOT(onRenamePrototypeBase()));
+    // add prototype from expert action
+    addProtoExpert = new QAction("Add prototype from expert",prototypeBaseMenu);
     prototypeBaseMenu->addAction(addProtoExpert);
     projectView->addAction(addProtoExpert);
+    connect(addProtoExpert,SIGNAL(triggered()),this,SLOT(onCreatePrototypeFromExpert()));
+    // change covariate name action
     QAction *changeCovName = new QAction("Change covariate name",prototypeBaseMenu);
     prototypeBaseMenu->addAction(changeCovName);
     projectView->addAction(changeCovName);
+    connect(changeCovName,SIGNAL(triggered()),this,SLOT(onChangeCovName()));
+    // save prototypebase as xml action
     QAction *savePrototypeBase_xml = new QAction("Save as external .xml file",prototypeBaseMenu);
     prototypeBaseMenu->addAction(savePrototypeBase_xml);
     projectView->addAction(savePrototypeBase_xml);
+    connect(savePrototypeBase_xml, SIGNAL(triggered()),this,SLOT(onSavePrototypeBase()));
+    // export prototype base to .csv action
     QAction *exportPrototypeBase_csv = new QAction("Export to .csv file",prototypeBaseMenu);
     prototypeBaseMenu->addAction(exportPrototypeBase_csv);
     projectView->addAction(exportPrototypeBase_csv);
+    connect(exportPrototypeBase_csv,SIGNAL(triggered()),this,SLOT(onExportPrototypeBase()));
+    // delete prototype base action
     QAction *deletePrototypeBase = new QAction("Delete this prototype base",prototypeBaseMenu);
     prototypeBaseMenu->addAction(deletePrototypeBase);
     projectView->addAction(deletePrototypeBase);
-    connect(addProtoExpert,SIGNAL(triggered()),this,SLOT(onCreatePrototypeFromExpert()));
-    connect(changeCovName,SIGNAL(triggered()),this,SLOT(onChangeCovName()));
-    connect(exportPrototypeBase_csv,SIGNAL(triggered()),this,SLOT(onExportPrototypeBase()));
-    connect(savePrototypeBase_xml, SIGNAL(triggered()),this,SLOT(onSavePrototypeBase()));
     connect(deletePrototypeBase, SIGNAL(triggered()),this,SLOT(onDeletePrototypeBase()));
+    // prototype menu
     prototypeMenu = new QMenu(projectView);
+    // add rules action
     QAction *addRules = new QAction("Add rules to this prototype", prototypeMenu);
     prototypeMenu->addAction(addRules);
     projectView->addAction(addRules);
+    connect(addRules,SIGNAL(triggered()),this,SLOT(onAddRules()));
+    // delete prototype action
     QAction *deletePrototype = new QAction("Delete this prototype", prototypeMenu);
     prototypeMenu->addAction(deletePrototype);
     projectView->addAction(deletePrototype);
-    connect(addRules,SIGNAL(triggered()),this,SLOT(onAddRules()));
     connect(deletePrototype,SIGNAL(triggered()),this,SLOT(onDeletePrototype()));
     projectViewInitialized = true;
+}
+
+void MainWindow::onExpanded(const QModelIndex& index)
+{
+    projectView->resizeColumnToContents(0);
 }
 
 void MainWindow::readPrototype(TiXmlElement*prototypesElement){

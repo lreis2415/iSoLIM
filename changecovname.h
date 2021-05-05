@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include <QLineEdit>
+#include <QMessageBox>
 #include "solim_lib/Prototype.h"
 
 namespace Ui {

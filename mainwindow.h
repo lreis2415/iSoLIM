@@ -5,6 +5,7 @@
 #include <QStandardItemModel>
 #include <QDockWidget>
 #include <QTreeView>
+#include <QScrollBar>
 #include <QMessageBox>
 #include <QDebug>
 #include <QFileDialog>
@@ -18,7 +19,7 @@
 #include <QTextCodec>
 #include "mapinference.h"
 #include "addprototypebase.h"
-#include "addrule.h"
+#include "addprototype_expert.h"
 #include "mygraphicsview.h"
 #include "newprojectdialog.h"
 #include "simpledialog.h"
@@ -66,12 +67,16 @@ private slots:
     void onAddPrototypeBaseFromMining();
     void onImportPrototypeBase();
     void onAddGisData();
-    void onChangeCovName();
+    void onRenamePrototypeBase();
+    void onChangeCovName(); // change for prototype
     void onSavePrototypeBase();
     void onExportPrototypeBase();
     void onAddRules();
     void onDeletePrototypeBase();
     void onDeletePrototype();
+    void onDeleteGisLayer();
+    void onModifyCovName();
+    void onModifyCovFile();
     //prototype from expert
     void onCreatePrototypeFromExpert();
     void onGetGisData();
@@ -84,10 +89,10 @@ private slots:
     void on_actionAdd_Covariates_triggered();
     void createImg();
     void finishedCreateImg();
-    void onDeleteGisLayer();
-    void onModifyCovFile();
     void onResetRange();
     void on_actionResample_triggered();
+
+    void onExpanded(const QModelIndex&);
 
 private:
     Ui::MainWindow *ui;
@@ -102,10 +107,11 @@ private:
     string imgFilename; // store current showing image filename
     QToolBar *zoomToolBar;
     QToolBar *resetRangeToolBar;
+    QAction *addProtoExpert;
     string currentBaseName;
     string currentProtoName;
     string currentLayerName;
-    AddRule *addRule;
+    AddPrototype_Expert *addRule;
     BaseIO *lyr;
     double imgMax;
     double imgMin;
@@ -115,7 +121,6 @@ private:
     void initModel();
     bool saveWarning();
     bool baseExistsWarning(string basename);
-    void updateGisDataFromTree();
     void readPrototype(TiXmlElement*prototypesElement);
     bool drawLayer(string filename);
     void drawMembershipFunction(string basename, string idname, string covName, float max = NODATA, float min = NODATA);

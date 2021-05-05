@@ -28,11 +28,24 @@ changeCovName::~changeCovName()
 
 void changeCovName::on_cancel_btn_clicked()
 {
+    close();
     return;
 }
 
 void changeCovName::on_ok_btn_clicked()
 {
+    for(int i = 0; i<proto->envConditionSize;i++){
+        string name_i = ((QLineEdit*) ui->tableWidget->cellWidget(i,1))->text().toStdString();
+        for(int j = i+1; j<proto->envConditionSize;j++){
+            string name_j = ((QLineEdit*) ui->tableWidget->cellWidget(j,1))->text().toStdString();
+            if(name_i == name_j){
+                QMessageBox warn;
+                warn.setText("Duplicate covariate names exist. Please check!");
+                warn.exec();
+                return;
+            }
+        }
+    }
     for(int i = 0; i<proto->envConditionSize;i++){
         string newName = ((QLineEdit*) ui->tableWidget->cellWidget(i,1))->text().toStdString();
         if(newName!=proto->envConditions[i].covariateName){
@@ -40,6 +53,7 @@ void changeCovName::on_ok_btn_clicked()
             proto->envConditions[i].covariateName=newName;
         }
     }
+
     close();
     return;
 }

@@ -40,7 +40,7 @@
      <item>
       <widget class="QLabel" name="label_2">
        <property name="text">
-        <string>Covariate:</string>
+        <string>Covariate name:</string>
        </property>
       </widget>
      </item>
@@ -86,14 +86,14 @@
        </property>
       </widget>
      </item>
-     <item>
-      <widget class="QLabel" name="label_hint">
-       <property name="text">
-        <string>Hint</string>
-       </property>
-      </widget>
-     </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QLabel" name="label_hint">
+     <property name="text">
+      <string>Hint</string>
+     </property>
+    </widget>
    </item>
    <item>
     <spacer name="verticalSpacer">

@@ -9,12 +9,14 @@ public:
     string projName;
     string projFilename;
     string studyArea;
+    string currentBaseName;
     vector<string> filenames;
     vector<string> layernames;
     vector<string> layertypes;
     vector<solim::Prototype> prototypes;
     //vector<solim::Exception> exceptions;
     vector<string> prototypeBaseNames;
+    vector<string> prototypeBaseTypes;
     vector<string> results;
     QString workingDir;
 public:
@@ -22,6 +24,7 @@ public:
         projName = "";
         projFilename = "";
         studyArea="";
+        currentBaseName = "";
         filenames.clear();
         layernames.clear();
         layertypes.clear();

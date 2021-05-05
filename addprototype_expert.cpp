@@ -1,12 +1,11 @@
-#include "addrule.h"
-#include "ui_addrule.h"
+#include "addprototype_expert.h"
+#include "ui_addprototype_expert.h"
 
-AddRule::AddRule(SoLIMProject *proj, int protoNum, string currentBaseName, QWidget *parent) :
+AddPrototype_Expert::AddPrototype_Expert(SoLIMProject *proj, int protoNum, string currentBaseName, QWidget *parent) :
     QDialog(parent),proj(proj),protoNum(protoNum),currentBasename(currentBaseName),
-    ui(new Ui::AddRule)
+    ui(new Ui::AddPrototype_Expert)
 {
     ui->setupUi(this);
-    this->layout()->setSizeConstraint(QLayout::SetFixedSize);
     myview = new MyGraphicsView();
     myview->setFixedHeight(width()*0.6);
     ui->layout_graphicsView->addWidget(myview);
@@ -68,18 +67,19 @@ AddRule::AddRule(SoLIMProject *proj, int protoNum, string currentBaseName, QWidg
         ui->lineEdit_prototype->setText(proj->prototypes[protoNum].prototypeID.c_str());
         ui->lineEdit_prototype->setReadOnly(true);
         ui->btn_create->setVisible(false);
+        setWindowTitle("Add rules to prototype");
     }
     ui->radioButton_enum->setEnabled(false);
     ui->radioButton_freehand->setEnabled(false);
     ui->radioButton_range->setEnabled(false);
 }
 
-AddRule::~AddRule()
+AddPrototype_Expert::~AddPrototype_Expert()
 {
     delete ui;
 }
 
-void AddRule::on_radioButton_range_toggled(bool checked)
+void AddPrototype_Expert::on_radioButton_range_toggled(bool checked)
 {
     if(!checked) return;
     myview->getScene()->clear();
@@ -111,12 +111,11 @@ void AddRule::on_radioButton_range_toggled(bool checked)
     ui->label_freehand_hint->setVisible(true);
     myview->editFreehandRule=false;
     myview->editEnumRule=false;
-    ui->label_freehand_hint->setText("<b>Hint</b>: <i><b>Low cross/high cross</b></i>: The environmental variable values when optimality value decreased to 0.5.<br>"
-                                     "<i><b>Low unity/high unity</b></i>: The highest optimality value.");
-
+    ui->label_freehand_hint->setText("<b>Hint</b>: <i><b>Low cross/high cross</b></i>: The covariable values when optimality value decreased to 0.5.<br>"
+                                     "<i><b>Low unity/high unity</b></i>: The covariable values when optimality value is 1.");
 }
 
-void AddRule::on_radioButton_freehand_toggled(bool checked)
+void AddPrototype_Expert::on_radioButton_freehand_toggled(bool checked)
 {
     if(!checked) return;
     myview->knotX.clear();
@@ -148,13 +147,11 @@ void AddRule::on_radioButton_freehand_toggled(bool checked)
     freeKnotY->clear();
     freeKnotY->shrink_to_fit();
     ui->label_freehand_hint->setText("<b>Hint</b>: Double click membership function view to add or delete points. Move points to adjust spline");
-    ui->label_freehand_hint->setFrameStyle(QFrame::Box);
-    ui->label_freehand_hint->setWordWrap(true);
     myview->editEnumRule=false;
     myview->editFreehandRule=true;
 }
 
-void AddRule::on_radioButton_enum_toggled(bool checked)
+void AddPrototype_Expert::on_radioButton_enum_toggled(bool checked)
 {
     if(!checked) return;
     myview->knotX.clear();
@@ -188,11 +185,9 @@ void AddRule::on_radioButton_enum_toggled(bool checked)
     myview->editEnumRule=true;
     ui->label_freehand_hint->setText("<b>Hint</b>: Enumerated rules are used for categorical environmental variables, e.g. geology, land use type. \
 Add all possible conditions when prototype occurs as optimality value");
-    ui->label_freehand_hint->setFrameStyle(QFrame::Box);
-    ui->label_freehand_hint->setWordWrap(true);
 }
 
-void AddRule::on_comboBox_cov_activated(const QString &arg1)
+void AddPrototype_Expert::on_comboBox_cov_activated(const QString &arg1)
 {
     ui->lineEdit_max_cov->clear();
     ui->lineEdit_min_cov->clear();
@@ -238,18 +233,12 @@ void AddRule::on_comboBox_cov_activated(const QString &arg1)
             return;
         }
     }
-    ui->radioButton_enum->setEnabled(true);
-    ui->radioButton_freehand->setEnabled(true);
-    ui->radioButton_range->setEnabled(true);
-    if(ui->comboBox_datatype->currentIndex()==1){
-        ui->radioButton_enum->setChecked(true);
-    }
     if(ui->lineEdit_max_cov->text().isEmpty()||ui->lineEdit_min_cov->text().isEmpty()){
         ui->label_freehand_hint->setText("<b>Hint</b>: Specify the Maximum and Minimum values of covariate.");
     }
 }
 
-void AddRule::on_btn_add_prop_clicked()
+void AddPrototype_Expert::on_btn_add_prop_clicked()
 {
     QString propName=ui->lineEdit_prop_name->text();
     QString propVal = ui->lineEdit_prop_val->text();
@@ -261,20 +250,12 @@ void AddRule::on_btn_add_prop_clicked()
             proj->prototypes[protoNum].addProperties(propName.toStdString(),propVal_d,solim::CATEGORICAL);
         else
             proj->prototypes[protoNum].addProperties(propName.toStdString(),propVal_d,solim::CONTINUOUS);
-        addSuccess("Property");
+        emit updatePrototype();
         return;
     }
 }
 
-void AddRule::addSuccess(QString content){
-    QMessageBox propertyAdded;
-    propertyAdded.setText(content+" added to prototype success!");
-    propertyAdded.show();
-    propertyAdded.button(QMessageBox::Ok)->animateClick(50000);
-    emit updatePrototype();
-}
-
-void AddRule::on_btn_add_rule_clicked()
+void AddPrototype_Expert::on_btn_add_rule_clicked()
 {
     // check valid cov name
     string covname=ui->comboBox_cov->currentText().toStdString();
@@ -295,7 +276,6 @@ void AddRule::on_btn_add_rule_clicked()
             c.range=fabs(rangeMax)>fabs(rangeMin)?fabs(rangeMax):fabs(rangeMin);
             proj->prototypes[protoNum].addConditions(c);
             //drawMembershipFunction(&c);
-            addSuccess("Rule");
             emit updatePrototype();
         }
     } else if(ui->radioButton_freehand->isChecked()){
@@ -303,7 +283,6 @@ void AddRule::on_btn_add_rule_clicked()
             solim::Curve c = solim::Curve(ui->comboBox_cov->currentText().toStdString(),solim::CONTINUOUS,freeKnotX,freeKnotY);
             c.range=fabs(rangeMax)>fabs(rangeMin)?fabs(rangeMax):fabs(rangeMin);
             proj->prototypes[protoNum].addConditions(c);
-            addSuccess("Rule");
             emit updatePrototype();
             freeKnotX->clear();
             freeKnotX->shrink_to_fit();
@@ -320,13 +299,12 @@ void AddRule::on_btn_add_rule_clicked()
             c.typicalValue=enumVals[0];
             c.range=fabs(rangeMax)>fabs(rangeMin)?fabs(rangeMax):fabs(rangeMin);
             proj->prototypes[protoNum].addConditions(c);
-            addSuccess("Rule");
             emit updatePrototype();
         }
     }
 }
 
-void AddRule::on_comboBox_curve_activated(const QString &arg1) {
+void AddPrototype_Expert::on_comboBox_curve_activated(const QString &arg1) {
     if(arg1=="Bell-shaped"){
         ui->lineEdit_lc->setEnabled(true);
         ui->lineEdit_lu->setEnabled(true);
@@ -345,7 +323,7 @@ void AddRule::on_comboBox_curve_activated(const QString &arg1) {
     }
 }
 
-void AddRule::drawMembershipFunction(solim::Curve *c) {
+void AddPrototype_Expert::drawMembershipFunction(solim::Curve *c) {
     ui->label_membership->setVisible(true);
     myview->setVisible(true);
     QGraphicsScene *scene = myview->getScene();
@@ -420,7 +398,7 @@ void AddRule::drawMembershipFunction(solim::Curve *c) {
     }
 }
 
-void AddRule::on_btn_add_opt_val_clicked() {
+void AddPrototype_Expert::on_btn_add_opt_val_clicked() {
     if(ui->radioButton_enum->isChecked()){
         bool*toNumFlag = new bool;
         int num=ui->lineEdit_opt_val->text().toInt(toNumFlag);
@@ -440,7 +418,7 @@ void AddRule::on_btn_add_opt_val_clicked() {
     }
 }
 
-void AddRule::drawEnumRange(){
+void AddPrototype_Expert::drawEnumRange(){
     ui->label_membership->setVisible(true);
     myview->setVisible(true);
     int margin = fabs(rangeMax)>fabs(rangeMin)?fabs(rangeMax):fabs(rangeMin);
@@ -506,17 +484,17 @@ void AddRule::drawEnumRange(){
         xaxis0->setPos(0.10*sceneWidth-4*xaxis0->toPlainText().size(),0.85*sceneHeight);
         yaxisName->setPos(0.10*sceneWidth, 0.1*sceneHeight-20);
     }
-    if(ui->radioButton_enum->isChecked())
-        ui->label_freehand_hint->setText("<b>Hint</b>: Enumerated rules are used for categorical environmental variables, e.g. geology, land use type."
+    /*if(ui->radioButton_enum->isChecked())
+        ui->label_freehand_hint->setText("<b>Hint</b>: Enumerated rules are used for categorical covariables, e.g. geology, land use type."
                                          " Add all possible conditions when prototype occurs as optimality value");
     else if(ui->radioButton_freehand->isChecked())
         ui->label_freehand_hint->setText("<b>Hint</b>: Double click membership function view to add or delete points. Move points to adjust spline");
     else if(ui->radioButton_range->isChecked())
-        ui->label_freehand_hint->setText("<b>Hint</b>: <i><b>Low cross/high cross</b></i>: The environmental variable values when optimality value decreased to 0.5.<br>"
-                                         "<i><b>Low unity/high unity</b></i>: The highest optimality value.");
+        ui->label_freehand_hint->setText("<b>Hint</b>: <i><b>Low cross/high cross</b></i>: The covariable values when optimality value decreased to 0.5.<br>"
+                                         "<i><b>Low unity/high unity</b></i>: The covariable values when optimality value is 1.");*/
 }
 
-void AddRule::on_btn_reset_clicked()
+void AddPrototype_Expert::on_btn_reset_clicked()
 {
     myview->knotX.clear();
     myview->knotY.clear();
@@ -541,7 +519,7 @@ void AddRule::on_btn_reset_clicked()
     }
 }
 
-void AddRule::onAddFreehandPoint(){
+void AddPrototype_Expert::onAddFreehandPoint(){
     int margin = fabs(rangeMax)>fabs(rangeMin)?fabs(rangeMax):fabs(rangeMin);
     freeKnotX->clear();
     freeKnotX->shrink_to_fit();
@@ -582,7 +560,7 @@ void AddRule::onAddFreehandPoint(){
     }
 }
 
-void AddRule::onAddEnumPoint(){
+void AddPrototype_Expert::onAddEnumPoint(){
     myview->getScene()->clear();
     drawEnumRange();
     int margin = fabs(rangeMax)>fabs(rangeMin)?fabs(rangeMax):fabs(rangeMin);
@@ -624,8 +602,21 @@ void AddRule::onAddEnumPoint(){
     }
 }
 
-void AddRule::on_lineEdit_min_cov_textChanged(const QString &arg1)
+void AddPrototype_Expert::on_lineEdit_min_cov_textChanged(const QString &arg1)
 {
+    if((!ui->lineEdit_max_cov->text().isEmpty())&&(!ui->lineEdit_min_cov->text().isEmpty())){
+        if(ui->comboBox_datatype->currentIndex()==1){
+            ui->radioButton_enum->setEnabled(true);
+            ui->radioButton_enum->setChecked(true);
+        } else {
+            ui->radioButton_range->setEnabled(true);
+            ui->radioButton_freehand->setEnabled(true);
+        }
+    } else {
+        ui->radioButton_enum->setEnabled(false);
+        ui->radioButton_freehand->setEnabled(false);
+        ui->radioButton_range->setEnabled(false);
+    }
     bool *toNum = new bool;
     double min = arg1.toDouble(toNum);
     if(!*toNum) return;
@@ -639,8 +630,21 @@ void AddRule::on_lineEdit_min_cov_textChanged(const QString &arg1)
     }
 }
 
-void AddRule::on_lineEdit_max_cov_textChanged(const QString &arg1)
+void AddPrototype_Expert::on_lineEdit_max_cov_textChanged(const QString &arg1)
 {
+    if((!ui->lineEdit_max_cov->text().isEmpty())&&(!ui->lineEdit_min_cov->text().isEmpty())){
+        if(ui->comboBox_datatype->currentIndex()==1){
+            ui->radioButton_enum->setEnabled(true);
+            ui->radioButton_enum->setChecked(true);
+        } else {
+            ui->radioButton_range->setEnabled(true);
+            ui->radioButton_freehand->setEnabled(true);
+        }
+    } else {
+        ui->radioButton_enum->setEnabled(false);
+        ui->radioButton_freehand->setEnabled(false);
+        ui->radioButton_range->setEnabled(false);
+    }
     bool *toNum = new bool;
     double max = arg1.toDouble(toNum);
     if(!*toNum) return;
@@ -654,7 +658,7 @@ void AddRule::on_lineEdit_max_cov_textChanged(const QString &arg1)
     }
 }
 
-bool AddRule::getPointRule(solim::Curve &c){
+bool AddPrototype_Expert::getPointRule(solim::Curve &c){
     if(!ui->radioButton_range->isChecked()) return false;
     solim::CurveTypeEnum type=solim::BELL_SHAPED;
     double lu=-1,lc=-1,hu=-1,hc=-1;
@@ -668,6 +672,9 @@ bool AddRule::getPointRule(solim::Curve &c){
         if(!*toNumFlag) return false;
         hc=ui->lineEdit_hc->text().toDouble(toNumFlag);
         if(!*toNumFlag) return false;
+        if(!(hc>hu)) return false;
+        if(!(lu>lc)) return false;
+        if(hu<lu) return false;
         type = solim::BELL_SHAPED;
     } else if(ui->comboBox_curve->currentText()=="S-shaped"){
         bool*toNumFlag = new bool;
@@ -675,15 +682,17 @@ bool AddRule::getPointRule(solim::Curve &c){
         if(!*toNumFlag) return false;
         lc=ui->lineEdit_lc->text().toDouble(toNumFlag);
         if(!*toNumFlag) return false;
+        if(!(lu>lc)) return false;
         hu=-1;
         hc=-1;
         type=solim::S_SHAPED;
-    } else if(ui->comboBox_curve->currentText()=="Z-shaped"){
+            } else if(ui->comboBox_curve->currentText()=="Z-shaped"){
         bool*toNumFlag = new bool;
         hu=ui->lineEdit_hu->text().toDouble(toNumFlag);
         if(!*toNumFlag) return false;
         hc=ui->lineEdit_hc->text().toDouble(toNumFlag);
         if(!*toNumFlag) return false;
+        if(!(hc>hu)) return false;
         lu=-1;
         lc=-1;
         type=solim::Z_SHAPED;
@@ -692,27 +701,32 @@ bool AddRule::getPointRule(solim::Curve &c){
     return true;
 }
 
-void AddRule::on_comboBox_datatype_activated(int index)
+void AddPrototype_Expert::on_comboBox_datatype_activated(int index)
 {
-    if(index==1){
-        ui->radioButton_enum->setEnabled(true);
-        ui->radioButton_range->setEnabled(false);
-        ui->radioButton_freehand->setEnabled(false);
-        ui->radioButton_enum->setChecked(true);
-    } else {
-        ui->radioButton_enum->setEnabled(false);
-        ui->radioButton_range->setEnabled(true);
-        ui->radioButton_freehand->setEnabled(true);
-        myview->getScene()->clear();
+    if((!ui->lineEdit_max_cov->text().isEmpty())&&(!ui->lineEdit_min_cov->text().isEmpty())){
+        if(index==1){
+            ui->radioButton_enum->setEnabled(true);
+            ui->radioButton_range->setEnabled(false);
+            ui->radioButton_freehand->setEnabled(false);
+            ui->radioButton_enum->setChecked(true);
+        } else {
+            ui->radioButton_enum->setEnabled(false);
+            ui->radioButton_range->setEnabled(true);
+            ui->radioButton_freehand->setEnabled(true);
+            myview->getScene()->clear();
+            if(myview->isVisible()){
+                ui->radioButton_freehand->setChecked(true);
+            }
+        }
     }
 }
 
-void AddRule::on_comboBox_datatype_currentIndexChanged(int index)
+void AddPrototype_Expert::on_comboBox_datatype_currentIndexChanged(int index)
 {
     on_comboBox_datatype_activated(index);
 }
 
-void AddRule::on_btn_create_clicked()
+void AddPrototype_Expert::on_btn_create_clicked()
 {
     if(!ui->lineEdit_prototype->text().isEmpty()){
         solim::Prototype prop;
@@ -723,11 +737,44 @@ void AddRule::on_btn_create_clicked()
         protoNum=proj->prototypes.size()-1;
         ui->btn_add_prop->setEnabled(true);
         ui->comboBox_cov->setEnabled(true);
-        ui->radioButton_range->setEnabled(true);
-        ui->radioButton_freehand->setEnabled(true);
-        ui->radioButton_enum->setEnabled(true);
         ui->btn_create->setEnabled(false);
         ui->lineEdit_prototype->setReadOnly(true);
         emit updatePrototype();
     }
+}
+
+
+void AddPrototype_Expert::on_lineEdit_lc_textChanged(const QString &arg1)
+{
+    solim::Curve c;
+    if(getPointRule(c))
+        drawMembershipFunction(&c);
+}
+
+void AddPrototype_Expert::on_lineEdit_lu_textChanged(const QString &arg1)
+{
+    solim::Curve c;
+    if(getPointRule(c))
+        drawMembershipFunction(&c);
+}
+
+void AddPrototype_Expert::on_lineEdit_hu_textChanged(const QString &arg1)
+{
+    solim::Curve c;
+    if(getPointRule(c))
+        drawMembershipFunction(&c);
+}
+
+void AddPrototype_Expert::on_lineEdit_hc_textChanged(const QString &arg1)
+{
+    solim::Curve c;
+    if(getPointRule(c))
+        drawMembershipFunction(&c);
+}
+
+void AddPrototype_Expert::on_comboBox_curve_activated(int index)
+{
+    solim::Curve c;
+    if(getPointRule(c))
+        drawMembershipFunction(&c);
 }

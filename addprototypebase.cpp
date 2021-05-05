@@ -16,14 +16,15 @@ AddPrototypeBase::AddPrototypeBase(addPrototypeBaseMode mode,SoLIMProject *proj,
     ui->covariate_tableWidget->setHorizontalHeaderItem(0,new QTableWidgetItem("Filename"));
     ui->covariate_tableWidget->setHorizontalHeaderItem(1,new QTableWidgetItem("Covariate"));
     ui->covariate_tableWidget->setHorizontalHeaderItem(2,new QTableWidgetItem("Categorical?"));
+    QTableWidgetItem *item_tmp;
     for(size_t i = 0; i<proj->filenames.size();i++){
         ui->covariate_tableWidget->insertRow(ui->covariate_tableWidget->rowCount());
-        ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1,
-                                                0,
-                                                new QTableWidgetItem(proj->filenames[i].c_str()));
-        ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1,
-                                                1,
-                                                new QTableWidgetItem(proj->layernames[i].c_str()));
+        item_tmp = new QTableWidgetItem(proj->filenames[i].c_str());
+        item_tmp->setFlags(item_tmp->flags()^Qt::ItemIsEditable);
+        ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1, 0, item_tmp);
+        item_tmp = new QTableWidgetItem(proj->layernames[i].c_str());
+        item_tmp->setFlags(item_tmp->flags()^Qt::ItemIsEditable);
+        ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1, 1, item_tmp);
         QCheckBox *categoriacl_cb = new QCheckBox();
         categoriacl_cb->setChecked(false);
         if(proj->layertypes[i]=="CATEGORICAL") categoriacl_cb->setChecked(true);
@@ -101,12 +102,13 @@ void AddPrototypeBase::on_addCovariate_btn_clicked()
     project->layernames.push_back(addGisData.covariate.toStdString());
     project->filenames.push_back(addGisData.filename.toStdString());*/
     ui->covariate_tableWidget->insertRow(ui->covariate_tableWidget->rowCount());
-    ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1,
-                                            0,
-                                            new QTableWidgetItem(addGisData.filename));
-    ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1,
-                                            1,
-                                            new QTableWidgetItem(addGisData.covariate));
+    QTableWidgetItem *item_tmp;
+    item_tmp = new QTableWidgetItem(addGisData.filename);
+    item_tmp->setFlags(item_tmp->flags()^Qt::ItemIsEditable);
+    ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1, 0, item_tmp);
+    item_tmp = new QTableWidgetItem(addGisData.covariate);
+    item_tmp->setFlags(item_tmp->flags()^Qt::ItemIsEditable);
+    ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1, 1, item_tmp);
     QCheckBox *categoriacl_cb = new QCheckBox();
     categoriacl_cb->setChecked(false);
     if(addGisData.datatype=="CATEGORICAL") categoriacl_cb->setChecked(true);
@@ -192,7 +194,8 @@ void AddPrototypeBase::on_browseSampleFile_btn_clicked()
     }
     int end = filename.lastIndexOf('.');
     QString prototypeBaseName = filename.mid(first+1,end-first-1);
-    ui->lineEdit_basename->setText(prototypeBaseName);
+    if(ui->lineEdit_basename->text().isEmpty())
+        ui->lineEdit_basename->setText(prototypeBaseName);
 }
 
 void AddPrototypeBase::on_ok_btn_clicked()
@@ -210,12 +213,9 @@ void AddPrototypeBase::on_ok_btn_clicked()
     for(int i = 0; i< project->prototypeBaseNames.size();i++){
         if(prototypeBaseName==project->prototypeBaseNames[i]){
             QMessageBox warning;
-            warning.setText("The sample file has been added, cannot add samples dupplicatedly!");
+            warning.setText("This base name exists already. Please change prototype base name!");
             warning.setStandardButtons(QMessageBox::Ok);
             warning.exec();
-            ui->sampleFile_lineEdit->clear();
-            ui->xFiled_comboBox->clear();
-            ui->yFiled_comboBox->clear();
             ui->progressBar->setVisible(false);
             return;
         }
@@ -295,6 +295,7 @@ void AddPrototypeBase::on_ok_btn_clicked()
         int protoNum=prototypes->size();
         if(protoNum>0){
             project->prototypeBaseNames.push_back(prototypeBaseName);
+            project->prototypeBaseTypes.push_back("SAMPLE");
             vector<string> ids;
             for(int i =0; i<protoNum; i++){
                 ids.push_back(prototypes->at(i).prototypeID);
@@ -321,6 +322,7 @@ void AddPrototypeBase::on_ok_btn_clicked()
             int protoNum=prototypes->size();
             if(protoNum>0){
                 project->prototypeBaseNames.push_back(prototypeBaseName);
+                project->prototypeBaseTypes.push_back("MAP");
                 vector<string> ids;
                 for(int i =0; i<protoNum; i++){
                     ids.push_back(prototypes->at(i).prototypeID);
@@ -342,6 +344,7 @@ void AddPrototypeBase::on_ok_btn_clicked()
             int protoNum=prototypes->size();
             if(protoNum>0){
                 project->prototypeBaseNames.push_back(prototypeBaseName);
+                project->prototypeBaseTypes.push_back("MAP");
                 vector<string> ids;
                 for(int i =0; i<protoNum; i++){
                     ids.push_back(prototypes->at(i).prototypeID);
