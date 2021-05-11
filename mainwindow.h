@@ -44,6 +44,7 @@ public:
     QMenu* gisLayerMenu;
     QMenu* prototypeBaseMenu;
     QMenu* prototypeMenu;
+    QMenu* membershipMenu;
     QStandardItem *resultChild;
     QStandardItem *prototypeChild;
     QStandardItem *gisDataChild;
@@ -77,6 +78,11 @@ private slots:
     void onDeleteGisLayer();
     void onModifyCovName();
     void onModifyCovFile();
+    void onEditRule();
+    void saveEditRuleChange();
+    void onAddFreehandPoint();
+    void resetEditRule();
+    void onAddEnumPoint();
     //prototype from expert
     void onCreatePrototypeFromExpert();
     void onGetGisData();
@@ -108,6 +114,9 @@ private:
     QToolBar *zoomToolBar;
     QToolBar *resetRangeToolBar;
     QAction *addProtoExpert;
+    QAction *editRule;
+    QAction *saveRule;
+    QAction *resetRule;
     string currentBaseName;
     string currentProtoName;
     string currentLayerName;
@@ -123,7 +132,7 @@ private:
     bool baseExistsWarning(string basename);
     void readPrototype(TiXmlElement*prototypesElement);
     bool drawLayer(string filename);
-    void drawMembershipFunction(string basename, string idname, string covName, float max = NODATA, float min = NODATA);
+    void drawMembershipFunction(float max = NODATA, float min = NODATA, solim::Curve *c = nullptr);
     void warn(QString msg){
         QMessageBox qb;
         qb.setText(msg);

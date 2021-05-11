@@ -372,6 +372,27 @@ namespace solim {
 		calcSpline();
 	}
 
+    void Curve::changeCurve(Curve*c) {
+        vecKnotX.clear();
+        vecKnotX.shrink_to_fit();
+        vecKnotY.clear();
+        vecKnotY.shrink_to_fit();
+        vecDY.clear();
+        vecDY.shrink_to_fit();
+        vecDDY.clear();
+        vecDDY.shrink_to_fit();
+        vecS.clear();
+        vecS.shrink_to_fit();
+        for(size_t i = 0; i < c->iKnotNum; i++){
+            vecKnotX.push_back(c->vecKnotX[i]);
+            vecKnotY.push_back(c->vecKnotY[i]);
+            vecDY.push_back(c->vecDY[i]);
+            vecDDY.push_back(c->vecDDY[i]);
+            vecS.push_back(c->vecS[i]);
+        }
+        iKnotNum = c->iKnotNum;
+        typicalValue = c->typicalValue;
+    }
 	double Curve::getOptimality(double envValue) {
 		// for categorical value
 		if (dataType == CATEGORICAL) {

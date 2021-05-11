@@ -11,7 +11,7 @@ MyGraphicsView::MyGraphicsView(QWidget *parent):
     lyr = nullptr;
     img = nullptr;
     dataDetailsView = nullptr;
-    membership=nullptr;
+    membership=new solim::Curve();
     imgMax = 0;
     imgMin = 0;
     showImage = false;

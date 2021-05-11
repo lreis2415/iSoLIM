@@ -30,9 +30,9 @@ namespace solim {
 		double typicalValue;
         double range;
         vector <double> vecKnotX;
-    private:
         vector <double> vecKnotY;
-		vector <double> vecDY;
+    private:
+        vector <double> vecDY;
 		vector <double> vecDDY;
 		vector <double> vecS;
 		int iKnotNum;
@@ -50,6 +50,7 @@ namespace solim {
 		void addKnot(double x, double y);
 		double getOptimality(double x);
 		void updateCurve();
+        void changeCurve(Curve *c);
 		int getKnotNum();
 		string getCoords();
 

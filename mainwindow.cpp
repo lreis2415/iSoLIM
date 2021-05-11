@@ -43,6 +43,8 @@ MainWindow::MainWindow(QWidget *parent)
     myGraphicsView = new MyGraphicsView();
     ui->centralwidget->layout()->addWidget(myGraphicsView);
     myGraphicsView->dataDetailsView = dataDetailsView;
+    connect(myGraphicsView,SIGNAL(addFreehandPoint()),this,SLOT(onAddFreehandPoint()));
+    connect(myGraphicsView,SIGNAL(addEnumPoint()),this,SLOT(onAddEnumPoint()));
     zoomToolBar = addToolBar(tr("Zoom In"));
     const QIcon zoomInIcon = QIcon("./imgs/zoomin.svg");//QIcon::fromTheme("document-new", QIcon(":/images/new.png"));
     QAction *zoomInAct = new QAction(zoomInIcon, tr("&Zoom In"), this);
@@ -290,12 +292,23 @@ void MainWindow::onViewData(){
 //==================================== Project tree slots ==========================================
 void MainWindow::onSelectionChanged(const QItemSelection& current,const QItemSelection& previous){
     QModelIndex index = current.indexes().at(0);
+    if(myGraphicsView->editFreehandRule == true){
+        if(myGraphicsView->membership->getKnotNum()>2) {
+            QMessageBox warn;
+            warn.setText("Do you want to save edit?");
+            warn.setStandardButtons(QMessageBox::Ok|QMessageBox::Cancel);
+            int ret = warn.exec();
+            if(ret == QMessageBox::Ok) saveEditRuleChange();
+        }
+    }
+    myGraphicsView->editFreehandRule = false;
+    myGraphicsView->editEnumRule = false;
     if(index.isValid()&&index.parent().data().toString().compare("Results")==0){
         string filename = index.data().toString().toStdString();
         drawLayer(filename);
     }
     else if(index.isValid()&&index.parent().data().toString().compare("Covariates")==0){
-        string layername=index.data().toString().midRef(11).toString().toStdString();
+        string layername=index.data().toString().toStdString();
         string filename="";
         for(size_t k = 0;k < proj->layernames.size();k++){
             if(layername==proj->layernames[k].c_str()){
@@ -305,19 +318,15 @@ void MainWindow::onSelectionChanged(const QItemSelection& current,const QItemSel
         }
         drawLayer(filename);
     }
-    else if(index.isValid()&&index.parent().data().toString().compare("Covariates")==0){
-        string filename = index.child(0,0).data().toString().midRef(10).toString().toStdString();
-        drawLayer(filename);
-    }
     else if(index.isValid()&&index.data().toString().compare("Membership Function")==0){
         string prototype = index.parent().parent().parent().data().toString().toStdString();
         int prefixLength = 11;
         int idPrefixLength = 14;
         int basePrefixLength = 16;
-        string baseName = index.parent().parent().parent().parent().data().toString().toStdString().substr(basePrefixLength);
-        string protoID = prototype.substr(idPrefixLength);
-        string covName = index.parent().data().toString().toStdString().substr(prefixLength);
-        drawMembershipFunction(baseName,protoID,covName);
+        currentBaseName = index.parent().parent().parent().parent().data().toString().toStdString().substr(basePrefixLength);
+        currentProtoName = prototype.substr(idPrefixLength);
+        currentLayerName = index.parent().data().toString().toStdString().substr(prefixLength);
+        drawMembershipFunction();
     }
 }
 
@@ -351,6 +360,24 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
         currentProtoName = index.data().toString().mid(14).toStdString();
         currentBaseName=index.parent().data().toString().mid(16).toStdString();
         prototypeMenu->exec(projectView->viewport()->mapToGlobal(point));
+    }
+    else if(index.isValid()&&index.data().toString().startsWith("Membership")){
+        int prefixLength = 11;
+        int idPrefixLength = 14;
+        int basePrefixLength = 16;
+        currentBaseName = index.parent().parent().parent().parent().data().toString().toStdString().substr(basePrefixLength);
+        currentProtoName = index.parent().parent().parent().data().toString().toStdString().substr(idPrefixLength);
+        currentLayerName = index.parent().data().toString().toStdString().substr(prefixLength);
+        if(myGraphicsView->editFreehandRule == true){
+            editRule->setEnabled(false);
+            saveRule->setEnabled(true);
+            resetRule->setEnabled(true);
+        } else {
+            editRule->setEnabled(true);
+            saveRule->setEnabled(false);
+            resetRule->setEnabled(false);
+        }
+        membershipMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
 }
 
@@ -845,10 +872,15 @@ void MainWindow::onGetPrototype(){
                 properties->setColumnCount(1);
                 for(size_t i = 0;i<(*it).properties.size();i++) {
                     string property = (*it).properties[i].propertyName;
+                    double value = (*it).properties[i].propertyValue;
                     if((*it).properties[i].soilPropertyType==solim::CATEGORICAL){
-                        property += " (category): " + to_string(int((*it).properties[i].propertyValue));
-                    } else
-                        property += " (property): " + to_string((*it).properties[i].propertyValue);
+                        property += " (category): " + to_string(int(value));
+                    } else {
+                        if(fabs(value-int(value)) < VERY_SMALL)
+                            property += " (continuous): " + to_string(int(value));
+                        else
+                            property += " (continuous): " + to_string(value);
+                    }
                     properties->setRowCount(properties->rowCount()+1);
                     QStandardItem *property_item = new QStandardItem(property.c_str());
                     property_item->setFlags(property_item->flags()^Qt::ItemIsEditable);
@@ -1045,13 +1077,10 @@ void MainWindow::onResetRange(){
     bool max_ok, min_ok;
     float max = resetRangeDialog.lineEdit2.toFloat(&max_ok);
     float min = resetRangeDialog.lineEdit1.toFloat(&min_ok);
-    if(max_ok && min_ok) drawMembershipFunction(currentBaseName,currentProtoName,currentLayerName,max,min);
+    if(max_ok && min_ok) drawMembershipFunction(max,min);
 }
 
-void MainWindow::drawMembershipFunction(string basename, string idname, string covName,float max, float min){
-    currentBaseName = basename;
-    currentProtoName = idname;
-    currentLayerName = covName;
+void MainWindow::drawMembershipFunction(float max, float min, solim::Curve *c){
     bool predefined_range = false;
     if((max-NODATA)>VERY_SMALL && (min-NODATA)>VERY_SMALL)
         predefined_range=true;
@@ -1064,11 +1093,11 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
     int protoPos = -1;
     int covPos = -1;
     for(size_t i = 0;i<proj->prototypes.size();i++){
-        if(proj->prototypes[i].prototypeBaseName==basename
-                && proj->prototypes[i].prototypeID==idname){
+        if(proj->prototypes[i].prototypeBaseName==currentBaseName
+                && proj->prototypes[i].prototypeID==currentProtoName){
             protoPos = i;
             for(int j = 0; j<proj->prototypes[i].envConditionSize;j++){
-                if(proj->prototypes[i].envConditions[j].covariateName==covName){
+                if(proj->prototypes[i].envConditions[j].covariateName==currentLayerName){
                     covPos = j;
                     break;
                 }
@@ -1079,14 +1108,19 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
     if(protoPos==-1||covPos==-1){
         return;
     }
-    myGraphicsView->showMembership=true;
-    myGraphicsView->membership=&(proj->prototypes[protoPos].envConditions[covPos]);
+    if(c==nullptr){
+        myGraphicsView->showMembership=true;
+        myGraphicsView->membership->changeCurve(&(proj->prototypes[protoPos].envConditions[covPos]));
+    } else {
+        myGraphicsView->showMembership=true;
+        myGraphicsView->membership->changeCurve(c);
+    }    
     myGraphicsView->getScene()->setSceneRect(0,0,myGraphicsView->width()*0.9,myGraphicsView->height()*0.9);
     QPen curvePen(Qt::black);
     QPen axisPen(Qt::gray);
     axisPen.setWidth(2);
     curvePen.setWidth(1);
-    string coords = proj->prototypes[protoPos].envConditions[covPos].getCoords();
+    string coords = myGraphicsView->membership->getCoords();
     vector<string> xycoord;
     solim::ParseStr(coords, ',', xycoord);
     int iKnotNum = xycoord.size();
@@ -1099,21 +1133,19 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
     xmax = atof(endCoord[0].c_str());
     int sceneWidth = myGraphicsView->getScene()->width();
     int sceneHeight = myGraphicsView->getScene()->height();
-    //double scale = proj->prototypes[protoPos].envConditions[covPos].range;
-    //if(scale<VERY_SMALL)
     double scale = fabs(xmax)>fabs(xmin)?fabs(xmax):fabs(xmin);
     if(scale<10) scale = (int(scale)+1)*2;
     else scale = (int(scale/10)+1)*10*2;
     int margin = 0.5*scale;
     // add info
-    QGraphicsTextItem *covNameText = myGraphicsView->getScene()->addText(string("Covariate: "+covName).c_str());
+    QGraphicsTextItem *covNameText = myGraphicsView->getScene()->addText(string("Covariate: "+currentLayerName).c_str());
     covNameText->setFont(QFont("Times", 10));
     covNameText->setPos(0.02*sceneWidth, 0.02*sceneHeight);
     string source = solim::PrototypeSource_str[proj->prototypes[protoPos].source];
     QGraphicsTextItem *covSourceText = myGraphicsView->getScene()->addText(string("Source: "+source).c_str());
     covSourceText->setFont(QFont("Times", 10));
     covSourceText->setPos(0.02*sceneWidth, 0.02*sceneHeight+20);
-    string typicalValue = to_string(proj->prototypes[protoPos].envConditions[covPos].typicalValue);
+    string typicalValue = to_string(myGraphicsView->membership->typicalValue);
     QGraphicsTextItem *typicalValueText=myGraphicsView->getScene()->addText(string("Typical value: "+typicalValue).c_str());
     typicalValueText->setFont(QFont("Times", 10));
     typicalValueText->setPos(0.02*sceneWidth, 0.02*sceneHeight+40);
@@ -1137,7 +1169,7 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
     QGraphicsTextItem *yaxis0 = myGraphicsView->getScene()->addText("0");
     yaxis0->setFont(QFont("Times", 10, QFont::Bold));
     yaxis0->setPos(0.45*sceneWidth-5,0.85*sceneHeight);
-
+    // drawing coordinates
     if(predefined_range) {
         myGraphicsView->getScene()->addLine(0.10*sceneWidth,0.85*sceneHeight,0.10*sceneWidth,0.1*sceneHeight,axisPen);
         myGraphicsView->getScene()->addLine(0.10*sceneWidth,0.1*sceneHeight,0.10*sceneWidth-3,0.1*sceneHeight+3,axisPen);
@@ -1158,6 +1190,7 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
         xaxis1->setPos(0.80*sceneWidth-4*xaxis1->toPlainText().size(),0.85*sceneHeight);
         myGraphicsView->curveXMin=min;
         myGraphicsView->curveXMax=max;
+        scale = max-min;
     } else if(xmin*xmax<0||xmax<VERY_SMALL){
         // set axis
         myGraphicsView->getScene()->addLine(0.45*sceneWidth,0.85*sceneHeight,0.45*sceneWidth,0.1*sceneHeight,axisPen);
@@ -1173,7 +1206,8 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
         xaxis0->setPos(0.10*sceneWidth-4*xaxis0->toPlainText().size(),0.85*sceneHeight);
         myGraphicsView->curveXMin=-margin;
         myGraphicsView->curveXMax=margin;
-    } else if(!predefined_range) {
+        scale = 2*margin;
+    } else {
         myGraphicsView->getScene()->addLine(0.10*sceneWidth,0.85*sceneHeight,0.10*sceneWidth,0.1*sceneHeight,axisPen);
         myGraphicsView->getScene()->addLine(0.10*sceneWidth,0.1*sceneHeight,0.10*sceneWidth-3,0.1*sceneHeight+3,axisPen);
         myGraphicsView->getScene()->addLine(0.10*sceneWidth,0.1*sceneHeight,0.10*sceneWidth+3,0.1*sceneHeight+3,axisPen);
@@ -1207,42 +1241,33 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
             myGraphicsView->curveXMax=margin;
         }
     }
+    myGraphicsView->knotX.clear();
+    myGraphicsView->knotY.clear();
+    myGraphicsView->knotX.shrink_to_fit();
+    myGraphicsView->knotY.shrink_to_fit();
+    for(int i = 0; i < myGraphicsView->membership->getKnotNum(); i++){
+        double x = (myGraphicsView->membership->vecKnotX[i]-myGraphicsView->curveXMin) / (myGraphicsView->curveXMax-myGraphicsView->curveXMin);
+        myGraphicsView->knotX.push_back(x);
+        myGraphicsView->knotY.push_back(myGraphicsView->membership->vecKnotY[i]);
+    }
 
-    double previousx,previousy;
-    double range_min,interval;
-    if(predefined_range){
-        previousx = min;
-        previousy = proj->prototypes[protoPos].envConditions[covPos].getOptimality(min);
-        interval = (max-min)/100.0;
-        range_min = previousx;
-        scale = max-min;
-    }
-    else if(xmin*xmax<0||xmax<VERY_SMALL){
-        previousy = proj->prototypes[protoPos].envConditions[covPos].getOptimality(0-margin);
-        previousx = -margin;
-        interval = 2*margin/100.0;
-        range_min = previousx;
-    } else if((xmin>xmax-xmin&&xmin>10) || margin-xmax>xmax-xmin){
-        previousx = int(xmin/10)*10;
-        previousy = proj->prototypes[protoPos].envConditions[covPos].getOptimality(previousx);
-        interval = double(margin-previousx)/100.0;
-        range_min = previousx;
-    } else {
-        previousx = 0;
-        previousy = proj->prototypes[protoPos].envConditions[covPos].getOptimality(previousx);
-        interval = double(margin)/100.0;
-        range_min = previousx;
-    }
+    if(myGraphicsView->membership->getKnotNum() < 3)
+        return;
+
+    double previousx = myGraphicsView->curveXMin;
+    double previousy = myGraphicsView->membership->getOptimality(previousx);
+    double range_min = previousx;
+    double interval = (myGraphicsView->curveXMax - myGraphicsView->curveXMin)/100.0;
 
     double x,y;
     int graphWidth = 0.7*sceneWidth;
     int graphHeight = 0.7*sceneHeight;
     int xStart = 0.10*sceneWidth;
     int yEnd = 0.85*sceneHeight;
-    if(proj->prototypes[protoPos].envConditions[covPos].dataType==solim::CONTINUOUS){
+    if(myGraphicsView->membership->dataType==solim::CONTINUOUS){
         for(int i =0;i<100;i++){
             x =previousx+interval;
-            y = proj->prototypes[protoPos].envConditions[covPos].getOptimality(x);
+            y = myGraphicsView->membership->getOptimality(x);
             if(fabs(y+1)<VERY_SMALL ||fabs(previousy+1)<VERY_SMALL)
                 continue;
             myGraphicsView->getScene()->addLine((previousx-range_min)/scale*graphWidth+xStart,yEnd-previousy*graphHeight,(x-range_min)/scale*graphWidth+xStart,yEnd-y*graphHeight,curvePen);
@@ -1251,8 +1276,8 @@ void MainWindow::drawMembershipFunction(string basename, string idname, string c
         }
     } else {
         curvePen.setWidth(2);
-        for(size_t i = 0;i<proj->prototypes[protoPos].envConditions[covPos].vecKnotX.size();i++){
-            x=proj->prototypes[protoPos].envConditions[covPos].vecKnotX[i];
+        for(size_t i = 0;i<myGraphicsView->membership->vecKnotX.size();i++){
+            x=myGraphicsView->membership->vecKnotX[i];
             myGraphicsView->getScene()->addLine((x-range_min)/scale*graphWidth+xStart,yEnd,(x+margin)/scale*graphWidth+xStart,yEnd-graphHeight,curvePen);
             QGraphicsTextItem *tag = myGraphicsView->getScene()->addText(QString::number(int(x)));
             tag->setFont(QFont("Times", 8));
@@ -1387,17 +1412,10 @@ void MainWindow::initialProjectView(){
     }
     projectDock = new QDockWidget(tr("Project"), this);
     projectView = new QTreeView(projectDock);
-    //removeDockWidget(dataDetailsDock);
     projectDock->setFeatures(projectDock->features() & ~QDockWidget::DockWidgetClosable);
     projectDock->setWidget(projectView);
-    //initDataDetailsView();
-    //addDockWidget(Qt::LeftDockWidgetArea,dataDetailsDock);
-    //myGraphicsView->dataDetailsView = dataDetailsView;
     projectView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(projectView,SIGNAL(customContextMenuRequested(const QPoint &)),this,SLOT(onCustomContextMenu(const QPoint &)));
-    projectView->horizontalScrollBar()->setEnabled(true);
-    projectView->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    projectView->header()->setStretchLastSection(true);
     connect(projectView, SIGNAL(expanded(QModelIndex)), this, SLOT(onExpanded(QModelIndex)));
     connect(projectView, SIGNAL(collapsed(QModelIndex)), this, SLOT(onExpanded(QModelIndex)));
     // prototype menu
@@ -1485,8 +1503,106 @@ void MainWindow::initialProjectView(){
     prototypeMenu->addAction(deletePrototype);
     projectView->addAction(deletePrototype);
     connect(deletePrototype,SIGNAL(triggered()),this,SLOT(onDeletePrototype()));
-    projectViewInitialized = true;
+    // prototype menu
+    membershipMenu = new QMenu(projectView);
+    // add rules action
+    editRule = new QAction("Edit this function", prototypeMenu);
+    membershipMenu->addAction(editRule);
+    projectView->addAction(editRule);
+    connect(editRule,SIGNAL(triggered()),this,SLOT(onEditRule()));
+    saveRule = new QAction("Save Edit", prototypeMenu);
+    membershipMenu->addAction(saveRule);
+    projectView->addAction(saveRule);
+    connect(saveRule,SIGNAL(triggered()),this,SLOT(saveEditRuleChange()));
+    resetRule = new QAction("reset", prototypeMenu);
+    membershipMenu->addAction(resetRule);
+    projectView->addAction(resetRule);
+    connect(resetRule,SIGNAL(triggered()),this,SLOT(resetEditRule()));
+   projectViewInitialized = true;
 }
+
+void MainWindow::onEditRule(){
+    myGraphicsView->editFreehandRule = true;
+    myGraphicsView->editEnumRule = true;
+    onAddFreehandPoint();
+}
+
+void MainWindow::onAddFreehandPoint(){
+    //todo
+    vector<double> *freeKnotX = new vector<double>;
+    vector<double> *freeKnotY = new vector<double>;
+    freeKnotX->clear();
+    freeKnotX->shrink_to_fit();
+    freeKnotY->clear();
+    freeKnotY->shrink_to_fit();
+    for(int i = 0; i<myGraphicsView->knotX.size();i++){
+        double knotX = myGraphicsView->knotX[i]*(myGraphicsView->curveXMax - myGraphicsView->curveXMin)
+                + myGraphicsView->curveXMin;
+        freeKnotX->push_back(knotX);
+        freeKnotY->push_back(myGraphicsView->knotY[i]);
+    }
+    int sceneWidth = myGraphicsView->getScene()->width();
+    int sceneHeight = myGraphicsView->getScene()->height();
+    int graphWidth = 0.7*sceneWidth;
+    int graphHeight = 0.7*sceneHeight;
+    int xStart = 0.10*sceneWidth;
+    int yEnd = 0.85*sceneHeight;
+    QPen pen(Qt::black);
+    pen.setWidth(1);
+    if(freeKnotX->size()>2){
+        // todo
+        solim::Curve *c = new solim::Curve("tmp",solim::CONTINUOUS,freeKnotX,freeKnotY);
+        c->range=(myGraphicsView->curveXMin - myGraphicsView->curveXMax);
+        drawMembershipFunction(myGraphicsView->curveXMax,myGraphicsView->curveXMin,c);
+        for(size_t i = 0; i<myGraphicsView->knotX.size();i++){
+            double x = myGraphicsView->knotX[i];
+            double y = myGraphicsView->knotY[i];
+            myGraphicsView->getScene()->addRect(x*graphWidth+xStart-2,yEnd-y*graphHeight-2,4,4,pen,QBrush(Qt::black));
+        }
+        delete c;
+    }
+    else {
+        solim::Curve *c = new solim::Curve();
+        drawMembershipFunction(myGraphicsView->curveXMax,myGraphicsView->curveXMax,c);
+        for(int i = 0; i<freeKnotX->size();i++){
+            double x=freeKnotX->at(i);//0.5*(freeKnotX->at(i)+margin)/margin;
+            double y = freeKnotY->at(i);
+            myGraphicsView->getScene()->addRect(x*graphWidth+xStart-2,yEnd-y*graphHeight-2,4,4,pen,QBrush(Qt::black));
+        }
+    }
+}
+
+void MainWindow::saveEditRuleChange(){
+    int protoPos = -1;
+    int covPos = -1;
+    for(size_t i = 0;i<proj->prototypes.size();i++){
+        if(proj->prototypes[i].prototypeBaseName==currentBaseName
+                && proj->prototypes[i].prototypeID==currentProtoName){
+            protoPos = i;
+            for(int j = 0; j<proj->prototypes[i].envConditionSize;j++){
+                if(proj->prototypes[i].envConditions[j].covariateName==currentLayerName){
+                    covPos = j;
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    proj->prototypes[protoPos].envConditions[covPos].changeCurve(myGraphicsView->membership);
+    myGraphicsView->editFreehandRule = false;
+    drawMembershipFunction(myGraphicsView->curveXMax,myGraphicsView->curveXMin);
+}
+
+void MainWindow::resetEditRule(){
+    drawMembershipFunction(myGraphicsView->curveXMax,myGraphicsView->curveXMin);
+    onAddFreehandPoint();
+}
+
+void MainWindow::onAddEnumPoint(){
+    myGraphicsView->getScene()->clear();
+    //todo
+}
+
 
 void MainWindow::onExpanded(const QModelIndex& index)
 {
