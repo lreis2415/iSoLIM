@@ -326,6 +326,7 @@ namespace solim {
                 if(iSoilIDField<0) prototypeID = prototypeBasename + to_string(fids[0]);
             }
         }
+        // if polygon is smaller than 4 cells, does not count as a prototype
         if (freq[0]->size() < 4) return;
         for (size_t i = 0; i < eds->Layers.size(); i++) {
             if (eds->Layers.at(i)->DataType == CATEGORICAL) {
@@ -374,7 +375,7 @@ namespace solim {
         for (int iField = 0; iField < poFDefn->GetFieldCount(); iField++) {
             OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
             string fieldname = poFieldDefn->GetNameRef();
-            if (fieldname == "soilID") {
+            if (fieldname == soilIDFieldName/*"soilID"*/) {
                 iIdField = iField;
                 break;
             }

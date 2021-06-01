@@ -1251,6 +1251,20 @@ void MainWindow::drawMembershipFunction(float max, float min, solim::Curve *c){
         myGraphicsView->knotY.push_back(myGraphicsView->membership->vecKnotY[i]);
     }
 
+    double x,y;
+    int graphWidth = 0.7*sceneWidth;
+    int graphHeight = 0.7*sceneHeight;
+    int xStart = 0.10*sceneWidth;
+    int yEnd = 0.85*sceneHeight;
+
+    if(myGraphicsView->membership->dataType==solim::CATEGORICAL){
+        for(size_t i = 0; i<myGraphicsView->membership->vecKnotX.size();i++){
+            double x = myGraphicsView->membership->vecKnotX[i];
+            myGraphicsView->getScene()->addLine((x-myGraphicsView->curveXMin)/scale*graphWidth+xStart,yEnd,(x-myGraphicsView->curveXMin)/scale*graphWidth+xStart,yEnd-graphHeight,curvePen);
+        }
+        return;
+    }
+
     if(myGraphicsView->membership->getKnotNum() < 3)
         return;
 
@@ -1259,11 +1273,6 @@ void MainWindow::drawMembershipFunction(float max, float min, solim::Curve *c){
     double range_min = previousx;
     double interval = (myGraphicsView->curveXMax - myGraphicsView->curveXMin)/100.0;
 
-    double x,y;
-    int graphWidth = 0.7*sceneWidth;
-    int graphHeight = 0.7*sceneHeight;
-    int xStart = 0.10*sceneWidth;
-    int yEnd = 0.85*sceneHeight;
     if(myGraphicsView->membership->dataType==solim::CONTINUOUS){
         for(int i =0;i<100;i++){
             x =previousx+interval;
@@ -1528,7 +1537,6 @@ void MainWindow::onEditRule(){
 }
 
 void MainWindow::onAddFreehandPoint(){
-    //todo
     vector<double> *freeKnotX = new vector<double>;
     vector<double> *freeKnotY = new vector<double>;
     freeKnotX->clear();

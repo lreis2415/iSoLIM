@@ -210,7 +210,7 @@ void AddPrototypeBase::on_ok_btn_clicked()
         return;
     }
     string prototypeBaseName = ui->lineEdit_basename->text().toStdString();
-    for(int i = 0; i< project->prototypeBaseNames.size();i++){
+    for(size_t i = 0; i< project->prototypeBaseNames.size();i++){
         if(prototypeBaseName==project->prototypeBaseNames[i]){
             QMessageBox warning;
             warning.setText("This base name exists already. Please change prototype base name!");
@@ -245,8 +245,8 @@ void AddPrototypeBase::on_ok_btn_clicked()
         vector<string> newEnvFileNames;
         vector<string> newLayernames;
         vector<string> newDatatypes;
-        for(int i = 0; i<eds->Layers.size();i++){
-            for(int j = 0; j< envFileNames.size();j++){
+        for(size_t i = 0; i<eds->Layers.size();i++){
+            for(size_t j = 0; j< envFileNames.size();j++){
                 if(layernames[j]==eds->Layers[i]->LayerName){
                     newEnvFileNames.push_back(envFileNames[j]);
                     newLayernames.push_back(layernames[j]);

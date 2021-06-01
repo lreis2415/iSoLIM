@@ -263,7 +263,7 @@ namespace solim {
 	}
 	Curve::Curve(string covName, vector<Curve> *curves) {
         covariateName = covName;
-        dataType = CONTINUOUS;
+        dataType = curves->at(0).dataType;
         iKnotNum = 0;
         vecKnotX.clear();
         vecKnotY.clear();
@@ -271,6 +271,17 @@ namespace solim {
         vecDDY.clear();
         vecS.clear();
         typicalValue = curves->at(0).typicalValue;
+        // if curves are categorical
+        if(dataType==CATEGORICAL){
+            for (size_t i = 0; i < curves->size(); ++i) {
+                for(size_t j = 0; j<curves->at(i).iKnotNum;j++){
+                    addKnot(curves->at(i).vecKnotX[j],curves->at(i).vecKnotY[j]);
+                }
+            }
+            bubbleSort();
+            return;
+        }
+        // if the curves are continuous;
         int knotNumSum = 0;
         vector<float> vecXCollect;
         for (int i = 0; i < curves->size(); ++i) {
@@ -328,18 +339,35 @@ namespace solim {
 	}
 
 	Curve::Curve(string covName, vector<int> *values) {	// add rules from data mining-categorical
-		int mode = 0;
-		int count = 0;
-		for (size_t n = 0; n < values->size(); ++n)
+        int count = values->size();
+        sort(values->begin(),values->end());
+        std::vector<int>::iterator unique_it;
+        unique_it = std::unique(values->begin(), values->end());
+        vector<float> freq;
+        float max_freq = 0;
+        for (std::vector<int>::iterator it = values->begin(); it!=unique_it; ++it)
 		{
-			int tmp_mode = values->at(n);
-			int tmp_count = std::count(values->begin() + n, values->end(), tmp_mode);
-			if (tmp_count > count)
-			{
-				mode = tmp_mode;
-				count = tmp_count;
-			}
-		}
+            int tmp_mode = *it;
+            int tmp_count = std::count(values->begin(), values->end(), tmp_mode);
+            float tmp_freq = float(tmp_count)/count;
+            freq.push_back(tmp_freq);
+            if(tmp_freq>max_freq) {
+                typicalValue = tmp_mode;
+                max_freq = tmp_freq;
+            }
+        }
+        // select values whose frequency is more than 0.5*max_freq as modes
+        /*float freq_threshold = 0.5;
+        int i = 0;
+        for (std::vector<float>::iterator it = freq.begin(); it!=freq.end(); ++it)
+        {
+            if(*it>freq_threshold*max_freq){
+                vecKnotX.push_back(values->at(i));
+                vecKnotY.push_back(1);
+            }
+            i++;
+        }*/
+
 		covariateName = covName;
 		dataType = CATEGORICAL;
 		iKnotNum = 1;
@@ -348,9 +376,9 @@ namespace solim {
 		vecDY.clear();
 		vecDDY.clear();
 		vecS.clear();
-		typicalValue = mode;
-		vecKnotX.push_back(mode);
-		vecKnotY.push_back(1);
+        // add only typical value as only mode
+        vecKnotX.push_back(typicalValue);
+        vecKnotY.push_back(1);
 	}
 
 	void Curve::addKnot(double x, double y) {
@@ -373,6 +401,7 @@ namespace solim {
 	}
 
     void Curve::changeCurve(Curve*c) {
+        dataType=c->dataType;
         vecKnotX.clear();
         vecKnotX.shrink_to_fit();
         vecKnotY.clear();
@@ -383,13 +412,11 @@ namespace solim {
         vecDDY.shrink_to_fit();
         vecS.clear();
         vecS.shrink_to_fit();
-        for(size_t i = 0; i < c->iKnotNum; i++){
-            vecKnotX.push_back(c->vecKnotX[i]);
-            vecKnotY.push_back(c->vecKnotY[i]);
-            vecDY.push_back(c->vecDY[i]);
-            vecDDY.push_back(c->vecDDY[i]);
-            vecS.push_back(c->vecS[i]);
-        }
+        vecKnotX.insert(vecKnotX.end(), c->vecKnotX.begin(),c->vecKnotX.end());
+        vecKnotY.insert(vecKnotY.end(), c->vecKnotY.begin(),c->vecKnotY.end());
+        vecDY.insert(vecDY.end(), c->vecDY.begin(),c->vecDY.end());
+        vecDDY.insert(vecDDY.end(), c->vecDDY.begin(),c->vecDDY.end());
+        vecS.insert(vecS.end(), c->vecS.begin(),c->vecS.end());
         iKnotNum = c->iKnotNum;
         typicalValue = c->typicalValue;
     }
@@ -397,7 +424,7 @@ namespace solim {
 		// for categorical value
 		if (dataType == CATEGORICAL) {
 			for (int i = 0; i < iKnotNum; ++i)
-				if (fabs(envValue - vecKnotX[i] < VERY_SMALL))
+                if (fabs(envValue - vecKnotX[i]) < VERY_SMALL)
 					return vecKnotY[i];
 			return 0;
 		}
