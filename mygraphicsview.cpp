@@ -35,6 +35,7 @@ void MyGraphicsView::mousePressEvent(QMouseEvent * e)
         int yEnd = 0.85*sceneHeight;
         if(pt.x()<xStart||pt.x()>xStart+graphWidth) return;
         double x = 1.0*(pt.x()-xStart)/graphWidth;
+        x = x * (curveXMax-curveXMin)+curveXMin;
         double y = 1.0*(yEnd-pt.y())/graphHeight;
         int py=pt.y();
         if(y>1){
@@ -46,7 +47,7 @@ void MyGraphicsView::mousePressEvent(QMouseEvent * e)
             py=yEnd-sceneHeight;
         }
         for(int i = 0;i<knotX.size();i++){
-            if(fabs(knotX[i]-x)<0.01){
+            if(fabs(knotX[i]-x)/(curveXMax-curveXMin)<0.01){
                 if(fabs(knotY[i]-y)<0.05){
                     moveKnotNum=i;
                     return;
@@ -68,12 +69,7 @@ void MyGraphicsView::mousePressEvent(QMouseEvent * e)
         double y = 1.0*(yEnd-pt.y())/graphHeight;
         int py=pt.y();
         if(y>1||y<0) return;
-        int margin=fabs(enumMax)>fabs(enumMin)?fabs(enumMax):fabs(enumMin);
-        if(enumMin*enumMax<0||enumMax<0){
-            x=x*2*margin-margin;
-        } else {
-            x=x*margin;
-        }
+        x = x * (curveXMax-curveXMin) + curveXMin;
         for(int i = 0;i<knotX.size();i++){
             if(fabs(knotX[i]-x)<0.1){
                     moveKnotNum=i;
@@ -127,6 +123,7 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent * e){
         int yEnd = 0.85*sceneHeight;
         if(pt.x()<xStart||pt.x()>xStart+graphWidth) return;
         double x = 1.0*(pt.x()-xStart)/graphWidth;
+        x = x * (curveXMax-curveXMin)+curveXMin;
         double y = 1.0*(yEnd-pt.y())/graphHeight;
         int py=pt.y();
         if(y>1){
@@ -161,13 +158,7 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent * e){
         double y = 1.0*(yEnd-pt.y())/graphHeight;
         int py=pt.y();
         if(y>1||y<0) return;
-        int margin=fabs(enumMax)>fabs(enumMin)?fabs(enumMax):fabs(enumMin);
-        if(enumMin*enumMax<0||enumMax<0){
-            x=x*2*margin-margin;
-        } else {
-            x=x*margin;
-        }
-        if(x<enumMin||x>enumMax) return;
+        x = x * (curveXMax-curveXMin) + curveXMin;
         for(int i = 0;i<knotX.size();i++){
             if(i!=moveKnotNum){
                 if(fabs(knotX[i]-x)<0.1){
@@ -220,6 +211,7 @@ void MyGraphicsView::mouseDoubleClickEvent(QMouseEvent *e){
         int yEnd = 0.85*sceneHeight;
         if(pt.x()<xStart||pt.x()>xStart+graphWidth) return;
         double x = 1.0*(pt.x()-xStart)/graphWidth;
+        x = x*(curveXMax-curveXMin)+curveXMin;
         double y = 1.0*(yEnd-pt.y())/graphHeight;
         int py=pt.y();
         if(y>1){
@@ -258,17 +250,13 @@ void MyGraphicsView::mouseDoubleClickEvent(QMouseEvent *e){
         double y = 1.0*(yEnd-pt.y())/graphHeight;
         int py=pt.y();
         if(y>1||y<0) return;
-        int margin=fabs(enumMax)>fabs(enumMin)?fabs(enumMax):fabs(enumMin);
-        if(enumMin*enumMax<0||enumMax<0){
-            x=x*2*margin-margin;
-        } else {
-            x=x*margin;
-        }
-        if(x<enumMin||x>enumMax) return;
+        x = x * (curveXMax-curveXMin) + curveXMin;
         for(int i = 0;i<knotX.size();i++){
             if(fabs(knotX[i]-x)<0.1){
                 knotX.erase(knotX.begin()+i);
+                knotY.erase(knotY.begin()+i);
                 knotX.shrink_to_fit();
+                knotY.shrink_to_fit();
                 emit addEnumPoint();
                 return;
             }
@@ -278,6 +266,7 @@ void MyGraphicsView::mouseDoubleClickEvent(QMouseEvent *e){
                 return;
         }
         knotX.push_back(int(x+0.5));
+        knotY.push_back(1);
         emit addEnumPoint();
     }
 }

@@ -142,4 +142,10 @@ void EnvLayer::ReadByBlock(int blockRank) {
         }
 	}
 }
+
+float EnvLayer::GetValue(int col, int row){
+    float *value = new float;
+    baseRef->read(col,row,1,1,value);
+    return *value;
+}
 };

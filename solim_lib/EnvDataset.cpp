@@ -169,6 +169,23 @@ namespace solim {
 		}
 		return e;
 	}
+
+    EnvUnit* EnvDataset::GetEnvUnit(Location *loc){
+        EnvUnit *e = new EnvUnit();
+        e->Loc->Row = loc->Row;
+        e->Loc->Col = loc->Col;
+        e->Loc->X = loc->X;
+        e->Loc->Y = loc->Y;
+        int numRows = 1;
+        int numCols = 1;
+        for (int i = 0; i < Layers.size(); ++i) {
+            float *value = new float;
+            Layers.at(i)->baseRef->read(e->Loc->Col, e->Loc->Row, numRows, numCols, value);
+            e->AddEnvValue(Layers.at(i)->LayerName, *value, Layers.at(i)->DataType);
+        }
+        return e;
+    }
+
 	EnvLayer *EnvDataset::getDEM() {
 		for (auto it = Layers.begin(); it != Layers.end(); ++it) {
 			string name = (*it)->LayerName;

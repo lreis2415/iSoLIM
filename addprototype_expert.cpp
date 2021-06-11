@@ -335,64 +335,57 @@ void AddPrototype_Expert::drawMembershipFunction(solim::Curve *c) {
     curvePen.setWidth(1);
     int sceneWidth = scene->width();
     int sceneHeight = scene->height();
-    double scale = c->range;
-    int margin;
-    if(ui->radioButton_freehand->isChecked()){
-        margin=scale;
-        scale = 2*scale;
-    }else{
-        if(scale<10) scale = (int(scale)+1)*2;
-        else scale = (int(scale/10)+1)*10*2;
-        margin = 0.5*scale;
-    }
+    myview->curveXMax = int(rangeMax+1);
+    myview->curveXMin = int(rangeMin);
 
     // set axis
     scene->addLine(0.05*sceneWidth,0.85*sceneHeight,0.85*sceneWidth,0.85*sceneHeight,axisPen);
     scene->addLine(0.85*sceneWidth,0.85*sceneHeight+1,0.85*sceneWidth-3,0.85*sceneHeight+4,axisPen);
     scene->addLine(0.85*sceneWidth,0.85*sceneHeight,0.85*sceneWidth-3,0.85*sceneHeight-3,axisPen);
-    scene->addLine(0.45*sceneWidth,0.85*sceneHeight,0.45*sceneWidth,0.1*sceneHeight,axisPen);
-    scene->addLine(0.45*sceneWidth,0.1*sceneHeight,0.45*sceneWidth-3,0.1*sceneHeight+3,axisPen);
-    scene->addLine(0.45*sceneWidth,0.1*sceneHeight,0.45*sceneWidth+3,0.1*sceneHeight+3,axisPen);
+    scene->addLine(0.10*sceneWidth,0.85*sceneHeight,0.10*sceneWidth,0.1*sceneHeight,axisPen);
+    scene->addLine(0.10*sceneWidth,0.1*sceneHeight,0.10*sceneWidth-3,0.1*sceneHeight+3,axisPen);
+    scene->addLine(0.10*sceneWidth,0.1*sceneHeight,0.10*sceneWidth+3,0.1*sceneHeight+3,axisPen);
     // set label
     scene->addLine(0.80*sceneWidth,0.85*sceneHeight,0.80*sceneWidth,0.85*sceneHeight-3,axisPen);
-    scene->addLine(0.10*sceneWidth,0.85*sceneHeight,0.10*sceneWidth,0.85*sceneHeight-3,axisPen);
-    scene->addLine(0.45*sceneWidth,0.15*sceneHeight,0.45*sceneWidth+3,0.15*sceneHeight,axisPen);
+    scene->addLine(0.10*sceneWidth,0.15*sceneHeight,0.10*sceneWidth+3,0.15*sceneHeight,axisPen);
 
     // set axis names
     QGraphicsTextItem *yaxisName = scene->addText("Optimality value");
     yaxisName->setFont(QFont("Times", 10, QFont::Bold));
-    yaxisName->setPos(0.45*sceneWidth, 0.1*sceneHeight-20);
+    yaxisName->setPos(0.10*sceneWidth, 0.1*sceneHeight-20);
     QGraphicsTextItem *xaxisName = scene->addText("Covariate value");
     xaxisName->setFont(QFont("Times", 10, QFont::Bold));
     xaxisName->setPos(0.85*sceneWidth, 0.85*sceneHeight-10);
 
     QGraphicsTextItem *yaxis1 = scene->addText("1");
     yaxis1->setFont(QFont("Times", 10, QFont::Bold));
-    yaxis1->setPos(0.45*sceneWidth-15,0.15*sceneHeight-10);
+    yaxis1->setPos(0.10*sceneWidth-15,0.15*sceneHeight-10);
     QGraphicsTextItem *yaxis0 = scene->addText("0");
     yaxis0->setFont(QFont("Times", 10, QFont::Bold));
-    yaxis0->setPos(0.45*sceneWidth-5,0.85*sceneHeight);
-    QGraphicsTextItem *xaxis1 = scene->addText(QString::number(margin));
+    yaxis0->setPos(0.10*sceneWidth-20,0.85*sceneHeight-20);
+    QGraphicsTextItem *xaxis1 = scene->addText(QString::number(int(rangeMax+1)));
     xaxis1->setFont(QFont("Times", 10, QFont::Bold));
     xaxis1->setPos(0.80*sceneWidth-4*xaxis1->toPlainText().size(),0.85*sceneHeight);
-    QGraphicsTextItem *xaxis0 = scene->addText(QString::number(-margin));
+    QGraphicsTextItem *xaxis0 = scene->addText(QString::number(int(rangeMin)));
     xaxis0->setFont(QFont("Times", 10, QFont::Bold));
     xaxis0->setPos(0.10*sceneWidth-4*xaxis0->toPlainText().size(),0.85*sceneHeight);
     double previousx,previousy;
-    previousy = c->getOptimality(0-margin);
-    previousx = -margin;
+    previousy = c->getOptimality(myview->curveXMin);
+    previousx = myview->curveXMin;
 
     double x,y;
     int graphWidth = 0.7*sceneWidth;
     int graphHeight = 0.7*sceneHeight;
     int xStart = 0.10*sceneWidth;
     int yEnd = 0.85*sceneHeight;
+    int range = myview->curveXMax-myview->curveXMin;
     for(int i =0;i<100;i++){
-        x =i*2*margin/101.0-margin;
+        x =i*range/101.0+myview->curveXMin;
         y = c->getOptimality(x);
         if(fabs(y+1)<VERY_SMALL ||fabs(previousy+1)<VERY_SMALL)
             continue;
-        scene->addLine((previousx+margin)/scale*graphWidth+xStart,yEnd-previousy*graphHeight,(x+margin)/scale*graphWidth+xStart,yEnd-y*graphHeight,curvePen);
+        scene->addLine((previousx-myview->curveXMin)/range*graphWidth+xStart,yEnd-previousy*graphHeight,
+                       (x-myview->curveXMin)/range*graphWidth+xStart,yEnd-y*graphHeight,curvePen);
         previousx = x;
         previousy = y;
     }
@@ -413,6 +406,7 @@ void AddPrototype_Expert::on_btn_add_opt_val_clicked() {
             }
             enumVals.push_back(num);
             myview->knotX.push_back(num);
+            myview->knotY.push_back(1);
             onAddEnumPoint();
         }
     }
@@ -421,11 +415,6 @@ void AddPrototype_Expert::on_btn_add_opt_val_clicked() {
 void AddPrototype_Expert::drawEnumRange(){
     ui->label_membership->setVisible(true);
     myview->setVisible(true);
-    int margin = fabs(rangeMax)>fabs(rangeMin)?fabs(rangeMax):fabs(rangeMin);
-    if(myview->editEnumRule){
-        myview->enumMax=rangeMax;
-        myview->enumMin=rangeMin;
-    }
     QGraphicsScene *scene = myview->getScene();
     scene->clear();
     scene->setSceneRect(0,0,myview->width()*0.9,myview->height()*0.9);
@@ -433,57 +422,40 @@ void AddPrototype_Expert::drawEnumRange(){
     axisPen.setWidth(2);
     int sceneWidth = scene->width();
     int sceneHeight = scene->height();
+    // set axis
     scene->addLine(0.05*sceneWidth,0.85*sceneHeight,0.85*sceneWidth,0.85*sceneHeight,axisPen);
     scene->addLine(0.85*sceneWidth,0.85*sceneHeight+1,0.85*sceneWidth-3,0.85*sceneHeight+4,axisPen);
     scene->addLine(0.85*sceneWidth,0.85*sceneHeight,0.85*sceneWidth-3,0.85*sceneHeight-3,axisPen);
+    scene->addLine(0.10*sceneWidth,0.85*sceneHeight,0.10*sceneWidth,0.1*sceneHeight,axisPen);
+    scene->addLine(0.10*sceneWidth,0.1*sceneHeight,0.10*sceneWidth-3,0.1*sceneHeight+3,axisPen);
+    scene->addLine(0.10*sceneWidth,0.1*sceneHeight,0.10*sceneWidth+3,0.1*sceneHeight+3,axisPen);
+    // set label
     scene->addLine(0.80*sceneWidth,0.85*sceneHeight,0.80*sceneWidth,0.85*sceneHeight-3,axisPen);
-    scene->addLine(0.10*sceneWidth,0.85*sceneHeight,0.10*sceneWidth,0.85*sceneHeight-3,axisPen);
+    scene->addLine(0.10*sceneWidth,0.15*sceneHeight,0.10*sceneWidth+3,0.15*sceneHeight,axisPen);
     // set axis names
     QGraphicsTextItem *yaxisName = scene->addText("Optimality value");
     yaxisName->setFont(QFont("Times", 10, QFont::Bold));
-    yaxisName->setPos(0.45*sceneWidth, 0.1*sceneHeight-20);
+    yaxisName->setPos(0.10*sceneWidth, 0.1*sceneHeight-20);
     QGraphicsTextItem *xaxisName = scene->addText("Covariate value");
     xaxisName->setFont(QFont("Times", 10, QFont::Bold));
     xaxisName->setPos(0.85*sceneWidth, 0.85*sceneHeight-10);
 
     QGraphicsTextItem *yaxis1 = scene->addText("1");
     yaxis1->setFont(QFont("Times", 10, QFont::Bold));
-    yaxis1->setPos(0.45*sceneWidth-15,0.15*sceneHeight-10);
+    yaxis1->setPos(0.10*sceneWidth-15,0.15*sceneHeight-10);
     QGraphicsTextItem *yaxis0 = scene->addText("0");
     yaxis0->setFont(QFont("Times", 10, QFont::Bold));
-    yaxis0->setPos(0.45*sceneWidth-5,0.85*sceneHeight);
+    yaxis0->setPos(0.10*sceneWidth-20,0.85*sceneHeight-20);
 
-    if(ui->radioButton_freehand->isChecked()||rangeMax*rangeMin<0||!rangeMax>0){
-        // set axis
-        scene->addLine(0.45*sceneWidth,0.85*sceneHeight,0.45*sceneWidth,0.1*sceneHeight,axisPen);
-        scene->addLine(0.45*sceneWidth,0.1*sceneHeight,0.45*sceneWidth-3,0.1*sceneHeight+3,axisPen);
-        scene->addLine(0.45*sceneWidth,0.1*sceneHeight,0.45*sceneWidth+3,0.1*sceneHeight+3,axisPen);
-        // set label
-        scene->addLine(0.45*sceneWidth,0.15*sceneHeight,0.45*sceneWidth+3,0.15*sceneHeight,axisPen);
-        QGraphicsTextItem *xaxis1 = scene->addText(QString::number(margin));
-        xaxis1->setFont(QFont("Times", 10, QFont::Bold));
-        xaxis1->setPos(0.80*sceneWidth-4*xaxis1->toPlainText().size(),0.85*sceneHeight);
-        QGraphicsTextItem *xaxis0 = scene->addText(QString::number(-margin));
-        xaxis0->setFont(QFont("Times", 10, QFont::Bold));
-        xaxis0->setPos(0.10*sceneWidth-4*xaxis0->toPlainText().size(),0.85*sceneHeight);
-
-    }
-    else if(rangeMax>0){
-        scene->addLine(0.10*sceneWidth,0.85*sceneHeight,0.10*sceneWidth,0.1*sceneHeight,axisPen);
-        scene->addLine(0.10*sceneWidth,0.1*sceneHeight,0.10*sceneWidth-3,0.1*sceneHeight+3,axisPen);
-        scene->addLine(0.10*sceneWidth,0.1*sceneHeight,0.10*sceneWidth+3,0.1*sceneHeight+3,axisPen);
-        // set label
-        scene->addLine(0.10*sceneWidth,0.15*sceneHeight,0.10*sceneWidth+3,0.15*sceneHeight,axisPen);
-        yaxis1->setPos(0.10*sceneWidth-15,0.15*sceneHeight-10);
-        yaxis0->setPos(0.10*sceneWidth-5,0.85*sceneHeight);
-        QGraphicsTextItem *xaxis1 = scene->addText(QString::number(rangeMax));
-        xaxis1->setFont(QFont("Times", 10, QFont::Bold));
-        xaxis1->setPos(0.80*sceneWidth-4*xaxis1->toPlainText().size(),0.85*sceneHeight);
-        QGraphicsTextItem *xaxis0 = scene->addText(QString::number(0));
-        xaxis0->setFont(QFont("Times", 10, QFont::Bold));
-        xaxis0->setPos(0.10*sceneWidth-4*xaxis0->toPlainText().size(),0.85*sceneHeight);
-        yaxisName->setPos(0.10*sceneWidth, 0.1*sceneHeight-20);
-    }
+    QGraphicsTextItem *xaxis1 = scene->addText(QString::number(int(rangeMax+1)));
+    xaxis1->setFont(QFont("Times", 10, QFont::Bold));
+    xaxis1->setPos(0.80*sceneWidth-4*xaxis1->toPlainText().size(),0.85*sceneHeight);
+    QGraphicsTextItem *xaxis0 = scene->addText(QString::number(int(rangeMin)));
+    xaxis0->setFont(QFont("Times", 10, QFont::Bold));
+    xaxis0->setPos(0.10*sceneWidth-4*xaxis0->toPlainText().size(),0.85*sceneHeight);
+    yaxisName->setPos(0.10*sceneWidth, 0.1*sceneHeight-20);
+    myview->curveXMax = int(rangeMax+1);
+    myview->curveXMin = int(rangeMin);
     /*if(ui->radioButton_enum->isChecked())
         ui->label_freehand_hint->setText("<b>Hint</b>: Enumerated rules are used for categorical covariables, e.g. geology, land use type."
                                          " Add all possible conditions when prototype occurs as optimality value");
@@ -520,14 +492,12 @@ void AddPrototype_Expert::on_btn_reset_clicked()
 }
 
 void AddPrototype_Expert::onAddFreehandPoint(){
-    int margin = fabs(rangeMax)>fabs(rangeMin)?fabs(rangeMax):fabs(rangeMin);
     freeKnotX->clear();
     freeKnotX->shrink_to_fit();
     freeKnotY->clear();
     freeKnotY->shrink_to_fit();
     for(int i = 0; i<myview->knotX.size();i++){
-        double knotX = myview->knotX[i]*2*margin-margin;
-        freeKnotX->push_back(knotX);
+        freeKnotX->push_back(myview->knotX[i]);
         freeKnotY->push_back(myview->knotY[i]);
     }
     int sceneWidth = myview->getScene()->width();
@@ -540,10 +510,9 @@ void AddPrototype_Expert::onAddFreehandPoint(){
     pen.setWidth(1);
     if(freeKnotX->size()>2){
         solim::Curve *c = new solim::Curve(ui->comboBox_cov->currentText().toStdString(),solim::CONTINUOUS,freeKnotX,freeKnotY);
-        c->range=margin;
         drawMembershipFunction(c);
         for(int i = 0; i<freeKnotX->size();i++){
-            double x=0.5*(freeKnotX->at(i)+margin)/margin;
+            double x = (freeKnotX->at(i)-myview->curveXMin)/(myview->curveXMax-myview->curveXMin);
             double y = freeKnotY->at(i);
             myview->getScene()->addRect(x*graphWidth+xStart-2,yEnd-y*graphHeight-2,4,4,pen,QBrush(Qt::black));
         }
@@ -553,7 +522,7 @@ void AddPrototype_Expert::onAddFreehandPoint(){
         myview->getScene()->clear();
         drawEnumRange();
         for(int i = 0; i<freeKnotX->size();i++){
-            double x=0.5*(freeKnotX->at(i)+margin)/margin;
+            double x = (freeKnotX->at(i)-myview->curveXMin)/(myview->curveXMax-myview->curveXMin);
             double y = freeKnotY->at(i);
             myview->getScene()->addRect(x*graphWidth+xStart-2,yEnd-y*graphHeight-2,4,4,pen,QBrush(Qt::black));
         }

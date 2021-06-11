@@ -56,6 +56,7 @@ public:
 	void Writeout(string filename, int blockRank = 0);
 	void Readin(int xstart, int ystart, int ny, int nx);
 	void ReadByBlock(int blockRank);
+    float GetValue(int col, int row);
 	int GetYSizeByBlock(int blockRank);
 };
 }

@@ -58,6 +58,7 @@
     </property>
     <addaction name="actionView_Data"/>
     <addaction name="actionResample"/>
+    <addaction name="actionValidation"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -146,6 +147,11 @@
   <action name="actionResample">
    <property name="text">
     <string>Resample</string>
+   </property>
+  </action>
+  <action name="actionValidation">
+   <property name="text">
+    <string>Validation</string>
    </property>
   </action>
  </widget>

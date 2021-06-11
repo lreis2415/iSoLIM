@@ -61,6 +61,8 @@ public:
     EnvUnit* GetEnvUnit(const int row, const int col);
 
     EnvUnit* GetEnvUnit(const double x, const double y);
+
+    EnvUnit* GetEnvUnit(Location *loc);
 	
 	void Writeout(string filename, float*EnvData, int blockRank=0);
 

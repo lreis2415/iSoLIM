@@ -292,7 +292,7 @@ void MainWindow::onViewData(){
 //==================================== Project tree slots ==========================================
 void MainWindow::onSelectionChanged(const QItemSelection& current,const QItemSelection& previous){
     QModelIndex index = current.indexes().at(0);
-    if(myGraphicsView->editFreehandRule == true){
+    if(myGraphicsView->editFreehandRule == true||myGraphicsView->editEnumRule == true){
         if(myGraphicsView->membership->getKnotNum()>2) {
             QMessageBox warn;
             warn.setText("Do you want to save edit?");
@@ -336,7 +336,8 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
         prototypesMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
     else if(index.isValid()&&index.data().toString().compare("Covariates")==0){
-        gisDataMenu->exec(projectView->viewport()->mapToGlobal(point));
+        if(index.parent().data().toString().compare(proj->projName.c_str())==0)
+            gisDataMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
     else if (index.isValid()&&index.parent().data().toString().compare("Covariates")==0){
         currentLayerName=index.data().toString().toStdString();
@@ -368,7 +369,7 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
         currentBaseName = index.parent().parent().parent().parent().data().toString().toStdString().substr(basePrefixLength);
         currentProtoName = index.parent().parent().parent().data().toString().toStdString().substr(idPrefixLength);
         currentLayerName = index.parent().data().toString().toStdString().substr(prefixLength);
-        if(myGraphicsView->editFreehandRule == true){
+        if(myGraphicsView->editFreehandRule == true || myGraphicsView->editEnumRule == true){
             editRule->setEnabled(false);
             saveRule->setEnabled(true);
             resetRule->setEnabled(true);
@@ -1246,8 +1247,7 @@ void MainWindow::drawMembershipFunction(float max, float min, solim::Curve *c){
     myGraphicsView->knotX.shrink_to_fit();
     myGraphicsView->knotY.shrink_to_fit();
     for(int i = 0; i < myGraphicsView->membership->getKnotNum(); i++){
-        double x = (myGraphicsView->membership->vecKnotX[i]-myGraphicsView->curveXMin) / (myGraphicsView->curveXMax-myGraphicsView->curveXMin);
-        myGraphicsView->knotX.push_back(x);
+        myGraphicsView->knotX.push_back(myGraphicsView->membership->vecKnotX[i]);
         myGraphicsView->knotY.push_back(myGraphicsView->membership->vecKnotY[i]);
     }
 
@@ -1531,9 +1531,12 @@ void MainWindow::initialProjectView(){
 }
 
 void MainWindow::onEditRule(){
-    myGraphicsView->editFreehandRule = true;
-    myGraphicsView->editEnumRule = true;
-    onAddFreehandPoint();
+    if(myGraphicsView->membership->dataType==solim::CONTINUOUS){
+        myGraphicsView->editFreehandRule = true;
+        onAddFreehandPoint();
+    } else
+        myGraphicsView->editEnumRule = true;
+
 }
 
 void MainWindow::onAddFreehandPoint(){
@@ -1544,9 +1547,7 @@ void MainWindow::onAddFreehandPoint(){
     freeKnotY->clear();
     freeKnotY->shrink_to_fit();
     for(int i = 0; i<myGraphicsView->knotX.size();i++){
-        double knotX = myGraphicsView->knotX[i]*(myGraphicsView->curveXMax - myGraphicsView->curveXMin)
-                + myGraphicsView->curveXMin;
-        freeKnotX->push_back(knotX);
+        freeKnotX->push_back(myGraphicsView->knotX[i]);
         freeKnotY->push_back(myGraphicsView->knotY[i]);
     }
     int sceneWidth = myGraphicsView->getScene()->width();
@@ -1563,7 +1564,7 @@ void MainWindow::onAddFreehandPoint(){
         c->range=(myGraphicsView->curveXMin - myGraphicsView->curveXMax);
         drawMembershipFunction(myGraphicsView->curveXMax,myGraphicsView->curveXMin,c);
         for(size_t i = 0; i<myGraphicsView->knotX.size();i++){
-            double x = myGraphicsView->knotX[i];
+            double x = (myGraphicsView->knotX[i]-myGraphicsView->curveXMin)/(myGraphicsView->curveXMax-myGraphicsView->curveXMin);
             double y = myGraphicsView->knotY[i];
             myGraphicsView->getScene()->addRect(x*graphWidth+xStart-2,yEnd-y*graphHeight-2,4,4,pen,QBrush(Qt::black));
         }
@@ -1571,9 +1572,9 @@ void MainWindow::onAddFreehandPoint(){
     }
     else {
         solim::Curve *c = new solim::Curve();
-        drawMembershipFunction(myGraphicsView->curveXMax,myGraphicsView->curveXMax,c);
+        drawMembershipFunction(myGraphicsView->curveXMax,myGraphicsView->curveXMin,c);
         for(int i = 0; i<freeKnotX->size();i++){
-            double x=freeKnotX->at(i);//0.5*(freeKnotX->at(i)+margin)/margin;
+            double x = (freeKnotX->at(i)-myGraphicsView->curveXMin)/(myGraphicsView->curveXMax-myGraphicsView->curveXMin);//0.5*(freeKnotX->at(i)+margin)/margin;
             double y = freeKnotY->at(i);
             myGraphicsView->getScene()->addRect(x*graphWidth+xStart-2,yEnd-y*graphHeight-2,4,4,pen,QBrush(Qt::black));
         }
@@ -1598,17 +1599,31 @@ void MainWindow::saveEditRuleChange(){
     }
     proj->prototypes[protoPos].envConditions[covPos].changeCurve(myGraphicsView->membership);
     myGraphicsView->editFreehandRule = false;
+    myGraphicsView->editEnumRule = false;
     drawMembershipFunction(myGraphicsView->curveXMax,myGraphicsView->curveXMin);
 }
 
 void MainWindow::resetEditRule(){
     drawMembershipFunction(myGraphicsView->curveXMax,myGraphicsView->curveXMin);
-    onAddFreehandPoint();
+    myGraphicsView->editFreehandRule = false;
+    myGraphicsView->editEnumRule = false;
 }
 
 void MainWindow::onAddEnumPoint(){
     myGraphicsView->getScene()->clear();
-    //todo
+    vector<double> *freeKnotX = new vector<double>;
+    vector<double> *freeKnotY = new vector<double>;
+    freeKnotX->clear();
+    freeKnotX->shrink_to_fit();
+    freeKnotY->clear();
+    freeKnotY->shrink_to_fit();
+    for(int i = 0; i<myGraphicsView->knotX.size();i++){
+        freeKnotX->push_back(myGraphicsView->knotX[i]);
+        freeKnotY->push_back(myGraphicsView->knotY[i]);
+    }
+    solim::Curve *c = new solim::Curve("tmp",solim::CATEGORICAL,freeKnotX,freeKnotY);
+    drawMembershipFunction(myGraphicsView->curveXMax,myGraphicsView->curveXMin,c);
+    return;
 }
 
 
@@ -1768,4 +1783,12 @@ void MainWindow::on_actionResample_triggered()
     delete inputLayer;
     workingDir = project->workingDir;
     delete project;
+}
+
+void MainWindow::on_actionValidation_triggered()
+{
+    if(proj==nullptr) return;
+    Validation valid(proj, this);
+    valid.exec();
+
 }

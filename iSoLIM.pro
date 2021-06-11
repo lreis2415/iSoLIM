@@ -34,10 +34,12 @@ SOURCES += \
     solim_lib/inference.cpp \
     solim_lib/io.cpp \
     solim_lib/preprocess.cpp \
+    solim_lib/validate.cpp \
     third_party/tinystr.cpp \
     third_party/tinyxml.cpp \
     third_party/tinyxmlerror.cpp \
-    third_party/tinyxmlparser.cpp
+    third_party/tinyxmlparser.cpp \
+    validation.cpp
 
 HEADERS += \
     addprototype_expert.h \
@@ -62,8 +64,10 @@ HEADERS += \
     solim_lib/inference.h \
     solim_lib/io.h \
     solim_lib/preprocess.h \
+    solim_lib/validate.h \
     third_party/tinystr.h \
-    third_party/tinyxml.h
+    third_party/tinyxml.h \
+    validation.h
 
 FORMS += \
     addprototype_expert.ui \
@@ -73,7 +77,8 @@ FORMS += \
     mainwindow.ui \
     mapinference.ui \
     newprojectdialog.ui \
-    simpledialog.ui
+    simpledialog.ui \
+    validation.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

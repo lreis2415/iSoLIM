@@ -23,6 +23,8 @@ bool WriteoutRaster(EnvLayer* envLayer, string filename, string type, GDALDatase
 vector<EnvUnit *> ReadTable(string filename,
                             EnvDataset* envDataset,
                             string targetVName/* = "None" */,
+                            string xName,
+                            string yName,
                             string idName/* = "None" */) {
     vector<EnvUnit *> envUnits;
     ifstream file(filename); // declare file stream:

@@ -25,6 +25,8 @@ bool WriteoutRaster(EnvLayer* envLayer, string filename, string type, GDALDatase
 vector<EnvUnit *> ReadTable(string filename,
                             EnvDataset* envDataset,
                             string targetVName = "None",
+                            string xName = "None",
+                            string yName = "None",
                             string idName = "None");
 
 bool WriteTable(string filename, vector<EnvUnit *> envUnit);

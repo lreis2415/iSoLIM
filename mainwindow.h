@@ -24,6 +24,7 @@
 #include "newprojectdialog.h"
 #include "simpledialog.h"
 #include "changecovname.h"
+#include "validation.h"
 #include <iostream>
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -99,6 +100,8 @@ private slots:
     void on_actionResample_triggered();
 
     void onExpanded(const QModelIndex&);
+
+    void on_actionValidation_triggered();
 
 private:
     Ui::MainWindow *ui;

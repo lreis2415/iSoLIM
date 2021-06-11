@@ -31,12 +31,12 @@ namespace solim {
 				typicalValue = vecKnotX[i];
 				break;
 			}
-		}
+        }
+        bubbleSort();
+        range=fabs(vecKnotX[0])>fabs(vecKnotX[iKnotNum-1])?fabs(vecKnotX[0]):fabs(vecKnotX[iKnotNum-1]);
 		if (dataType == CONTINUOUS) {
-			bubbleSort();
-			calcSpline();
-            range=fabs(vecKnotX[0])>fabs(vecKnotX[iKnotNum-1])?fabs(vecKnotX[0]):fabs(vecKnotX[iKnotNum-1]);
-		}
+            calcSpline();
+        }
 	}
 
 	Curve::Curve(string covName, DataTypeEnum type) {
@@ -232,14 +232,17 @@ namespace solim {
 			x_next = x + interval;	//x_min+interval*(i+1)
 			y_next= KernelEst(x_next, n, h, values);
 			double flag = (y - y_pre)*(y - y_next);
+            if(!(flag < 0)){
+                addKnot(x_pre, y_pre);
+                addKnot(x, y);
+                addKnot(x_next, y_next);
+                if (y_pre > ymax) { ymax = y_pre; typicalValue = x_pre;}
+                if (y_pre < ymin) ymin = y_pre;
+            }
 			x_pre = x;
 			y_pre = y;
 			x = x_next;
 			y = y_next;
-			if (flag< 0) continue;
-			addKnot(x_pre, y_pre);
-			if (y_pre > ymax) { ymax = y_pre; typicalValue = x_pre;}
-			if (y_pre < ymin) ymin = y_pre;
 		}
 		if (iKnotNum == 1) {
 			x = xmin + xrange*0.5;
@@ -316,7 +319,11 @@ namespace solim {
                 }
                 if ((y - y_pre)*(y - y_next) < 0);
                 else if (fabs(y - y_pre) < VERY_SMALL&&fabs(y - y_next) < VERY_SMALL);
-                else addKnot(x, y);
+                else {
+                    addKnot(x_pre, y_pre);
+                    addKnot(x, y);
+                    addKnot(x_next, y_next);
+                }
                 x_pre = x;
                 y_pre = y;
                 x = x_next;
