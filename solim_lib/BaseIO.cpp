@@ -154,6 +154,7 @@ BaseIO::BaseIO(string filename) {
         ds->GetGeoTransform(adfGeoTransform);//GDALGetGeoTransform(fh, adfGeoTransform);
 		dx = abs(adfGeoTransform[1]);
 		dy = abs(adfGeoTransform[5]);
+        cellSize = dx;
 		xLeftEdge = adfGeoTransform[0];
 		yTopEdge = adfGeoTransform[3];
         xllCenter = xLeftEdge + dx / 2.;
@@ -229,7 +230,6 @@ BaseIO::BaseIO(BaseIO *lyr){
         dataStd = lyr->dataStd;
         firstDataByte = lyr->firstDataByte;
         dataEndLoc = lyr->dataEndLoc;
-        cellSize = lyr->cellSize;	// raster location info: cell size of raster layer
     } else {
         ds = lyr->ds;            // gdal file handle
         band = lyr->band;
@@ -243,6 +243,7 @@ BaseIO::BaseIO(BaseIO *lyr){
     }
     dx = lyr->dx;
     dy = lyr->dy;
+    cellSize = lyr->cellSize;	// raster location info: cell size of raster layer
     isFileInititialized = false;
     fileName = lyr->fileName;
     xSize = lyr->xSize;
@@ -367,8 +368,17 @@ void BaseIO::write(long xStart, long yStart, long numRows, long numCols, float *
 				fprintf(threeDRfp, "%s %lf\n", "Ymin: ", yllCenter - cellSize / 2.0);
 				fprintf(threeDRfp, "%s %lf\n", "CellSize: ", cellSize);
 			}
-            if (dataMin > noDataValue)	fprintf(threeDRfp, "%s %f\n", "DataMin: ", dataMin);
-			if (dataMax > noDataValue)	fprintf(threeDRfp, "%s %f\n", "DataMax: ", dataMax);
+            // calculate min & max
+            dataMin = source[0];
+            dataMax = source[0];
+            for(int i = 1; i<numRows*numCols; i++){
+                if(fabs(source[i]-noDataValue)>VERY_SMALL){
+                    if(source[i]>dataMax) dataMax = source[i];
+                    if(source[i]<dataMin) dataMin = source[i];
+                }
+            }
+            fprintf(threeDRfp, "%s %f\n", "DataMin: ", dataMin);
+            fprintf(threeDRfp, "%s %f\n", "DataMax: ", dataMax);
 			fprintf(threeDRfp, "%s %lf\n", "NoData: ", noDataValue);
 			fprintf(threeDRfp, "%s %d\n", "FirstDataByte: ", firstDataByte);
 			fclose(threeDRfp);

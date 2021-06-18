@@ -22,10 +22,10 @@ bool WriteoutRaster(EnvLayer* envLayer, string filename, string type, GDALDatase
 
 vector<EnvUnit *> ReadTable(string filename,
                             EnvDataset* envDataset,
-                            string targetVName/* = "None" */,
+                            string targetVName,
+                            string idName,
                             string xName,
-                            string yName,
-                            string idName/* = "None" */) {
+                            string yName) {
     vector<EnvUnit *> envUnits;
     ifstream file(filename); // declare file stream:
 
@@ -37,16 +37,35 @@ vector<EnvUnit *> ReadTable(string filename,
     int pos_targetVName = -1;
     int pos_idName = 0;
     ParseStr(line, ',', names);
-    for (int i = 0; i < names.size(); i++) {
-        if (names[i] == "X" || names[i] == "x") {
-            pos_X = i;
-            break;
+    if(xName=="None"){
+        for (int i = 0; i < names.size(); i++) {
+            if (names[i] == "X" || names[i] == "x") {
+                pos_X = i;
+                break;
+            }
         }
     }
-    for (int i = 0; i < names.size(); i++) {
-        if (names[i] == "Y" || names[i] == "y") {
-            pos_Y = i;
-            break;
+    else{
+        for (int i = 0; i < names.size(); i++) {
+            if (names[i] == xName) {
+                pos_X = i;
+                break;
+            }
+        }
+    }
+    if(yName=="None"){
+        for (int i = 0; i < names.size(); i++) {
+            if (names[i] == "Y" || names[i] == "y") {
+                pos_Y = i;
+                break;
+            }
+        }
+    } else {
+        for (int i = 0; i < names.size(); i++) {
+            if (names[i] == yName) {
+                pos_Y = i;
+                break;
+            }
         }
     }
     if (targetVName != "None") {
@@ -92,7 +111,7 @@ vector<EnvUnit *> ReadTable(string filename,
             id = values[pos_idName];
         }
         EnvUnit* e = envDataset->GetEnvUnit(x, y);
-        if (e != NULL) {
+        if (e != nullptr) {
             if (targetVName != "None") { e->SoilVariable = targetV; }
             if (idName != "None") { e->SampleID = id; }
             envUnits.push_back(e);
@@ -102,6 +121,118 @@ vector<EnvUnit *> ReadTable(string filename,
     return envUnits;
 }
 
+vector<EnvUnit *> ReadTable_geocoords(string filename,
+                            EnvDataset* envDataset,
+                            string targetVName/* = "None"*/,
+                            string idName/* = "None"*/,
+                            string lonName/* = "None"*/,
+                            string latName/* = "None"*/){
+    vector<EnvUnit *> envUnits;
+    OGRSpatialReference src, dst;
+    src.SetWellKnownGeogCS("WGS84");
+    const char*pszWKT = envDataset->LayerRef->getProjection();
+    dst.importFromWkt(pszWKT);
+    OGRCoordinateTransformation *ct =OGRCreateCoordinateTransformation(&src, &dst);
+    if(ct==NULL) return envUnits;
+
+    ifstream file(filename);
+    string line;
+    getline(file, line);
+    vector<string> names;
+    int pos_X = 0;
+    int pos_Y = 1;
+    int pos_targetVName = -1;
+    int pos_idName = 0;
+    ParseStr(line, ',', names);
+
+    if(lonName=="None"){
+        for (int i = 0; i < names.size(); i++) {
+            if (names[i] == "lon" || names[i] == "LON" ||
+                    names[i] == "longitude" || names[i] == "LONGITUDE") {
+                pos_X = i;
+                break;
+            }
+        }
+    } else {
+        for (int i = 0; i < names.size(); i++) {
+            if (names[i] == lonName) {
+                pos_X = i;
+                break;
+            }
+        }
+    }
+    if(latName=="None"){
+        for (int i = 0; i < names.size(); i++) {
+            if (names[i] == "lat" || names[i] == "LAT" ||
+                    names[i] == "latitude" || names[i] == "LATITUDE") {
+                pos_Y = i;
+                break;
+            }
+        }
+    }
+    else{
+        for (int i = 0; i < names.size(); i++) {
+            if (names[i] == latName) {
+                pos_Y = i;
+                break;
+            }
+        }
+    }
+
+    if (targetVName != "None") {
+        for (int i = 0; i < names.size(); i++) {
+            if (names[i] == targetVName) {
+                pos_targetVName = i;
+                break;
+            }
+        }
+    }
+    if (idName != "None") {
+        for (int i = 0; i < names.size(); i++) {
+            if (names[i] == idName) {
+                pos_idName = i;
+                break;
+            }
+        }
+    }
+
+    while (getline(file, line)) {
+        vector<string> values;
+        ParseStr(line, ',', values);
+        const char* xstr = values[pos_X].c_str();
+        const char* ystr = values[pos_Y].c_str();
+        double x = atof(xstr);
+        double y = atof(ystr);
+        int err = ct->Transform(1,&x,&y);
+        if(!err) continue;
+        double targetV = 0.0;
+        if (targetVName != "None") {
+            if (pos_targetVName == -1) {
+                throw "Target name does not exist in the file.";
+                return envUnits;
+            }
+            const char* targetVstr = values[pos_targetVName].c_str();
+            targetV = atof(targetVstr);
+        } else {
+            pos_targetVName = 2;
+            const char* targetVstr = values[pos_targetVName].c_str();
+            targetV = atof(targetVstr);
+        }
+        string id = "";
+        if (idName != "None") {
+            id = values[pos_idName];
+        }
+        EnvUnit* e = envDataset->GetEnvUnit(x, y);
+        if (e != nullptr) {
+            if (targetVName != "None") { e->SoilVariable = targetV; }
+            if (idName != "None") { e->SampleID = id; }
+            envUnits.push_back(e);
+        }
+    }
+    file.close();
+    return envUnits;
+
+}
 bool WriteTable(string filename, vector<EnvUnit *> envUnit) {
     if (envUnit.empty()) {
         return false;

@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QFileDialog>
 #include "project.h"
+#include "solim_lib/validate.h"
 
 namespace Ui {
 class Validation;
@@ -18,13 +19,13 @@ public:
     ~Validation();
 
 private slots:
-    void on_buttonBox_accepted();
-
     void on_btn_browse_clicked();
 
     void on_comboBox_activated(const QString &arg1);
 
     void on_lineEdit_sample_textChanged(const QString &arg1);
+
+    void on_btn_ok_clicked();
 
 private:
     Ui::Validation *ui;

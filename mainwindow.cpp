@@ -14,7 +14,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->actionSave_as->setDisabled(true);
     ui->actionClose_Project->setDisabled(true);
     ui->actionDefine_Study_Area->setDisabled(true);
-    ui->actionFrom_Prototypes->setDisabled(true);
+    ui->action_infer_continuous->setDisabled(true);
     setWindowIcon(QIcon("./imgs/solim.jpg"));
     // setup dock view
     projectViewInitialized = false;
@@ -25,16 +25,6 @@ MainWindow::MainWindow(QWidget *parent)
     initDataDetailsView();
     addDockWidget(Qt::LeftDockWidgetArea,dataDetailsDock);
     // setup main menu
-    connect(ui->actionFrom_Prototypes, SIGNAL(triggered()), this, SLOT(onSoilInferenceFromPrototypes()));
-    connect(ui->actionNew,SIGNAL(triggered()),this,SLOT(onProjectNew()));
-    connect(ui->actionSave,SIGNAL(triggered()),this,SLOT(onProjectSave()));
-    connect(ui->actionOpen,SIGNAL(triggered()),this,SLOT(onProjectOpen()));
-    connect(ui->actionAdd_prototypes_from_samples, SIGNAL(triggered()), this, SLOT(onAddPrototypeBaseFromSamples()));
-    connect(ui->actionView_Data,SIGNAL(triggered()),this,SLOT(onViewData()));
-    connect(ui->actionSave_as,SIGNAL(triggered()),this,SLOT(onProjectSaveAs()));
-    connect(ui->actionAdd_prototypes_from_Data_Mining,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromMining()));
-    connect(ui->actionAdd_prototypes_from_expert,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromExpert()));
-    connect(ui->actionDefine_Study_Area,SIGNAL(triggered()),this,SLOT(onEditStudyArea()));
     connect(&createImgThread, SIGNAL(finished()), this, SLOT(finishedCreateImg())); //cant have parameter sorry, when using connect
     connect(&createImgThread, SIGNAL(started()), this, SLOT(createImg())); //cant have parameter sorry, when using connect
     projectSaved = true;
@@ -86,7 +76,8 @@ MainWindow::~MainWindow()
 }
 
 //======================================= Main menu ================================================
-void MainWindow::onProjectNew(){
+void MainWindow::on_actionNew_triggered(){
+    // project new
     if(!saveWarning())
         return;
     NewProjectDialog newProject(workingDir,this);
@@ -103,7 +94,7 @@ void MainWindow::onProjectNew(){
     proj->workingDir=workingDir;
 }
 
-void MainWindow::onProjectSave(){
+void MainWindow::on_actionSave_triggered(){
     if(!proj){
         return;
     }
@@ -160,7 +151,7 @@ void MainWindow::onProjectSave(){
     }
 }
 
-void MainWindow::onProjectSaveAs(){
+void MainWindow::on_actionSave_as_triggered(){
     if(!proj) return;
     QString filename = QFileDialog::getSaveFileName(this,
                                                     tr("Save project as"),
@@ -177,10 +168,11 @@ void MainWindow::onProjectSaveAs(){
     }
     workingDir=QFileInfo(filename).absoluteDir().absolutePath();
     model->setData(model->index(0,0), proj->projName.c_str());
-    onProjectSave();
+    on_actionSave_triggered();
 }
 
-void MainWindow::onProjectOpen(){
+void MainWindow::on_actionOpen_triggered(){
+    // project open
     if(!saveWarning())
         return;
     QString projectFile = QFileDialog::getOpenFileName(this,
@@ -254,7 +246,7 @@ void MainWindow::onProjectOpen(){
 
 }
 
-void MainWindow::onEditStudyArea(){
+void MainWindow::on_actionDefine_Study_Area_triggered(){
     if(proj==nullptr) return;
     SimpleDialog editStudyArea(SimpleDialog::EDITSTUDYAREA,proj,this);
     editStudyArea.exec();
@@ -265,15 +257,25 @@ void MainWindow::onEditStudyArea(){
     model->item(0,0)->setChild(0,0, studyarea);
     projectSaved = false;
 }
-void MainWindow::onSoilInferenceFromPrototypes(){
+void MainWindow::on_action_infer_continuous_triggered(){
     if(proj){
-        mapInference *infer= new mapInference(proj);
+        mapInference *infer= new mapInference(proj,this);
         infer->show();
         connect(infer,SIGNAL(finished(int)),this,SLOT(onInferResults()));
     }
 }
 
-void MainWindow::onViewData(){
+void MainWindow::on_action_infer_categorical_triggered()
+{
+    if(proj){
+        mapInference *infer= new mapInference(proj,this,true);
+        infer->show();
+        connect(infer,SIGNAL(finished(int)),this,SLOT(onInferResults()));
+    }
+}
+
+
+void MainWindow::on_actionView_Data_triggered(){
     string filename = QFileDialog::getOpenFileName(this,
                                                    tr("Open Raster File"),
                                                    workingDir,
@@ -410,7 +412,7 @@ void MainWindow::onAddGisData(){
     onGetGisData();
 }
 
-void MainWindow::onAddPrototypeBaseFromSamples(){
+void MainWindow::on_actionAdd_prototypes_from_samples_triggered(){
     AddPrototypeBase*getPrototype = new AddPrototypeBase(AddPrototypeBase::SAMPLE,proj,this);
     getPrototype->exec();
     // show prototypes
@@ -421,7 +423,7 @@ void MainWindow::onAddPrototypeBaseFromSamples(){
     projectSaved = false;
 }
 
-void MainWindow::onAddPrototypeBaseFromExpert(){
+void MainWindow::on_actionAdd_prototypes_from_expert_triggered(){
     SimpleDialog *addPrototypeBase = new SimpleDialog(SimpleDialog::ADDPROTOTYPEBASE,proj,this);
     addPrototypeBase->exec();
     workingDir=proj->workingDir;
@@ -567,7 +569,7 @@ void MainWindow::onUpdatePrototypeFromExpert(const Prototype*prop){
         }
     }
 }
-void MainWindow::onAddPrototypeBaseFromMining(){
+void MainWindow::on_actionAdd_prototypes_from_Data_Mining_triggered(){
     AddPrototypeBase*getPrototype = new AddPrototypeBase(AddPrototypeBase::MAP,proj,this);
     getPrototype->exec();
     workingDir=proj->workingDir;
@@ -913,7 +915,7 @@ void MainWindow::onGetPrototype(){
             }
         }
     }
-    ui->actionFrom_Prototypes->setEnabled(true);
+    ui->action_infer_continuous->setEnabled(true);
 }
 
 void MainWindow::onInferResults(){
@@ -1432,15 +1434,15 @@ void MainWindow::initialProjectView(){
     QAction *prototypesFromSamples = new QAction("Add new prototype base from samples",prototypesMenu);
     prototypesMenu->addAction(prototypesFromSamples);
     projectView->addAction(prototypesFromSamples);
-    connect(prototypesFromSamples,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromSamples()));
+    connect(prototypesFromSamples,SIGNAL(triggered()),this,SLOT(on_actionAdd_prototypes_from_samples_triggered()));
     QAction *prototypesFromExpert = new QAction("Add new prototype base from expert",prototypesMenu);
     prototypesMenu->addAction(prototypesFromExpert);
     projectView->addAction(prototypesFromExpert);
-    connect(prototypesFromExpert,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromExpert()));
+    connect(prototypesFromExpert,SIGNAL(triggered()),this,SLOT(on_actionAdd_prototypes_from_expert_triggered()));
     QAction *prototypesFromMining = new QAction("Add new prototype base from data mining",prototypesMenu);
     prototypesMenu->addAction(prototypesFromMining);
     projectView->addAction(prototypesFromMining);
-    connect(prototypesFromMining,SIGNAL(triggered()),this,SLOT(onAddPrototypeBaseFromMining()));
+    connect(prototypesFromMining,SIGNAL(triggered()),this,SLOT(on_actionAdd_prototypes_from_Data_Mining_triggered()));
     QAction *importPrototypeBase = new QAction("Import prototype base from file",prototypesMenu);
     prototypesMenu->addAction(importPrototypeBase);
     projectView->addAction(importPrototypeBase);
@@ -1676,14 +1678,14 @@ bool MainWindow::saveWarning(){
         int ret = saveBox.exec();
         switch(ret){
         case QMessageBox::Save:
-            onProjectSave();
+            on_actionSave_triggered();
             break;
         case QMessageBox::Discard:
             break;
         case QMessageBox::Cancel:
             return false;
         default:
-            onProjectSave();
+            on_actionSave_triggered();
         }
     }
     projectSaved = true;

@@ -77,8 +77,8 @@ namespace solim {
 		LayerRef = new BaseIO(envLayerFilenames[0]);
 		TotalX = LayerRef->getXSize();
 		TotalY = LayerRef->getYSize();
-		CellSize = LayerRef->getDxA();
-		CellSizeY = LayerRef->getDyA(); // Assuming dx==dy
+        CellSize = LayerRef->getDx();
+        CellSizeY = LayerRef->getDy(); // Assuming dx==dy
 		NoDataValue = LayerRef->getNoDataValue();
 
 		// Read tiff data into partitions and blocks
@@ -137,6 +137,7 @@ namespace solim {
 	}
 
 	EnvUnit* EnvDataset::GetEnvUnit(const int row, const int col) {
+        if (row<0 || row>YSize || col<0 || col>XSize) return nullptr;
 		// receive global col and row number
 		EnvUnit *e = new EnvUnit();
 		e->Loc->Row = row;
@@ -154,7 +155,8 @@ namespace solim {
 	}
 
 	EnvUnit* EnvDataset::GetEnvUnit(const double x, const double y) {
-		EnvUnit *e = new EnvUnit();
+        if(x<XMin||x>XMax||y<YMin||y>YMax) return nullptr;
+        EnvUnit *e = new EnvUnit();
 		e->Loc->X = x;
 		e->Loc->Y = y;
 		e->Loc->Row = int((YMax - y) / CellSize);

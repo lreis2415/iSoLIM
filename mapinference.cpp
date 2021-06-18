@@ -1,9 +1,10 @@
 #include "mapinference.h"
 #include "ui_mapinference.h"
 
-mapInference::mapInference(SoLIMProject *proj, QWidget *parent) :
+mapInference::mapInference(SoLIMProject *proj, QWidget *parent, bool isCategoricalType) :
     QDialog(parent),
     ui(new Ui::mapInference),
+    isCategorical(isCategoricalType),
     project(proj)
 {
     setWindowFlags(Qt::Window
@@ -148,6 +149,10 @@ void mapInference::on_Inference_OK_btn_clicked()
     string targetName = ui->InferedProperty_comboBox->currentText().toStdString();
     string outSoil = ui->OutputSoilFile_lineEdit->text().toStdString();
     string outUncer=ui->OutputUncerFile_lineEdit->text().toStdString();
+    QFile outsoil_img((outSoil+".png").c_str());
+    if(outsoil_img.exists()) outsoil_img.remove();
+    QFile outuncer_img((outUncer+".png").c_str());
+    if(outuncer_img.exists()) outuncer_img.remove();
     ui->progressBar->setRange(0,100);
     ui->progressBar->setValue(0);
     ui->progressBar->setVisible(TRUE);
@@ -169,8 +174,10 @@ void mapInference::on_Inference_OK_btn_clicked()
         if(ui->prototypeBaseName_lineEdit->text().split(';').contains(project->prototypes[i].prototypeBaseName.c_str()))
             prototypes->push_back(project->prototypes[i]);
     }
-    solim::Inference::inferMap(eds, &(project->prototypes), targetName, threshold, outSoil, outUncer,ui->progressBar);
-
+    if(isCategorical == false)
+        solim::Inference::inferMap(eds, &(project->prototypes), targetName, threshold, outSoil, outUncer,ui->progressBar);
+    else
+        solim::Inference::inferCategoricalMap(eds, &(project->prototypes), targetName, threshold, outSoil, outUncer,ui->progressBar);
     project->addResult(outSoil);
     project->addResult(outUncer);
     this->close();

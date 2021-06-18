@@ -132,6 +132,7 @@ public:
 	int getBlockY() { return blockY; }
 	int getBlockSize() { return blockSize; }
 	int getBlockRows() { return blockRows; }
+    const char*  getProjection() { return ds->GetProjectionRef(); }
 
     string getFilename() { return fileName; }
     void setFileName(string name) { fileName = name; }

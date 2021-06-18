@@ -12,6 +12,7 @@ public:
     vector<double> measuredValues;
     vector<double> predictedValues;
     int sampleSize;
+    int validSampleCount;
 public:
     Validate(string sampleFile, string resultFile,
              string resultDatatype, string xFiled, string yField, string targetField);
@@ -20,6 +21,7 @@ public:
     double getPrecision();
     double getRecall();
     double getOverallAccuracy();
+    int getValidSampleCoutn() { return validSampleCount; }
 };
 }
 

@@ -10,6 +10,9 @@ Validation::Validation(SoLIMProject *project, QWidget *parent) :
         ui->comboBox->addItem(project->results[i].c_str());
     }
     ui->comboBox->addItem("[Select other result file]");
+    ui->label_result->setText("");
+    ui->label_result->setTextFormat(Qt::RichText);
+    ui->label_result->setWordWrap(true);
     proj = project;
 }
 
@@ -72,12 +75,13 @@ void Validation::on_lineEdit_sample_textChanged(const QString &arg1)
     }
 }
 
-void Validation::on_buttonBox_accepted()
+void Validation::on_btn_ok_clicked()
 {
     if(ui->lineEdit_sample->text().isEmpty()){
         QMessageBox warn;
         warn.setText("Please input validation sample file!");
         warn.exec();
+        ui->label_result->clear();
         return;
     }
     string sampleFile = ui->lineEdit_sample->text().toStdString();
@@ -86,13 +90,31 @@ void Validation::on_buttonBox_accepted()
         QMessageBox warn;
         warn.setText("Validation sample file does not exist.");
         warn.exec();
+        ui->label_result->clear();
         return;
     }
     if(!QFileInfo(resultFile.c_str()).exists()){
         QMessageBox warn;
         warn.setText("Result file does not exist.");
         warn.exec();
+        ui->label_result->clear();
         return;
     }
+    string resultDatatype = "CONTINUOUS";
+    if(ui->checkBox->isChecked()) resultDatatype = "CATEGORICAL";
+    solim::Validate validate(sampleFile, resultFile, resultDatatype,
+                             ui->comboBox_fieldx->currentText().toStdString(),
+                             ui->comboBox_fieldy->currentText().toStdString(),
+                             ui->comboBox_fieldname->currentText().toStdString());
+    if(validate.sampleSize==0){
+        //warn about no sample
+        QMessageBox warn;
+        warn.setText("Samples are not outside of result file. Please make sure that samples have the same projection with result file.");
+        warn.exec();
+        ui->label_result->clear();
+        return;
+    }
+    double rmse = validate.getRMSE();
+    double mae = validate.getMAE();
+    ui->label_result->setText("<b>RMSE</b>: "+QString::number(rmse)+" ; <b>MAE</b>: "+QString::number(mae));
 }
-

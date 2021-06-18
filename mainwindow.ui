@@ -48,9 +48,10 @@
    </widget>
    <widget class="QMenu" name="menuSoil_Inference">
     <property name="title">
-     <string>Soil Inference</string>
+     <string>Inference</string>
     </property>
-    <addaction name="actionFrom_Prototypes"/>
+    <addaction name="action_infer_continuous"/>
+    <addaction name="action_infer_categorical"/>
    </widget>
    <widget class="QMenu" name="menuUtilities">
     <property name="title">
@@ -81,9 +82,9 @@
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="actionFrom_Prototypes">
+  <action name="action_infer_continuous">
    <property name="text">
-    <string>From Prototypes</string>
+    <string>Inference (continuous property)</string>
    </property>
    <property name="toolTip">
     <string>Soil Inference From Samples</string>
@@ -152,6 +153,11 @@
   <action name="actionValidation">
    <property name="text">
     <string>Validation</string>
+   </property>
+  </action>
+  <action name="action_infer_categorical">
+   <property name="text">
+    <string>Inference (categorical property)</string>
    </property>
   </action>
  </widget>

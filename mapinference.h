@@ -20,7 +20,7 @@ class mapInference : public QDialog
     Q_OBJECT
 
 public:
-    explicit mapInference(SoLIMProject *proj, QWidget *parent = nullptr);
+    explicit mapInference(SoLIMProject *proj, QWidget *parent = nullptr, bool isCategorical=false);
     QString workingDir;
     ~mapInference();
 signals:
@@ -46,6 +46,7 @@ private:
     Ui::mapInference *ui;
     SoLIMProject *project;
     bool outputAutoFill;
+    bool isCategorical;
     void warn(QString msg){
         QMessageBox qb;
         qb.setText(msg);

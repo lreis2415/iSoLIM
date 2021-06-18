@@ -182,12 +182,18 @@ namespace solim {
 		double SDSquare = squareSum / (double)cellNum - mean * mean;
 		double SDjSquare = SDjSquareSum / (double)cellNum;
 
-        double halfPar = SDSquare/sqrt(SDjSquare)*1.17741002251547469101;    // 1.117=sqrt(-2*ln0.5);
         double zeroPar = SDSquare/sqrt(SDjSquare)*3.03485425877029270172;    // 3.034=sqrt(-2*ln0.01);
+        double _1stQuaPar = SDSquare/sqrt(SDjSquare)*1.66510922231539551270; // 1.665=sqrt(-2*ln0.25);
+        double halfPar = SDSquare/sqrt(SDjSquare)*1.17741002251547469101;    // 1.117=sqrt(-2*ln0.5);
+        double _3rdQuaPar = SDSquare/sqrt(SDjSquare)*0.75852761644093213257; // 1.665=sqrt(-2*ln0.75);
         addKnot(typicalValue - zeroPar,0);
+        addKnot(typicalValue - _1stQuaPar, 0.25);
         addKnot(typicalValue - halfPar,0.5);
+        addKnot(typicalValue - _3rdQuaPar, 0.75);
         addKnot(typicalValue,1);
+        addKnot(typicalValue + _3rdQuaPar, 0.75);
         addKnot(typicalValue + halfPar, 0.5);
+        addKnot(typicalValue + _1stQuaPar, 0.25);
         addKnot(typicalValue + zeroPar, 0);
 		calcSpline();
 	}

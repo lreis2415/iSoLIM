@@ -9,34 +9,42 @@ Validate::Validate(string sampleFile, string resultFile,
     datatypes.push_back(resultDatatype);
     EnvDataset *eds = new EnvDataset(filenames,datatypes);
     mappingResult = eds->Layers[0];
-    samples = ReadTable(sampleFile,eds,targetField,xField,yField);
+    samples = ReadTable(sampleFile,eds,targetField,"None",xField,yField);
     sampleSize = samples.size();
+    validSampleCount = 0;
     for(int i = 0; i<sampleSize;i++){
         EnvUnit *e = samples[i];
-        predictedValues.push_back(mappingResult->GetValue(e->Loc->Col,e->Loc->Row));
-        measuredValues.push_back(e->SoilVariable);
+        double predictedValue = mappingResult->GetValue(e->Loc->Col,e->Loc->Row);
+        double measuredValue = e->SoilVariable;
+        if(fabs(predictedValue-mappingResult->NoDataValue) < VERY_SMALL
+                || (predictedValue - NODATA) < VERY_SMALL
+                || (measuredValue - NODATA) < VERY_SMALL)
+            continue;
+        predictedValues.push_back(predictedValue);
+        measuredValues.push_back(measuredValue);
+        validSampleCount++;
     }
 }
 double Validate::getRMSE(){
-    if(mappingResult->DataType==CATEGORICAL)
+    if(mappingResult->DataType==CATEGORICAL||validSampleCount<1)
         return -1;
     double sum = 0;
-    for(int i = 0;i < sampleSize;i++){
+    for(int i = 0;i < validSampleCount; i++){
         sum += pow(predictedValues[i]-measuredValues[i],2);
     }
     return sqrt(sum/sampleSize);
 }
 double Validate::getMAE(){
-    if(mappingResult->DataType==CATEGORICAL)
+    if(mappingResult->DataType==CATEGORICAL||validSampleCount<1)
         return -1;
     double sum = 0;
-    for(int i = 0;i < sampleSize;i++){
+    for(int i = 0;i < validSampleCount; i++){
         sum += fabs(predictedValues[i]-measuredValues[i]);
     }
     return sum/sampleSize;
 }
 double Validate::getPrecision(){
-    if(mappingResult->DataType==CONTINUOUS)
+    if(mappingResult->DataType==CONTINUOUS || validSampleCount < 1)
         return -1;
     else {
         //todo
@@ -44,7 +52,7 @@ double Validate::getPrecision(){
     }
 }
 double Validate::getRecall(){
-    if(mappingResult->DataType==CONTINUOUS)
+    if(mappingResult->DataType==CONTINUOUS || validSampleCount < 1)
         return -1;
     else {
         //todo
@@ -52,7 +60,7 @@ double Validate::getRecall(){
     }
 }
 double Validate::getOverallAccuracy(){
-    if(mappingResult->DataType==CONTINUOUS)
+    if(mappingResult->DataType==CONTINUOUS || validSampleCount < 1)
         return -1;
     else {
         //todo

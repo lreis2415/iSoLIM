@@ -53,20 +53,9 @@ public:
     QString workingDir;
     QThread createImgThread;
 private slots:
-    // main menu
-    void onProjectNew();
-    void onProjectSave();
-    void onProjectOpen();
-    void onProjectSaveAs();
-    void onViewData();
-    void onSoilInferenceFromPrototypes();
-    void onEditStudyArea();
     // project tree slots
     void onSelectionChanged(const QItemSelection&,const QItemSelection&);
     void onCustomContextMenu(const QPoint &point);
-    void onAddPrototypeBaseFromSamples();
-    void onAddPrototypeBaseFromExpert();
-    void onAddPrototypeBaseFromMining();
     void onImportPrototypeBase();
     void onAddGisData();
     void onRenamePrototypeBase();
@@ -93,15 +82,26 @@ private slots:
     void onZoomin();
     void onZoomout();
     void onInferResults();
-    void on_actionAdd_Covariates_triggered();
     void createImg();
     void finishedCreateImg();
     void onResetRange();
-    void on_actionResample_triggered();
-
     void onExpanded(const QModelIndex&);
 
+    void on_actionAdd_Covariates_triggered();
+    void on_actionResample_triggered();
     void on_actionValidation_triggered();
+    void on_action_infer_continuous_triggered();
+    void on_actionView_Data_triggered();
+    void on_actionNew_triggered();
+    void on_actionOpen_triggered();
+    void on_actionSave_triggered();
+    void on_actionSave_as_triggered();
+    void on_actionDefine_Study_Area_triggered();
+    void on_actionAdd_prototypes_from_samples_triggered();
+    void on_actionAdd_prototypes_from_expert_triggered();
+    void on_actionAdd_prototypes_from_Data_Mining_triggered();
+
+    void on_action_infer_categorical_triggered();
 
 private:
     Ui::MainWindow *ui;

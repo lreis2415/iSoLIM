@@ -17,11 +17,13 @@ namespace solim {
     class Inference {
     public:
         static void inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string targetVName, double threshold, string outSoilFile, string outUncerFile, QProgressBar *progressBar);
-        static void iPSMInferSoil(vector<string> filenames, vector<string> datatypes, vector<string> layernames,
+        static void inferCategoricalMap(EnvDataset *eds, vector<Prototype>* prototypes, string targetVName, double threshold, string outSoilFile, string outUncerFile, QProgressBar *progressBar);
+        static void propertyInference(vector<string> filenames, vector<string> datatypes, vector<string> layernames,
             double threshold, string sampleFilename, string targetVName, string idName,
             string outSoil, string outUncer, double ramEfficient, QProgressBar *progressBar);
-        //static void typeInference();
-        //static void propertyInference();
+        static void typeInference(vector<string> filenames, vector<string> datatypes, vector<string> layernames,
+                                  double threshold, string sampleFilename, string targetVName, string idName,
+                                  string outSoilFile, string outUncerFile, double ramEfficient,QProgressBar *progressBar);
     };
 }
 

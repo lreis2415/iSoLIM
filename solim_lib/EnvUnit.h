@@ -10,6 +10,7 @@
 
 #include "DataTypeEnum.h"
 #include "Location.h"
+#include "BaseIO.h"
 
 // using namespace std; // Avoid this usage, instead of specific functions. 2019/08/06 ZHULJ
 using std::vector;
@@ -60,8 +61,8 @@ public:
         PredictCredibility = -1;
         PredictSoilVarible = -1;
         PredictUncertainty = -1;
-        SoilType = 0.0;
-        SoilVariable = 0.0;
+        SoilType = NODATA;
+        SoilVariable = NODATA;
         SampleID = "id-none";
 
         Density = 0;

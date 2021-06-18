@@ -174,41 +174,27 @@ namespace solim {
                 addConditions(Curve(eds->Layers.at(i)->LayerName, freq[i]));
             }
         }
+        // add soil id to prototypeID and soil properties
+        OGRFieldDefn *poFieldDefn = poFeature->GetFieldDefnRef(iSoilIDField);
+        string soilIDName = poFieldDefn->GetNameRef();
         for (int iField = 0; iField < poFeature->GetFieldCount(); iField++)
         {
             if (iField == iSoilIDField) {
                 prototypeID = poFeature->GetFieldAsString(iField);
+                int id = -1;
+                try {
+                    id = stoi(prototypeID);
+                    addProperties(soilIDName,id,CATEGORICAL);
+                }  catch (invalid_argument) {
+                    addProperties(soilIDName,fid,CATEGORICAL);
+                }
                 continue;
             }
-            // iterate over fields
-            OGRFieldDefn *poFieldDefn = poFeature->GetFieldDefnRef(iField);
-            string fieldname = poFieldDefn->GetNameRef();
-
-            SoilProperty sp;
-            sp.propertyName = fieldname;
-            switch (poFieldDefn->GetType())
-            {
-            case OFTInteger:
-                sp.propertyValue = poFeature->GetFieldAsInteger(iField);
-                break;
-            case OFTInteger64:
-                sp.propertyValue = poFeature->GetFieldAsInteger64(iField);
-                break;
-            case OFTReal:
-                sp.propertyValue = poFeature->GetFieldAsDouble(iField);
-                break;
-            case OFTString:
-                sp.propertyName = sp.propertyName + poFeature->GetFieldAsString(iField);
-                sp.propertyValue = NODATA;
-                break;
-            default:
-                sp.propertyName = sp.propertyName + poFeature->GetFieldAsString(iField);
-                sp.propertyValue = NODATA;
-                break;
-            }
-            properties.push_back(sp);
         }
-        if(iSoilIDField<0) prototypeID = prototypeBasename + to_string(fid);
+        if(iSoilIDField<0){
+            prototypeID = prototypeBasename + to_string(fid);
+            addProperties("ID",fid,CATEGORICAL);
+        }
         //GDALClose(poDS);
     }
 
@@ -289,41 +275,26 @@ namespace solim {
                 }
             }
             if(iFid==0){
+                OGRFieldDefn *poFieldDefn = poFeature->GetFieldDefnRef(iSoilIDField);
+                string soilIDName = poFieldDefn->GetNameRef();
                 for (int iField = 0; iField < poFeature->GetFieldCount(); iField++)
                 {
                     if (iField == iSoilIDField) {
                         prototypeID = poFeature->GetFieldAsString(iField);
+                        int id = -1;
+                        try {
+                            id = stoi(prototypeID);
+                            addProperties(soilIDName,id,CATEGORICAL);
+                        }  catch (invalid_argument) {
+                            addProperties(soilIDName,fids[iFid],CATEGORICAL);
+                        }
                         continue;
                     }
-                    // iterate over fields
-                    OGRFieldDefn *poFieldDefn = poFeature->GetFieldDefnRef(iField);
-                    string fieldname = poFieldDefn->GetNameRef();
-
-                    SoilProperty sp;
-                    sp.propertyName = fieldname;
-                    switch (poFieldDefn->GetType())
-                    {
-                    case OFTInteger:
-                        sp.propertyValue = poFeature->GetFieldAsInteger(iField);
-                        break;
-                    case OFTInteger64:
-                        sp.propertyValue = poFeature->GetFieldAsInteger64(iField);
-                        break;
-                    case OFTReal:
-                        sp.propertyValue = poFeature->GetFieldAsDouble(iField);
-                        break;
-                    case OFTString:
-                        sp.propertyName = sp.propertyName + poFeature->GetFieldAsString(iField);
-                        sp.propertyValue = NODATA;
-                        break;
-                    default:
-                        sp.propertyName = sp.propertyName + poFeature->GetFieldAsString(iField);
-                        sp.propertyValue = NODATA;
-                        break;
-                    }
-                    properties.push_back(sp);
                 }
-                if(iSoilIDField<0) prototypeID = prototypeBasename + to_string(fids[0]);
+                if(iSoilIDField<0){
+                    prototypeID = prototypeBasename + to_string(fids[iFid]);
+                    addProperties("ID",fids[iFid],CATEGORICAL);
+                }
             }
         }
         // if polygon is smaller than 4 cells, does not count as a prototype
@@ -488,6 +459,7 @@ namespace solim {
         vector<string>::iterator unique_it = std::unique(soilIDs.begin(), soilIDs.end());
         soilIDs.resize(std::distance(soilIDs.begin(), unique_it));
         vector<Prototype> *soiltypes_proto = new vector<Prototype>;
+        int soilID_num = 0;
         for (vector<string>::iterator it = soilIDs.begin(); it != soilIDs.end(); ++it) {
             vector<Prototype> tmp_protos;
             vector<Prototype>::iterator it_proto = prototypes->begin();
@@ -515,17 +487,16 @@ namespace solim {
                     p.addConditions(Curve(covname, curves));
                     p.envConditions.at(iCon).range=ranges[iCon];
                 }
-                for (size_t i = 0; i < tmp_protos[0].properties.size(); i++) {
-                    string propertyName = tmp_protos[0].properties[i].propertyName;
-                    double value = tmp_protos[0].properties[i].propertyValue;
-                    for (size_t iProto = 1; iProto < tmp_protos.size(); ++iProto) {
-                        if(propertyName!=tmp_protos[iProto].properties[i].propertyName||
-                            fabs(value- tmp_protos[iProto].properties[i].propertyValue)<VERY_SMALL)
-                            continue;
-                    }
-                    p.addProperties(propertyName, value);
+                int id = -1;
+                try {
+                    id = std::stoi(*it);
+                    p.addProperties(soilIDFieldName, id, CATEGORICAL);
+                } catch(invalid_argument){
+                    id = soilID_num;
+                    p.addProperties(soilIDFieldName, id, CATEGORICAL);
                 }
                 soiltypes_proto->push_back(p);
+                soilID_num++;
             }
             if(omp_get_thread_num()==0) progressBar->setValue(progressBar->value()+tmp_protos.size());
         }
