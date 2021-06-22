@@ -21,6 +21,12 @@ mapInference::mapInference(SoLIMProject *proj, QWidget *parent, bool isCategoric
         QTimer::singleShot(0, this, SLOT(close()));;
     } else {
         ui->setupUi(this);
+        if(!isCategorical){
+            ui->membershipMaps_checkBox->setVisible(false);
+        }
+        ui->membership_label->setVisible(false);
+        ui->membershipFolder_btn->setVisible(false);
+        ui->membershipFolder_lineEdit->setVisible(false);
         ui->progressBar->setVisible(false);
         ui->RAMEfficient_low_rbtn->setChecked(true);
         ui->Threshold_lineEdit->setText("0.0");
@@ -134,6 +140,18 @@ void mapInference::on_Inference_OK_btn_clicked()
         else datatypes.push_back("CONTINUOUS");
         layernames.push_back(layername.toStdString());
     }
+    string membershipFolder = "";
+    if(isCategorical && ui->membershipMaps_checkBox->isChecked()){
+        QString folder = ui->membershipFolder_lineEdit->text();
+        QDir membershipDir(folder);
+        if(!membershipDir.exists()||!membershipDir.isEmpty()){
+            QMessageBox warn;
+            warn.setText("Please assign a valid and empty folder for membership maps.");
+            warn.exec();
+            return;
+        }
+        membershipFolder = folder.toStdString();
+    }
     double ramEfficient;
     if(ui->RAMEfficient_low_rbtn->isChecked()){
         ramEfficient=0.25;
@@ -158,6 +176,15 @@ void mapInference::on_Inference_OK_btn_clicked()
     ui->progressBar->setVisible(TRUE);
     ui->cancel_btn->setEnabled(false);
     ui->Inference_OK_btn->setEnabled(false);
+    vector<solim::Prototype> *prototypes = new vector<solim::Prototype>;
+    for(size_t i = 0;i<project->prototypes.size();i++){
+        if(ui->prototypeBaseName_lineEdit->text().split(';').contains(project->prototypes[i].prototypeBaseName.c_str()))
+            prototypes->push_back(project->prototypes[i]);
+    }
+    if(membershipFolder!=""){
+        // adjust ramefficient to save memory for writing membership maps
+        ramEfficient = ramEfficient*envFileNames.size()/(envFileNames.size()+prototypes->size());
+    }
     solim::EnvDataset *eds = new solim::EnvDataset(envFileNames,datatypes,layernames,ramEfficient);
     // update filename
     for(size_t i = 0; i<eds->Layers.size(); i++){
@@ -168,16 +195,19 @@ void mapInference::on_Inference_OK_btn_clicked()
             }
         }
     }
-    vector<solim::Prototype> *prototypes = new vector<solim::Prototype>;
-    for(size_t i = 0;i<project->prototypes.size();i++){
-        //if(project->prototypes[i].prototypeBaseName == ui->prototypeBaseName_lineEdit->text().toStdString())
-        if(ui->prototypeBaseName_lineEdit->text().split(';').contains(project->prototypes[i].prototypeBaseName.c_str()))
-            prototypes->push_back(project->prototypes[i]);
-    }
+
     if(isCategorical == false)
         solim::Inference::inferMap(eds, &(project->prototypes), targetName, threshold, outSoil, outUncer,ui->progressBar);
-    else
-        solim::Inference::inferCategoricalMap(eds, &(project->prototypes), targetName, threshold, outSoil, outUncer,ui->progressBar);
+    else{
+        solim::Inference::inferCategoricalMap(eds, &(project->prototypes), targetName, threshold, outSoil, outUncer,membershipFolder,ui->progressBar);
+        if(membershipFolder!=""){
+            QDir membershipDir(membershipFolder.c_str());
+            QFileInfoList membershipMaps = membershipDir.entryInfoList();
+            for(QFileInfo map:membershipMaps){
+                if(!map.isDir()) project->addResult(map.absoluteFilePath().toStdString());
+            }
+        }
+    }
     project->addResult(outSoil);
     project->addResult(outUncer);
     this->close();
@@ -264,4 +294,26 @@ void mapInference::on_OutputSoilFile_lineEdit_textEdited(const QString &arg1)
 void mapInference::on_OutputUncerFile_lineEdit_textEdited(const QString &arg1)
 {
     outputAutoFill = false;
+}
+
+void mapInference::on_membershipMaps_checkBox_toggled(bool checked)
+{
+    if(checked){
+        ui->membershipFolder_btn->setVisible(true);
+        ui->membership_label->setVisible(true);
+        ui->membershipFolder_lineEdit->setVisible(true);
+    } else {
+        ui->membershipFolder_btn->setVisible(false);
+        ui->membership_label->setVisible(false);
+        ui->membershipFolder_lineEdit->setVisible(false);
+    }
+}
+
+void mapInference::on_membershipFolder_btn_clicked()
+{
+    QString dir = QFileDialog::getExistingDirectory(this,
+                                      tr("Open Directory for Membership Maps"),
+                                      project->workingDir);
+    ui->membershipFolder_lineEdit->setText(dir);
+    if(!dir.isEmpty())    project->workingDir = dir;
 }

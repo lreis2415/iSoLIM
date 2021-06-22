@@ -42,6 +42,10 @@ private slots:
 
     void on_OutputUncerFile_lineEdit_textEdited(const QString &arg1);
 
+    void on_membershipMaps_checkBox_toggled(bool checked);
+
+    void on_membershipFolder_btn_clicked();
+
 private:
     Ui::mapInference *ui;
     SoLIMProject *project;

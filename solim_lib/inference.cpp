@@ -111,14 +111,67 @@ void Inference::inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string 
     delete uncertaintyValue;
 }
 
-void Inference::inferCategoricalMap(EnvDataset *eds, vector<Prototype>* prototypes, string targetVName, double threshold, string outSoilFile, string outUncerFile, QProgressBar *progressBar) {
+void Inference::inferCategoricalMap(EnvDataset *eds, vector<Prototype>* prototypes, string targetVName, double threshold,
+                                    string outSoilFile, string outUncerFile, string membershipFolder, QProgressBar *progressBar) {
     // check the consistency of prototype rules and envdataset
-    for (auto it=prototypes->begin(); it!=prototypes->end(); ++it){
+    vector<int> category_nums;
+    for (vector<Prototype>::iterator it=prototypes->begin(); it!=prototypes->end(); ++it){
         if (!(*it).checkEnvConsIsSorted(eds)) {
             throw invalid_argument("Prototype inconsistent with layers");
             return;
         }
+        category_nums.push_back((*it).getProperty(targetVName));
     }
+    // check if each prototype represent one unique category
+    std::sort(category_nums.begin(), category_nums.end());
+    vector<int>::iterator last = std::unique(category_nums.begin(), category_nums.end());
+    category_nums.erase(last, category_nums.end());
+    category_nums.shrink_to_fit();
+    if(category_nums.size()<prototypes->size()){
+        vector<Prototype>* prototyeps_merge = new vector<Prototype>;
+        for(int i = 0; i<category_nums.size();i++){
+            vector<Prototype> tmp_protos;
+            vector<Prototype>::iterator it = prototypes->begin();
+            while(it!=prototypes->end()){
+                if(int((*it).getProperty(targetVName))==category_nums[i]){
+                    tmp_protos.push_back(Prototype(*it));
+                    it = prototypes->erase(it);
+                }
+                else ++it;
+            }
+            if (tmp_protos.size() == 1) prototyeps_merge->push_back(tmp_protos[0]);
+            else if (tmp_protos.size() > 1) {
+                Prototype p;
+                p.source = MAP;
+                p.prototypeBaseName=tmp_protos[0].prototypeBaseName;
+                p.prototypeID = to_string(category_nums[i]);
+                for (int iCon = 0; iCon < tmp_protos[0].envConditionSize; ++iCon) {
+                    string covname = tmp_protos[0].envConditions[iCon].covariateName;
+                    vector<Curve>* curves = new vector<Curve>;
+                    for (size_t iProto = 0; iProto < tmp_protos.size(); ++iProto) {
+                        curves->push_back(tmp_protos[iProto].envConditions[iCon]);
+                    }
+                    p.addConditions(Curve(covname, curves));
+                }
+                p.addProperties(targetVName, category_nums[i], CATEGORICAL);
+                prototyeps_merge->push_back(p);
+            }
+        }
+        prototypes->clear();
+        prototypes->insert(prototypes->end(),prototyeps_merge->begin(),prototyeps_merge->end());
+        prototypes->shrink_to_fit();
+    }
+    // re-sort category_nums based on the sequence of prototypes
+    category_nums.clear();
+    for (vector<Prototype>::iterator it=prototypes->begin(); it!=prototypes->end(); ++it){
+        if (!(*it).checkEnvConsIsSorted(eds)) {
+            throw invalid_argument("Prototype inconsistent with layers");
+            return;
+        }
+        category_nums.push_back((*it).getProperty(targetVName));
+    }
+    category_nums.shrink_to_fit();
+    // calculate membership
     int Xstart, Ystart;
     int nx, ny;
     double xa, ya;
@@ -138,6 +191,22 @@ void Inference::inferCategoricalMap(EnvDataset *eds, vector<Prototype>* prototyp
     double *nodata = new double[MAXLN_LAYERS];
     for (int k = 0; k < eds->Layers.size(); k++) {
         nodata[k] = eds->Layers.at(k)->NoDataValue;
+    }
+    vector<BaseIO> *membershipMaps = new vector<BaseIO>;
+    vector<float*> membershipData;
+    if(membershipFolder!=""){
+        string refname = eds->LayerRef->getFilename();
+        string ext = refname.substr(refname.find_last_of("."));
+        string slash = "/";
+        if(membershipFolder.find("\\")!=string::npos) slash = "\\";
+        long pixelCount = eds->XSize * eds->YSize;
+        for(int i = 0; i<category_nums.size();i++){
+            BaseIO tmpMap = BaseIO(eds->LayerRef);
+            tmpMap.setFileName(membershipFolder + slash + to_string(category_nums[i]) + ext);
+            tmpMap.setNodataValue(-1);
+            membershipMaps->push_back(tmpMap);
+            membershipData.push_back(new float[pixelCount]);
+        }
     }
     //EnvUnit *e;
     progressBar->setMinimum(0);
@@ -176,11 +245,16 @@ void Inference::inferCategoricalMap(EnvDataset *eds, vector<Prototype>* prototyp
             if (!validEnvUnitFlag) {
                 uncertaintyValue[n] = -1;
                 predictedValue[n] = NODATA;
-                //delete e;
+                if(membershipFolder!=""){
+                    for(int proto_num = 0; proto_num<category_nums.size();proto_num++){
+                          membershipData[proto_num][n]=-1;
+                    }
+                }
                 continue;
             }
             double maxSimi = 0;
             int hardenedClass = NODATA;
+            int proto_num = 0;
             // calculate predicted value
             for (vector<Prototype>::iterator it = prototypes->begin(); it != prototypes->end(); ++it) {
                 // calculate similarity to prototype
@@ -198,6 +272,10 @@ void Inference::inferCategoricalMap(EnvDataset *eds, vector<Prototype>* prototyp
                         hardenedClass = (*it).getProperty(targetVName);
                     }
                 }
+                if(membershipFolder!=""){
+                    membershipData[proto_num][n]=simi;
+                }
+                proto_num++;
             }
             predictedValue[n] = hardenedClass;
             uncertaintyValue[n] = 1 - maxSimi;
@@ -207,6 +285,11 @@ void Inference::inferCategoricalMap(EnvDataset *eds, vector<Prototype>* prototyp
         outSoilMap->write(Xstart, Ystart, ny, nx, predictedValue);
         outUncerMap->setNodataValue(-1);
         outUncerMap->write(Xstart, Ystart, ny, nx, uncertaintyValue);//
+        if(membershipFolder!=""){
+            for(int proto_num = 0; proto_num<category_nums.size();proto_num++){
+                membershipMaps->at(proto_num).write(Xstart, Ystart, ny, nx,membershipData[proto_num]);
+            }
+        }
 
     }
     delete []envValues;
@@ -216,7 +299,7 @@ void Inference::inferCategoricalMap(EnvDataset *eds, vector<Prototype>* prototyp
 }
 
 void Inference::propertyInference(vector<string> filenames, vector<string> datatypes, vector<string> layernames,
-    double threshold, string sampleFilename, string targetVName, string idName,
+    double threshold, string sampleFilename, string targetVName,
     string outSoilFile, string outUncerFile, double ramEfficient,QProgressBar *progressBar) {
     EnvDataset *eds = new EnvDataset(filenames, datatypes,layernames, ramEfficient);
     vector<Prototype> *prototypes = Prototype::getPrototypesFromSample(sampleFilename, eds);
@@ -224,11 +307,11 @@ void Inference::propertyInference(vector<string> filenames, vector<string> datat
 }
 
 void Inference::typeInference(vector<string> filenames, vector<string> datatypes, vector<string> layernames,
-    double threshold, string sampleFilename, string targetVName, string idName,
-    string outSoilFile, string outUncerFile, double ramEfficient,QProgressBar *progressBar) {
+    double threshold, string sampleFilename, string targetVName,
+    string outSoilFile, string outUncerFile, double ramEfficient, string membershipFolder, QProgressBar *progressBar) {
     EnvDataset *eds = new EnvDataset(filenames, datatypes,layernames, ramEfficient);
     vector<Prototype> *prototypes = Prototype::getPrototypesFromSample(sampleFilename, eds);
-    inferCategoricalMap(eds, prototypes, targetVName, threshold, outSoilFile, outUncerFile,progressBar);
+    inferCategoricalMap(eds, prototypes, targetVName, threshold, outSoilFile, outUncerFile, membershipFolder, progressBar);
 }
 
 }
