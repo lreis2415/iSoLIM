@@ -223,6 +223,8 @@ void AddPrototype_Expert::on_comboBox_cov_activated(const QString &arg1)
                 if(lyr->isOpened()){
                     ui->lineEdit_max_cov->setText(QString::number(lyr->getDataMax()));
                     ui->lineEdit_min_cov->setText(QString::number(lyr->getDataMin()));
+                    rangeMax = lyr->getDataMax();
+                    rangeMin = lyr->getDataMin();
                     ui->lineEdit_filename->setReadOnly(true);
                     ui->lineEdit_max_cov->setReadOnly(true);
                     ui->lineEdit_min_cov->setReadOnly(true);
@@ -276,6 +278,7 @@ void AddPrototype_Expert::on_btn_add_rule_clicked()
             c.range=fabs(rangeMax)>fabs(rangeMin)?fabs(rangeMax):fabs(rangeMin);
             proj->prototypes[protoNum].addConditions(c);
             //drawMembershipFunction(&c);
+            myview->getScene()->clear();
             emit updatePrototype();
         }
     } else if(ui->radioButton_freehand->isChecked()){
@@ -288,6 +291,7 @@ void AddPrototype_Expert::on_btn_add_rule_clicked()
             freeKnotX->shrink_to_fit();
             freeKnotY->clear();
             freeKnotY->shrink_to_fit();
+            myview->getScene()->clear();
             myview->editFreehandRule=false;
         }
     } else if(ui->radioButton_enum->isChecked()){
@@ -335,8 +339,8 @@ void AddPrototype_Expert::drawMembershipFunction(solim::Curve *c) {
     curvePen.setWidth(1);
     int sceneWidth = scene->width();
     int sceneHeight = scene->height();
-    myview->curveXMax = int(rangeMax+1);
-    myview->curveXMin = int(rangeMin);
+    myview->curveXMax = rangeMax;
+    myview->curveXMin = rangeMin;
 
     // set axis
     scene->addLine(0.05*sceneWidth,0.85*sceneHeight,0.85*sceneWidth,0.85*sceneHeight,axisPen);
@@ -363,10 +367,10 @@ void AddPrototype_Expert::drawMembershipFunction(solim::Curve *c) {
     QGraphicsTextItem *yaxis0 = scene->addText("0");
     yaxis0->setFont(QFont("Times", 10, QFont::Bold));
     yaxis0->setPos(0.10*sceneWidth-20,0.85*sceneHeight-20);
-    QGraphicsTextItem *xaxis1 = scene->addText(QString::number(int(rangeMax+1)));
+    QGraphicsTextItem *xaxis1 = scene->addText(QString::number(rangeMax));
     xaxis1->setFont(QFont("Times", 10, QFont::Bold));
     xaxis1->setPos(0.80*sceneWidth-4*xaxis1->toPlainText().size(),0.85*sceneHeight);
-    QGraphicsTextItem *xaxis0 = scene->addText(QString::number(int(rangeMin)));
+    QGraphicsTextItem *xaxis0 = scene->addText(QString::number(rangeMin));
     xaxis0->setFont(QFont("Times", 10, QFont::Bold));
     xaxis0->setPos(0.10*sceneWidth-4*xaxis0->toPlainText().size(),0.85*sceneHeight);
     double previousx,previousy;
@@ -378,7 +382,7 @@ void AddPrototype_Expert::drawMembershipFunction(solim::Curve *c) {
     int graphHeight = 0.7*sceneHeight;
     int xStart = 0.10*sceneWidth;
     int yEnd = 0.85*sceneHeight;
-    int range = myview->curveXMax-myview->curveXMin;
+    float range = myview->curveXMax-myview->curveXMin;
     for(int i =0;i<100;i++){
         x =i*range/101.0+myview->curveXMin;
         y = c->getOptimality(x);
@@ -592,9 +596,9 @@ void AddPrototype_Expert::on_lineEdit_min_cov_textChanged(const QString &arg1)
     double max = ui->lineEdit_max_cov->text().toDouble(toNum);
     if(!*toNum) return;
     if(max<min||fabs(max-min)<0.0001) return;
+    rangeMax=max;
+    rangeMin=min;
     if(ui->radioButton_freehand->isChecked()||ui->radioButton_enum->isChecked()){
-        rangeMax=max+0.9999;
-        rangeMin=min;
         drawEnumRange();
     }
 }
@@ -620,9 +624,9 @@ void AddPrototype_Expert::on_lineEdit_max_cov_textChanged(const QString &arg1)
     double min = ui->lineEdit_min_cov->text().toDouble(toNum);
     if(!*toNum) return;
     if(max<min||fabs(max-min)<0.0001) return;
+    rangeMax=max;
+    rangeMin=min;
     if(ui->radioButton_freehand->isChecked()||ui->radioButton_enum->isChecked()){
-        rangeMax=max+0.9999;
-        rangeMin=min;
         drawEnumRange();
     }
 }

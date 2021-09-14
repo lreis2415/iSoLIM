@@ -14,7 +14,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->actionSave_as->setDisabled(true);
     ui->actionClose_Project->setDisabled(true);
     ui->actionDefine_Study_Area->setDisabled(true);
-    ui->action_infer_continuous->setDisabled(true);
+    ui->action_infer->setDisabled(true);
     setWindowIcon(QIcon("./imgs/solim.jpg"));
     // setup dock view
     projectViewInitialized = false;
@@ -257,18 +257,9 @@ void MainWindow::on_actionDefine_Study_Area_triggered(){
     model->item(0,0)->setChild(0,0, studyarea);
     projectSaved = false;
 }
-void MainWindow::on_action_infer_continuous_triggered(){
+void MainWindow::on_action_infer_triggered(){
     if(proj){
         mapInference *infer= new mapInference(proj,this);
-        infer->show();
-        connect(infer,SIGNAL(finished(int)),this,SLOT(onInferResults()));
-    }
-}
-
-void MainWindow::on_action_infer_categorical_triggered()
-{
-    if(proj){
-        mapInference *infer= new mapInference(proj,this,true);
         infer->show();
         connect(infer,SIGNAL(finished(int)),this,SLOT(onInferResults()));
     }
@@ -915,7 +906,7 @@ void MainWindow::onGetPrototype(){
             }
         }
     }
-    ui->action_infer_continuous->setEnabled(true);
+    ui->action_infer->setEnabled(true);
 }
 
 void MainWindow::onInferResults(){

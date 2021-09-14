@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>390</width>
-    <height>346</height>
+    <height>347</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -59,16 +59,16 @@
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="radioButton_poly">
+      <widget class="QRadioButton" name="radioButton_soiltype">
        <property name="text">
-        <string>Polygon Mode</string>
+        <string>Soil Type Mode</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="radioButton_soiltype">
+      <widget class="QRadioButton" name="radioButton_poly">
        <property name="text">
-        <string>Soil Type Mode</string>
+        <string>Polygon Mode</string>
        </property>
       </widget>
      </item>

@@ -90,7 +90,7 @@ private slots:
     void on_actionAdd_Covariates_triggered();
     void on_actionResample_triggered();
     void on_actionValidation_triggered();
-    void on_action_infer_continuous_triggered();
+    void on_action_infer_triggered();
     void on_actionView_Data_triggered();
     void on_actionNew_triggered();
     void on_actionOpen_triggered();
@@ -100,8 +100,6 @@ private slots:
     void on_actionAdd_prototypes_from_samples_triggered();
     void on_actionAdd_prototypes_from_expert_triggered();
     void on_actionAdd_prototypes_from_Data_Mining_triggered();
-
-    void on_action_infer_categorical_triggered();
 
 private:
     Ui::MainWindow *ui;

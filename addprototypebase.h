@@ -42,6 +42,8 @@ private slots:
 
     void on_btn_hint_clicked();
 
+    void on_covariate_tableWidget_itemSelectionChanged();
+
 private:
     addPrototypeBaseMode mode;
     Ui::AddPrototypeBase *ui;

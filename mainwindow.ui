@@ -25,7 +25,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>23</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuProjects">
@@ -50,8 +50,7 @@
     <property name="title">
      <string>Inference</string>
     </property>
-    <addaction name="action_infer_continuous"/>
-    <addaction name="action_infer_categorical"/>
+    <addaction name="action_infer"/>
    </widget>
    <widget class="QMenu" name="menuUtilities">
     <property name="title">
@@ -82,9 +81,9 @@
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="action_infer_continuous">
+  <action name="action_infer">
    <property name="text">
-    <string>Inference (continuous property)</string>
+    <string>Inference and map production</string>
    </property>
    <property name="toolTip">
     <string>Soil Inference From Samples</string>

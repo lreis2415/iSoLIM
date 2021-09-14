@@ -1,10 +1,9 @@
 #include "mapinference.h"
 #include "ui_mapinference.h"
 
-mapInference::mapInference(SoLIMProject *proj, QWidget *parent, bool isCategoricalType) :
+mapInference::mapInference(SoLIMProject *proj, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::mapInference),
-    isCategorical(isCategoricalType),
     project(proj)
 {
     setWindowFlags(Qt::Window
@@ -71,16 +70,7 @@ mapInference::mapInference(SoLIMProject *proj, QWidget *parent, bool isCategoric
                                                               selected_cb);
             }
             connect(ui->CovariateFiles_tableWidget, SIGNAL(cellDoubleClicked(int,int)), this, SLOT(tableItemClicked(int,int)));
-            QStringList propertyList;
-            for(int i = 0; i<proj->prototypes.size();i++){
-                if(proj->prototypes[i].prototypeBaseName==proj->prototypeBaseNames[0]){
-                    for(int j = 0;j<proj->prototypes[i].properties.size();j++){
-                        propertyList.push_back(proj->prototypes[i].properties[j].propertyName.c_str());
-                    }
-                    break;
-                }
-            }
-            ui->InferedProperty_comboBox->addItems(propertyList);
+
         }
     }
 }
@@ -176,14 +166,14 @@ void mapInference::on_Inference_OK_btn_clicked()
     ui->progressBar->setVisible(TRUE);
     ui->cancel_btn->setEnabled(false);
     ui->Inference_OK_btn->setEnabled(false);
-    vector<solim::Prototype> *prototypes = new vector<solim::Prototype>;
+    vector<solim::Prototype> *selectedPrototypes = new vector<solim::Prototype>;
     for(size_t i = 0;i<project->prototypes.size();i++){
         if(ui->prototypeBaseName_lineEdit->text().split(';').contains(project->prototypes[i].prototypeBaseName.c_str()))
-            prototypes->push_back(project->prototypes[i]);
+            selectedPrototypes->push_back(project->prototypes[i]);
     }
     if(membershipFolder!=""){
         // adjust ramefficient to save memory for writing membership maps
-        ramEfficient = ramEfficient*envFileNames.size()/(envFileNames.size()+prototypes->size());
+        ramEfficient = ramEfficient*envFileNames.size()/(envFileNames.size()+selectedPrototypes->size());
     }
     solim::EnvDataset *eds = new solim::EnvDataset(envFileNames,datatypes,layernames,ramEfficient);
     // update filename
@@ -197,9 +187,9 @@ void mapInference::on_Inference_OK_btn_clicked()
     }
 
     if(isCategorical == false)
-        solim::Inference::inferMap(eds, &(project->prototypes), targetName, threshold, outSoil, outUncer,ui->progressBar);
+        solim::Inference::inferMap(eds, selectedPrototypes, targetName, threshold, outSoil, outUncer,ui->progressBar);
     else{
-        solim::Inference::inferCategoricalMap(eds, &(project->prototypes), targetName, threshold, outSoil, outUncer,membershipFolder,ui->progressBar);
+        solim::Inference::inferCategoricalMap(eds, selectedPrototypes, targetName, threshold, outSoil, outUncer,membershipFolder,ui->progressBar);
         if(membershipFolder!=""){
             QDir membershipDir(membershipFolder.c_str());
             QFileInfoList membershipMaps = membershipDir.entryInfoList();
@@ -316,4 +306,60 @@ void mapInference::on_membershipFolder_btn_clicked()
                                       project->workingDir);
     ui->membershipFolder_lineEdit->setText(dir);
     if(!dir.isEmpty())    project->workingDir = dir;
+}
+
+void mapInference::on_InferedProperty_comboBox_activated(const QString &arg1)
+{
+    QStringList basenames = ui->prototypeBaseName_lineEdit->text().split(';',Qt::SkipEmptyParts);
+    for(int i = 0; i<project->prototypes.size();i++){
+        if(project->prototypes[i].prototypeBaseName==basenames.at(0).toStdString()){
+            for(int j = 0;j<project->prototypes[i].properties.size();j++){
+                if(project->prototypes[i].properties[j].propertyName.c_str()==arg1){
+                    if(project->prototypes[i].properties[j].soilPropertyType==solim::CATEGORICAL){
+                        isCategorical = true;
+                        ui->membershipMaps_checkBox->setVisible(true);
+                    } else {
+                        isCategorical = false;
+                        ui->membershipMaps_checkBox->setVisible(false);
+                        ui->membershipFolder_btn->setVisible(false);
+                        ui->membership_label->setVisible(false);
+                        ui->membershipFolder_lineEdit->setVisible(false);
+                    }
+                }
+            }
+            break;
+        }
+    }
+}
+
+void mapInference::on_prototypeBaseName_lineEdit_textChanged(const QString &arg1)
+{
+    QStringList basenames = ui->prototypeBaseName_lineEdit->text().split(';',Qt::SkipEmptyParts);
+    QStringList propertyList;
+    for(int i = 0;i < basenames.size();i++){
+        QStringList propertyList_tmp;
+        for(int i = 0; i<project->prototypes.size();i++){
+            if(project->prototypes[i].prototypeBaseName==basenames.at(i).toStdString()){
+                for(int j = 0;j<project->prototypes[i].properties.size();j++){
+                    propertyList_tmp.push_back(project->prototypes[i].properties[j].propertyName.c_str());
+                }
+                break;
+            }
+        }
+        if(i==0)
+            propertyList = propertyList_tmp;
+        else {
+            QStringList propertyList_common;
+            for(int m = 0; m<propertyList.size();m++){
+                for(int n =0; n<propertyList_tmp.size();n++){
+                    if(propertyList.at(m)==propertyList_tmp.at(n)){
+                        propertyList_common.push_back(propertyList.at(m));
+                    }
+                }
+            }
+            propertyList = propertyList_common;
+        }
+    }
+    ui->InferedProperty_comboBox->clear();
+    ui->InferedProperty_comboBox->addItems(propertyList);
 }

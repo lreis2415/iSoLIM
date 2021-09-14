@@ -16,6 +16,7 @@ AddPrototypeBase::AddPrototypeBase(addPrototypeBaseMode mode,SoLIMProject *proj,
     ui->covariate_tableWidget->setHorizontalHeaderItem(0,new QTableWidgetItem("Filename"));
     ui->covariate_tableWidget->setHorizontalHeaderItem(1,new QTableWidgetItem("Covariate"));
     ui->covariate_tableWidget->setHorizontalHeaderItem(2,new QTableWidgetItem("Categorical?"));
+    ui->deleteCovariate_btn->setDisabled(true);
     QTableWidgetItem *item_tmp;
     for(size_t i = 0; i<proj->filenames.size();i++){
         ui->covariate_tableWidget->insertRow(ui->covariate_tableWidget->rowCount());
@@ -368,15 +369,32 @@ void AddPrototypeBase::on_btn_hint_clicked()
     QMessageBox msg;
     msg.setTextFormat(Qt::RichText);
     msg.setTextInteractionFlags(Qt::TextBrowserInteraction);
-    msg.setText("<b>Polygon mode</b>:"
-                "<ul><li>When each polygon has <b>only one dominant soil type</b>: For each soil type, mining rules from every polygon, and then merge the rules from polygons to generate the rule for the soil type"
-                " <a href=\"https://www.sciencedirect.com/science/article/pii/S2095311918619380\">(Cheng et al., 2019)</a>.</li>"
-                "<li>When each polygon contains <b>one or more soil types</b>: To be continued</li></ul>"
-                "<b>Soil Type mode</b>: "
+    msg.setText("<b>Soil Type mode</b>: "
                 "<ul><li>When each polygon has <b>only one dominant soil type</b>: For each soil type, mining rules from overall distribution of covariate values from all polygon in the soil type"
                 " <a href=\"https://www.tandfonline.com/doi/abs/10.1080/13658810310001596049\">(Qi and Zhu, 2003)</a>.</li>"
+                "<li>When each polygon contains <b>one or more soil types</b>: To be continued</li></ul>"
+                "<b>Polygon mode</b>:"
+                "<ul><li>When each polygon has <b>only one dominant soil type</b>: For each soil type, mining rules from every polygon, and then merge the rules from polygons to generate the rule for the soil type"
+                " <a href=\"https://www.sciencedirect.com/science/article/pii/S2095311918619380\">(Cheng et al., 2019)</a>.</li>"
                 "<li>When each polygon contains <b>one or more soil types</b>: To be continued</li></ul>");
     msg.setStandardButtons(QMessageBox::Ok);
     //ui->label_hint->setOpenExternalLinks(true);
     msg.exec();
+}
+
+void AddPrototypeBase::on_covariate_tableWidget_itemSelectionChanged()
+{
+    QList<QTableWidgetItem *> selected_items = ui->covariate_tableWidget->selectedItems();
+    if(selected_items.size()>0){
+        vector<int> selected_rows;
+        QList<QTableWidgetItem *>::iterator i;
+        for (i = selected_items.begin(); i != selected_items.end(); ++i){
+            selected_rows.push_back((*i)->row());
+        }
+        sort( selected_rows.begin(), selected_rows.end() );
+        selected_rows.erase( unique( selected_rows.begin(), selected_rows.end() ), selected_rows.end() );
+        if(selected_rows.size()==1)
+            ui->deleteCovariate_btn->setEnabled(true);
+        else ui->deleteCovariate_btn->setDisabled(true);
+    } else ui->deleteCovariate_btn->setDisabled(true);
 }

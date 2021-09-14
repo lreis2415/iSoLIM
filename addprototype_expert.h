@@ -79,8 +79,8 @@ private:
     int protoNum;
     MyGraphicsView *myview;
     vector<int> enumVals;
-    int rangeMax;
-    int rangeMin;
+    float rangeMax;
+    float rangeMin;
     bool enumViewInit;
     vector<double> *freeKnotX;
     vector<double> *freeKnotY;

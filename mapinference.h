@@ -20,7 +20,7 @@ class mapInference : public QDialog
     Q_OBJECT
 
 public:
-    explicit mapInference(SoLIMProject *proj, QWidget *parent = nullptr, bool isCategorical=false);
+    explicit mapInference(SoLIMProject *proj, QWidget *parent = nullptr);
     QString workingDir;
     ~mapInference();
 signals:
@@ -45,6 +45,10 @@ private slots:
     void on_membershipMaps_checkBox_toggled(bool checked);
 
     void on_membershipFolder_btn_clicked();
+
+    void on_InferedProperty_comboBox_activated(const QString &arg1);
+
+    void on_prototypeBaseName_lineEdit_textChanged(const QString &arg1);
 
 private:
     Ui::mapInference *ui;
