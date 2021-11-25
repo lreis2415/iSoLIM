@@ -1,5 +1,6 @@
 #include "addprototypebase.h"
 #include "ui_addprototypebase.h"
+#include <QTextCodec>
 
 AddPrototypeBase::AddPrototypeBase(addPrototypeBaseMode mode,SoLIMProject *proj,QWidget *parent) :
     mode(mode), QDialog(parent),
@@ -134,14 +135,28 @@ void AddPrototypeBase::on_browseSampleFile_btn_clicked()
         if(filename.isEmpty()) return;
         ui->sampleFile_lineEdit->setText(filename);
         project->workingDir=QFileInfo(filename).absoluteDir().absolutePath();
-        ifstream file(filename.toStdString()); // declare file stream:
+        QTextCodec *code = QTextCodec::codecForName("UTF-8");
+
+       //std::string filename_str = code->fromUnicode(filename.toStdString().c_str()).data();
+        QString filename1 = QString::fromStdString(code->fromUnicode(filename).data());
+        QFile file(filename1);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            warn("Cannot open sample file");
+            ui->sampleFile_lineEdit->clear();
+            return;
+        }
+        QTextStream txtInput(&file);
+        string line= txtInput.readLine().toStdString();
+
+        /*ifstream file(filename_str);
         if(!file.is_open()){
             warn("Cannot open sample file");
             ui->sampleFile_lineEdit->clear();
             return;
         }
         string line;
-        getline(file, line);
+        getline(file, line);*/
         vector<string> names;
         solim::ParseStr(line, ',', names);
         QStringList columnNames;
@@ -292,6 +307,7 @@ void AddPrototypeBase::on_ok_btn_clicked()
         vector<Prototype>* prototypes = Prototype::getPrototypesFromSample(sampleFile,eds, prototypeBaseName,
                                                                            ui->xFiled_comboBox->currentText().toStdString(),
                                                                            ui->yFiled_comboBox->currentText().toStdString());
+        if(prototypes==nullptr) warn("Sample file open failed!");
         //project->prototypeBaseNames.push_back(prototypeBaseName);
         int protoNum=prototypes->size();
         if(protoNum>0){

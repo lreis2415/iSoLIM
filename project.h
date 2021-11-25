@@ -10,6 +10,7 @@ public:
     string projFilename;
     string studyArea;
     string currentBaseName;
+    string currentResultName;
     vector<string> filenames;
     vector<string> layernames;
     vector<string> layertypes;
@@ -23,8 +24,9 @@ public:
     SoLIMProject(){
         projName = "";
         projFilename = "";
-        studyArea="";
+        studyArea = "";
         currentBaseName = "";
+        currentResultName = "";
         filenames.clear();
         layernames.clear();
         layertypes.clear();

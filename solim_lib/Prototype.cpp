@@ -1,5 +1,5 @@
 #include "Prototype.h"
-
+#include <QTextCodec>
 namespace solim {
 	Prototype::Prototype() {
         envConditions.clear();
@@ -13,10 +13,16 @@ namespace solim {
 
     vector<Prototype> *Prototype::getPrototypesFromSample(string filename, EnvDataset* eds, string prototypeName, string xfield, string yfield) {
         vector<Prototype> *prototypes = new vector<Prototype>;
-        ifstream file(filename); // declare file stream:
+        /*ifstream file(filename); // declare file stream:
         if(!file.is_open()) return nullptr;
         string line;
-        getline(file, line);
+        getline(file, line);*/
+        QTextCodec *code = QTextCodec::codecForName("UTF-8");
+        QString filename1 = QString::fromStdString(code->fromUnicode(QString(filename.c_str())).data());
+        QFile file(filename1);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))  return nullptr;
+        QTextStream txtInput(&file);
+        string line= txtInput.readLine().toStdString();
         vector<string> names;
         int pos_X = -1;
         int pos_Y = -1;
@@ -45,8 +51,10 @@ namespace solim {
         }
 
         int num=0;
-		while (getline(file, line)) {
-			vector<string> values;
+        //while (getline(file, line)) {
+        while (!txtInput.atEnd()){
+            line = txtInput.readLine().toStdString();
+            vector<string> values;
 			ParseStr(line, ',', values);
 			const char* xstr = values[pos_X].c_str();
 			const char* ystr = values[pos_Y].c_str();

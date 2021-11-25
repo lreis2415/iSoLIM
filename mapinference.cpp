@@ -200,6 +200,7 @@ void mapInference::on_Inference_OK_btn_clicked()
     }
     project->addResult(outSoil);
     project->addResult(outUncer);
+    project->currentResultName = outSoil;
     this->close();
 }
 

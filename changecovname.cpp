@@ -6,6 +6,7 @@ changeCovName::changeCovName(solim::Prototype *proto, QWidget *parent) :
     ui(new Ui::changeCovName)
 {
     ui->setupUi(this);
+    setWindowTitle("Change Covariate Name");
     ui->tableWidget->setColumnCount(2);
     ui->tableWidget->setHorizontalHeaderItem(0,new QTableWidgetItem("Current name"));
     ui->tableWidget->setHorizontalHeaderItem(1,new QTableWidgetItem("New name"));

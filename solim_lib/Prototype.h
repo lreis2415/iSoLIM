@@ -9,6 +9,7 @@
 #include <ogrsf_frmts.h>
 #include <QProgressBar>
 #include <omp.h>
+#include <QFile>
 #include <QDebug>
 #include "EnvDataset.h"
 #include "EnvUnit.h"

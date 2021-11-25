@@ -115,6 +115,7 @@ private:
     QToolBar *zoomToolBar;
     QToolBar *resetRangeToolBar;
     QAction *addProtoExpert;
+    QAction *addRules;
     QAction *editRule;
     QAction *saveRule;
     QAction *resetRule;

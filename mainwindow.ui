@@ -141,7 +141,7 @@
   </action>
   <action name="actionAdd_Covariates">
    <property name="text">
-    <string>Add Covariates</string>
+    <string>Add Covariate</string>
    </property>
   </action>
   <action name="actionResample">

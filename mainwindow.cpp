@@ -333,9 +333,11 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
             gisDataMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
     else if (index.isValid()&&index.parent().data().toString().compare("Covariates")==0){
-        currentLayerName=index.data().toString().toStdString();
-        gisLayerMenu->exec(projectView->viewport()->mapToGlobal(point));
-}
+        if(index.parent().parent().data().toString().startsWith("Prototype ID:")==false){
+            currentLayerName=index.data().toString().toStdString();
+            gisLayerMenu->exec(projectView->viewport()->mapToGlobal(point));
+        }
+    }
     else if(index.isValid()&&index.parent().data().toString().compare("Prototypes")==0){
         currentBaseName=index.data().toString().mid(16).toStdString();
         size_t i = 0;
@@ -344,10 +346,14 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
                 break;
             i++;
         }
-        if(proj->prototypeBaseTypes[i]=="EXPERT")
-            addProtoExpert->setEnabled(true);
-        else
-            addProtoExpert->setEnabled(false);
+        if(proj->prototypeBaseTypes[i]=="EXPERT"){
+            addRules->setVisible(true);
+            addProtoExpert->setVisible(true);
+        }
+        else{
+            addRules->setVisible(false);
+            addProtoExpert->setVisible(false);
+        }
         prototypeBaseMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
     else if(index.isValid()&&index.data().toString().startsWith("Prototype ID:")){
@@ -655,16 +661,18 @@ void MainWindow::onRenamePrototypeBase(){
     SimpleDialog *changeBaseName = new SimpleDialog(SimpleDialog::CHANGEBASENAME,proj,this);
     changeBaseName->exec();
     string newname = changeBaseName->lineEdit2.toStdString();
-    for(size_t i =0; i<proj->prototypeBaseNames.size();i++){
-        if(currentBaseName==proj->prototypeBaseNames[i]){
-            proj->prototypeBaseNames[i]=newname;
-            for(int i =0; i<prototypeChild->rowCount();i++){
-                if(prototypeChild->child(i,0)->text().endsWith(currentBaseName.c_str())){
-                    QStandardItem *editExpertBase=prototypeChild->child(i,0);
-                    editExpertBase->setText(("Prototype Base: "+newname).c_str());
+    if(!newname.empty()){
+        for(size_t i =0; i<proj->prototypeBaseNames.size();i++){
+            if(currentBaseName==proj->prototypeBaseNames[i]){
+                proj->prototypeBaseNames[i]=newname;
+                for(int i =0; i<prototypeChild->rowCount();i++){
+                    if(prototypeChild->child(i,0)->text().endsWith(currentBaseName.c_str())){
+                        QStandardItem *editExpertBase=prototypeChild->child(i,0);
+                        editExpertBase->setText(("Prototype Base: "+newname).c_str());
+                    }
                 }
+                return;
             }
-            return;
         }
     }
 }
@@ -925,6 +933,10 @@ void MainWindow::onInferResults(){
     }
     projectView->expand(resultChild->index());
     projectSaved = false;
+    if(proj->currentResultName != "") {
+        drawLayer(proj->currentResultName);
+        proj->currentResultName = "";
+    }
 }
 
 //=========================== Main Graphics View function===============================
@@ -935,7 +947,9 @@ bool MainWindow::drawLayer(string filename){
     if(!fileinfo.exists()) return false;
     imgFilename = filename;
     string imagename = filename+".png";
-    img = new QImage(imagename.c_str());
+    QTextCodec *code = QTextCodec::codecForName("UTF-8");
+    QString imagename_q = QString::fromStdString(code->fromUnicode(QString(imagename.c_str())).data());
+    img = new QImage(imagename_q);
     lyr = new BaseIO(filename);
     if(!lyr->isOpened()) return false;
     imgMax = lyr->getDataMax();
@@ -981,6 +995,8 @@ bool MainWindow::drawLayer(string filename){
 
 void MainWindow::createImg(){
     string imagename = lyr->getFilename()+".png";
+    QTextCodec *code = QTextCodec::codecForName("UTF-8");
+    QString imagename_q = QString::fromStdString(code->fromUnicode(QString(imagename.c_str())).data());
     int stretch=1;
     int xsize=lyr->getXSize();
     int ysize=lyr->getYSize();
@@ -1026,8 +1042,8 @@ void MainWindow::createImg(){
         }
     }
     img = new QImage(imgData, xsize,ysize,xsize, QImage::Format_Grayscale8);
-    img->save(imagename.c_str());
-    img->load(imagename.c_str());
+    img->save(imagename_q);
+    img->load(imagename_q);
     if(pafScanline)
         delete []pafScanline;
     if(imgData)
@@ -1496,7 +1512,7 @@ void MainWindow::initialProjectView(){
     // prototype menu
     prototypeMenu = new QMenu(projectView);
     // add rules action
-    QAction *addRules = new QAction("Add rules to this prototype", prototypeMenu);
+    addRules = new QAction("Add rules to this prototype", prototypeMenu);
     prototypeMenu->addAction(addRules);
     projectView->addAction(addRules);
     connect(addRules,SIGNAL(triggered()),this,SLOT(onAddRules()));
