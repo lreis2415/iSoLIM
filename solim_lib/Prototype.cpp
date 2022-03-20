@@ -176,10 +176,12 @@ namespace solim {
         for (size_t i = 0; i < eds->Layers.size(); i++) {
             if (eds->Layers.at(i)->DataType == CATEGORICAL) {
                 vector<int>*values = new vector<int>(freq[i]->begin(), freq[i]->end());
-                addConditions(Curve(eds->Layers.at(i)->LayerName, values));
+                Curve c=Curve(eds->Layers.at(i)->LayerName, values);
+                if(c.getKnotNum()>0) addConditions(c);
             }
             else {
-                addConditions(Curve(eds->Layers.at(i)->LayerName, freq[i]));
+                Curve c=Curve(eds->Layers.at(i)->LayerName, freq[i]);
+                if(c.getKnotNum()>0) addConditions(c);
             }
         }
         // add soil id to prototypeID and soil properties
@@ -310,10 +312,12 @@ namespace solim {
         for (size_t i = 0; i < eds->Layers.size(); i++) {
             if (eds->Layers.at(i)->DataType == CATEGORICAL) {
                 vector<int>*values = new vector<int>(freq[i]->begin(), freq[i]->end());
-                addConditions(Curve(eds->Layers.at(i)->LayerName, values));
+                Curve c=Curve(eds->Layers.at(i)->LayerName, values);
+                if(c.getKnotNum()>0) addConditions(c);
             }
             else {
-                addConditions(Curve(eds->Layers.at(i)->LayerName, freq[i]));
+                Curve c=Curve(eds->Layers.at(i)->LayerName, freq[i]);
+                if(c.getKnotNum()>0) addConditions(c);
             }
         }
         //GDALClose(poDS);

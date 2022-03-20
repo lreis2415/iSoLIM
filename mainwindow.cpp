@@ -470,7 +470,7 @@ void MainWindow::onAddRules(){
         if(proj->prototypes[i].prototypeBaseName==currentBaseName
                 &&proj->prototypes[i].prototypeID==currentProtoName){
             if(addRule){ addRule->close(); delete addRule;}
-            addRule = new AddPrototype_Expert(proj,i,"",this);
+            addRule = new AddPrototype_Expert(proj,i,currentBaseName,this);
             addRule->show();
             connect(addRule,SIGNAL(addlayer()),this,SLOT(onGetGisData()));
             connect(addRule,SIGNAL(updatePrototype()),this,SLOT(onGetPrototype()));
@@ -591,10 +591,8 @@ void MainWindow::onImportPrototypeBase(){
         if(basenames[0]!="basename"){ warn("Wrong file format"); return; }
         string basename = basenames[1].toStdString();
         if(baseExistsWarning(basename)) return;
-        proj->prototypeBaseNames.push_back(basename);
         if(basenames[2]!="source"){ warn("Wrong file format"); return; }
         string source = basenames[3].toStdString();
-        proj->prototypeBaseTypes.push_back(source);
         solim::PrototypeSource protoSource = solim::getSourceFromString(source);
 
         for(int i =1;i<lines.size();i++){
@@ -609,8 +607,8 @@ void MainWindow::onImportPrototypeBase(){
             int properties_num = properties[3].toInt();
             int loc = 4;
             for(int k=0;k<properties_num;k++){
-                proto.addProperties(properties[loc].toStdString(),properties[loc+1].toDouble());
-                loc += 2;
+                proto.addProperties(properties[loc].toStdString(),properties[loc+1].toDouble(),solim::getDatatypeFromString(properties[loc+2].toStdString()));
+                loc += 3;
             }
             if(properties[loc]!="covariates_num"){ warn("Wrong file format"); return; }
             int cov_num = properties[loc+1].toInt();
@@ -636,6 +634,8 @@ void MainWindow::onImportPrototypeBase(){
             }
             proj->prototypes.push_back(proto);
         }
+        proj->prototypeBaseNames.push_back(basename);
+        proj->prototypeBaseTypes.push_back(source);
         onGetPrototype();
         projectSaved=false;
     } if(basefilename.endsWith(".xml",Qt::CaseInsensitive)){
@@ -649,7 +649,7 @@ void MainWindow::onImportPrototypeBase(){
         string basename=prototypeBaseHandle.ToElement()->Attribute("Basename");
         if(baseExistsWarning(basename)) return;
         proj->prototypeBaseNames.push_back(basename);
-        proj->prototypeBaseNames.push_back(prototypeBaseHandle.ToElement()->Attribute("Source"));
+        proj->prototypeBaseTypes.push_back(prototypeBaseHandle.ToElement()->Attribute("Source"));
         readPrototype(prototypeBaseHandle.ToElement());
         onGetPrototype();
         projectSaved=false;
@@ -712,6 +712,7 @@ void MainWindow::onDeleteGisLayer() {
             break;
         }
     }
+    dataDetailsView->setModel(new QStandardItemModel(dataDetailsView));
     onGetGisData();
 }
 
@@ -805,7 +806,7 @@ void MainWindow::onExportPrototypeBase(){
                     warn("Please do not use ',' in prototype property name");
                     return;
                 }
-                stream<<proto->properties[j].propertyName.c_str()<<","<<QString::number(proto->properties[j].propertyValue)<<",";
+                stream<<proto->properties[j].propertyName.c_str()<<","<<QString::number(proto->properties[j].propertyValue)<<","<<solim::DataTypeEnum_str[proto->properties[j].soilPropertyType]<<",";
             }
             stream<<"covariates_num,"<<QString::number(proto->envConditionSize)<<",";
             for(int j = 0;j<proto->envConditionSize;j++){
@@ -941,6 +942,7 @@ void MainWindow::onInferResults(){
 
 //=========================== Main Graphics View function===============================
 bool MainWindow::drawLayer(string filename){
+    dataDetailsView->setModel(new QStandardItemModel(dataDetailsView));
     graphicFilename=filename;
     if(filename.empty()) return false;
     QFileInfo fileinfo(filename.c_str());
@@ -1098,7 +1100,7 @@ void MainWindow::drawMembershipFunction(float max, float min, solim::Curve *c){
     zoomToolBar->setVisible(false);
     resetRangeToolBar->setVisible(true);
     myGraphicsView->showImage = false;
-    myGraphicsView->dataDetailsView->setModel(new QStandardItemModel(myGraphicsView->dataDetailsView));
+    dataDetailsView->setModel(new QStandardItemModel(dataDetailsView));
     myGraphicsView->getScene()->clear();
     int protoPos = -1;
     int covPos = -1;

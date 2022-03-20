@@ -20,6 +20,7 @@ AddPrototypeBase::AddPrototypeBase(addPrototypeBaseMode mode,SoLIMProject *proj,
     ui->deleteCovariate_btn->setDisabled(true);
     QTableWidgetItem *item_tmp;
     for(size_t i = 0; i<proj->filenames.size();i++){
+        if(proj->filenames[i].empty()) continue;
         ui->covariate_tableWidget->insertRow(ui->covariate_tableWidget->rowCount());
         item_tmp = new QTableWidgetItem(proj->filenames[i].c_str());
         item_tmp->setFlags(item_tmp->flags()^Qt::ItemIsEditable);

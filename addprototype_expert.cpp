@@ -244,15 +244,38 @@ void AddPrototype_Expert::on_btn_add_prop_clicked()
 {
     QString propName=ui->lineEdit_prop_name->text();
     QString propVal = ui->lineEdit_prop_val->text();
+    solim::DataTypeEnum propType = solim::CONTINUOUS;
+    if(ui->checkBox_datatype_category->isChecked()) propType = solim::CATEGORICAL;
     if(!propName.isEmpty()&&!propVal.isEmpty()){
         bool propValValid = true;
         double propVal_d=propVal.toDouble(&propValValid);
         if(!propValValid) return;
-        if(ui->checkBox_datatype_category->isChecked())
-            proj->prototypes[protoNum].addProperties(propName.toStdString(),propVal_d,solim::CATEGORICAL);
-        else
-            proj->prototypes[protoNum].addProperties(propName.toStdString(),propVal_d,solim::CONTINUOUS);
+        for(int i = 0; i < proj->prototypes.size();i++){
+            bool break_flag = false;
+            if (proj->prototypes[i].prototypeBaseName==currentBasename){
+                for(int j = 0; j < proj->prototypes[i].properties.size(); j++){
+                    if(proj->prototypes[i].properties[j].propertyName==propName.toStdString()){
+                        if (propType!=proj->prototypes[i].properties[j].soilPropertyType){
+                            warn("Property datatype contradicts with existing records in the prototype base. The datatype (checkbox) selection has been changed. Please try again.");
+                            ui->checkBox_datatype_category->toggle();
+                            return;
+                        }
+                        break_flag = true;
+                        break;
+                    }
+                }
+                if(break_flag) break;
+            }
+        }
+        for(int i = 0; i<proj->prototypes[protoNum].properties.size();i++){
+            if(proj->prototypes[protoNum].properties[i].propertyName==propName.toStdString()){
+                warn("This property has been add before. The value will be updated.");
+            }
+        }
+        proj->prototypes[protoNum].addProperties(propName.toStdString(),propVal_d,propType);
         emit updatePrototype();
+        ui->lineEdit_prop_name->clear();
+        ui->lineEdit_prop_val->clear();
         return;
     }
 }
@@ -279,6 +302,10 @@ void AddPrototype_Expert::on_btn_add_rule_clicked()
             proj->prototypes[protoNum].addConditions(c);
             //drawMembershipFunction(&c);
             myview->getScene()->clear();
+            ui->lineEdit_lc->clear();
+            ui->lineEdit_lu->clear();
+            ui->lineEdit_hu->clear();
+            ui->lineEdit_hc->clear();
             emit updatePrototype();
         }
     } else if(ui->radioButton_freehand->isChecked()){
@@ -303,6 +330,7 @@ void AddPrototype_Expert::on_btn_add_rule_clicked()
             c.typicalValue=enumVals[0];
             c.range=fabs(rangeMax)>fabs(rangeMin)?fabs(rangeMax):fabs(rangeMin);
             proj->prototypes[protoNum].addConditions(c);
+            myview->getScene()->clear();
             emit updatePrototype();
         }
     }
@@ -713,6 +741,33 @@ void AddPrototype_Expert::on_btn_create_clicked()
         ui->btn_create->setEnabled(false);
         ui->lineEdit_prototype->setReadOnly(true);
         emit updatePrototype();
+        QString suggestedPropName = "";
+        solim::DataTypeEnum suggestedPropType = solim::CONTINUOUS;
+        for(int i = 0; i< proj->prototypes.size();i++){
+            if(proj->prototypes[i].prototypeBaseName==currentBasename){
+                if(proj->prototypes[i].properties.size()>0){
+                    suggestedPropName = proj->prototypes[i].properties[0].propertyName.c_str();
+                    suggestedPropType = proj->prototypes[i].properties[0].soilPropertyType;
+                    break;
+                }
+            }
+        }
+        if(suggestedPropName.isEmpty()){
+            for(int i = 0; i< proj->prototypes.size();i++){
+                if(proj->prototypes[i].prototypeBaseName!=currentBasename){
+                    if(proj->prototypes[i].properties.size()>0){
+                        suggestedPropName = proj->prototypes[i].properties[0].propertyName.c_str();
+                        suggestedPropType = proj->prototypes[i].properties[0].soilPropertyType;
+                        break;
+                    }
+                }
+            }
+        }
+        ui->lineEdit_prop_name->setText(suggestedPropName);
+        if(suggestedPropType==solim::CATEGORICAL)
+            ui->checkBox_datatype_category->setCheckState(Qt::Checked);
+        else
+            ui->checkBox_datatype_category->setCheckState(Qt::Unchecked);
     }
 }
 

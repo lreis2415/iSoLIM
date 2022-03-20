@@ -221,9 +221,14 @@ namespace solim {
 		std::nth_element(values->begin() + Q1 + 1, values->begin() + Q3, values->end());
 		double quartile = values->at(Q3)-values->at(Q1);
 		double p = (stdev < quartile) ? stdev : quartile;
+        if(p<VERY_SMALL) p=stdev;
 		double h = 1.06*p*pow(n, -0.2);	// 1.06min(std,quartile range)n^(-0.2)
 		float xmin = *std::min_element(values->begin(),values->end());	//minimum value
 		float xrange = *std::max_element(values->begin(), values->end())-xmin;
+        if(xrange<VERY_SMALL){
+            addKnot(xmin, 1);
+            return;
+        }
         range = (fabs(xrange+xmin)>fabs(xmin))?fabs(xrange+xmin):fabs(xmin);
 		double x_pre = xmin;
 		double y_pre = KernelEst(x_pre, n, h, values);
@@ -340,7 +345,7 @@ namespace solim {
         bubbleSort();
         if(1 - vecKnotY[0]>VERY_SMALL) vecKnotY[0] = 0;
         if(1-vecKnotY[iKnotNum-1]>VERY_SMALL) vecKnotY[iKnotNum-1]=0;
-        calcSpline();
+        if(iKnotNum > 3)  calcSpline();
 	}
 
 	double Curve::KernelEst(double x,int n,double h, vector<float> *values){
@@ -442,35 +447,42 @@ namespace solim {
 			return 0;
 		}
 		// for continuous value
-		if (iKnotNum < 3) return 0;
-		double result;
-        if (envValue < vecKnotX[0]){
-            if(vecKnotY[0]<VERY_SMALL || fabs(vecKnotY[0]-1) < VERY_SMALL) return vecKnotY[0];
-            result = vecDY[0] * (envValue - vecKnotX[0]) + vecKnotY[0];
+        else{
+            if (iKnotNum < 3){
+                for (int i = 0; i < iKnotNum; ++i)
+                    if (fabs(envValue - vecKnotX[i]) < VERY_SMALL)
+                        return vecKnotY[i];
+                return 0;
+            }
+            double result;
+            if (envValue < vecKnotX[0]){
+                if(vecKnotY[0]<VERY_SMALL || fabs(vecKnotY[0]-1) < VERY_SMALL) return vecKnotY[0];
+                result = vecDY[0] * (envValue - vecKnotX[0]) + vecKnotY[0];
+            }
+            else if (envValue > vecKnotX[iKnotNum - 1]){
+                if(vecKnotY[iKnotNum - 1]<VERY_SMALL || fabs(vecKnotY[iKnotNum - 1]-1) < VERY_SMALL) return vecKnotY[iKnotNum - 1];
+                result = vecDY[iKnotNum - 1] * (envValue - vecKnotX[iKnotNum - 1]) + vecKnotY[iKnotNum - 1];
+            }
+            else {
+                int i = 0;
+                while (envValue>vecKnotX[i + 1])
+                    i = i + 1;
+                double h0, h1;
+                h1 = (vecKnotX[i + 1] - envValue) / vecS[i];
+                h0 = h1*h1;
+                result = (3.0*h0 - 2.0*h0*h1)*vecKnotY[i];
+                result += vecS[i] * (h0 - h0*h1)*vecDY[i];
+                h1 = (envValue - vecKnotX[i]) / vecS[i];
+                h0 = h1*h1;
+                result += (3.0*h0 - 2.0*h0*h1)*vecKnotY[i + 1];
+                result -= vecS[i] * (h0 - h0*h1)*vecDY[i + 1];
+            }
+            if (result>1)
+                result = 1;
+            else if (result<0)
+                result = 0;
+            return result;
         }
-        else if (envValue > vecKnotX[iKnotNum - 1]){
-            if(vecKnotY[iKnotNum - 1]<VERY_SMALL || fabs(vecKnotY[iKnotNum - 1]-1) < VERY_SMALL) return vecKnotY[iKnotNum - 1];
-            result = vecDY[iKnotNum - 1] * (envValue - vecKnotX[iKnotNum - 1]) + vecKnotY[iKnotNum - 1];
-        }
-        else {
-            int i = 0;
-            while (envValue>vecKnotX[i + 1])
-                i = i + 1;
-            double h0, h1;
-            h1 = (vecKnotX[i + 1] - envValue) / vecS[i];
-            h0 = h1*h1;
-            result = (3.0*h0 - 2.0*h0*h1)*vecKnotY[i];
-            result += vecS[i] * (h0 - h0*h1)*vecDY[i];
-            h1 = (envValue - vecKnotX[i]) / vecS[i];
-            h0 = h1*h1;
-            result += (3.0*h0 - 2.0*h0*h1)*vecKnotY[i + 1];
-            result -= vecS[i] * (h0 - h0*h1)*vecDY[i + 1];
-        }
-        if (result>1)
-            result = 1;
-        else if (result<0)
-            result = 0;
-        return result;
 	}
 
 	int Curve::getKnotNum() {
@@ -513,7 +525,7 @@ namespace solim {
 
 	void Curve::calcSpline() {
 		if (iKnotNum < 3) {
-			throw invalid_argument("Knot number less than 3, unable to generate spline");
+            cout<<"Knot number less than 3, unable to generate spline";
 			return;
 		}
 		vecDY.reserve(iKnotNum);

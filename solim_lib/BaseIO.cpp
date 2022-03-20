@@ -199,16 +199,14 @@ BaseIO::BaseIO(string filename) {
         dataMin = band->GetMinimum(&fGotMin);//GDALGetRasterMinimum(bandh, &fGotMin);
 		if (!(fGotMax&&fGotMin)) {
 			double adfMinMax[2];
-            CPLErr result = band->ComputeRasterMinMax(TRUE, adfMinMax);//GDALComputeRasterMinMax(bandh, TRUE, adfMinMax);
+            int approxOK = FALSE;
+            CPLErr result = band->ComputeRasterMinMax(approxOK, adfMinMax);//GDALComputeRasterMinMax(bandh, TRUE, adfMinMax);
             if(result == CE_None){
                 dataMin = adfMinMax[0];
                 dataMax = adfMinMax[1];
             }
 		}
 		dataRange = dataMax - dataMin;
-		dataMax += dataRange / 100;
-		dataMin -= dataRange / 100;
-		
 	}
     blockRows = ySize;
     blockSize = 1;

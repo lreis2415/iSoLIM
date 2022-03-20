@@ -1,7 +1,7 @@
 #include "inference.h"
 
 namespace solim {
-void Inference::inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string targetVName, double threshold, string outSoilFile, string outUncerFile, QProgressBar *progressBar) {
+void Inference::inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string targetVName, double threshold, string outSoilFile, string outUncerFile, QProgressBar *progressBar,IntegrationMethod integrate) {
     // check the consistency of prototype rules and envdataset
     for (auto it=prototypes->begin(); it!=prototypes->end(); ++it){
         if (!(*it).checkEnvConsIsSorted(eds)) {
@@ -72,6 +72,34 @@ void Inference::inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string 
             double valueSum = 0;
             double weightSum = 0;
             double maxSimi = 0;
+            // adaptive threshold
+            /*double *simi_collect = new double[prototypes->size()];
+            double *value_collect = new double[prototypes->size()];
+            int k = 0;
+            for (vector<Prototype>::iterator it = prototypes->begin(); it != prototypes->end(); ++it) {
+                // calculate similarity to prototype
+                double tmpOptimity;
+                double minOptimity = (*it).envConditions[0].getOptimality(envValues[0]);
+                for (int i = 1; i < eds->Layers.size(); ++i) {
+                    tmpOptimity = (*it).envConditions[i].getOptimality(envValues[i]);
+                    if (tmpOptimity < minOptimity) minOptimity = tmpOptimity;
+                }
+                simi_collect[k] = minOptimity;
+                value_collect[k] = (*it).getProperty(targetVName);
+                k++;
+            }
+            std::sort(simi_collect, simi_collect + prototypes->size());
+            int threshold_loc = prototypes->size()-int(prototypes->size()/10+0.5)-1;
+            if(threshold_loc<0) threshold_loc = 0;
+            double threshold = simi_collect[threshold_loc];
+            for(int i = 0; i < prototypes->size(); i++){
+                if(simi_collect[i]>threshold){
+                    valueSum += simi_collect[i]*value_collect[i];
+                    weightSum += simi_collect[i];
+                    if (simi_collect[i] > maxSimi)
+                        maxSimi = simi_collect[i];
+                }
+            }*/
             // calculate predicted value
             for (vector<Prototype>::iterator it = prototypes->begin(); it != prototypes->end(); ++it) {
                 // calculate similarity to prototype

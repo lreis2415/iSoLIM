@@ -20,6 +20,7 @@ mapInference::mapInference(SoLIMProject *proj, QWidget *parent) :
         QTimer::singleShot(0, this, SLOT(close()));;
     } else {
         ui->setupUi(this);
+        init = true;
         if(!isCategorical){
             ui->membershipMaps_checkBox->setVisible(false);
         }
@@ -217,6 +218,7 @@ void mapInference::on_editPrototypeBase_btn_clicked()
         names.append(project->prototypeBaseNames[i].c_str());
     editPrototypeBases editDialog(names,ui->prototypeBaseName_lineEdit->text(),this);
     editDialog.exec();
+    init = false;
     ui->prototypeBaseName_lineEdit->setText(editDialog.selectedNames);
 }
 
@@ -336,18 +338,19 @@ void mapInference::on_InferedProperty_comboBox_activated(const QString &arg1)
 void mapInference::on_prototypeBaseName_lineEdit_textChanged(const QString &arg1)
 {
     QStringList basenames = ui->prototypeBaseName_lineEdit->text().split(';',Qt::SkipEmptyParts);
+    if(basenames.empty()) return;
     QStringList propertyList;
-    for(int i = 0;i < basenames.size();i++){
+    for(int k = 0;k < basenames.size();k++){
         QStringList propertyList_tmp;
         for(int i = 0; i<project->prototypes.size();i++){
-            if(project->prototypes[i].prototypeBaseName==basenames.at(i).toStdString()){
+            if(project->prototypes[i].prototypeBaseName==basenames.at(k).toStdString()){
                 for(int j = 0;j<project->prototypes[i].properties.size();j++){
                     propertyList_tmp.push_back(project->prototypes[i].properties[j].propertyName.c_str());
                 }
                 break;
             }
         }
-        if(i==0)
+        if(k==0)
             propertyList = propertyList_tmp;
         else {
             QStringList propertyList_common;
@@ -361,6 +364,17 @@ void mapInference::on_prototypeBaseName_lineEdit_textChanged(const QString &arg1
             propertyList = propertyList_common;
         }
     }
+    if (propertyList.isEmpty()) {
+        if(!init) {
+            if(basenames.size()==1)
+                warn("The selected prototype base has no property to be inferred. Please re-select prototype base used for inference.");
+            if(basenames.size()>1)
+                warn("The selected prototype bases have no common property to be inferred. Please re-select prototype base used for inference.");
+        }
+        ui->prototypeBaseName_lineEdit->clear();
+        ui->Inference_OK_btn->setEnabled(false);
+    }
     ui->InferedProperty_comboBox->clear();
     ui->InferedProperty_comboBox->addItems(propertyList);
+    ui->Inference_OK_btn->setEnabled(true);
 }

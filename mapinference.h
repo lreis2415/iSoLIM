@@ -53,6 +53,7 @@ private slots:
 private:
     Ui::mapInference *ui;
     SoLIMProject *project;
+    bool init;
     bool outputAutoFill;
     bool isCategorical;
     void warn(QString msg){
