@@ -87,6 +87,7 @@ void AddPrototypeBase::on_addCovariate_btn_clicked()
 //    }
     SimpleDialog addGisData(SimpleDialog::ADDGISDATA,project,this);
     addGisData.exec();
+    if(addGisData.filename.isEmpty()) return;
     for(int i = 0;i<ui->covariate_tableWidget->rowCount();i++){
         if(ui->covariate_tableWidget->item(i,0)->text()==addGisData.filename){
             QMessageBox warning;

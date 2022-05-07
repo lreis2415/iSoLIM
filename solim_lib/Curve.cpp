@@ -221,8 +221,7 @@ namespace solim {
 		std::nth_element(values->begin() + Q1 + 1, values->begin() + Q3, values->end());
 		double quartile = values->at(Q3)-values->at(Q1);
 		double p = (stdev < quartile) ? stdev : quartile;
-        if(p<VERY_SMALL) p=stdev;
-		double h = 1.06*p*pow(n, -0.2);	// 1.06min(std,quartile range)n^(-0.2)
+        double h = 1.06*p*pow(n, -0.2);	// 1.06min(std,quartile range)n^(-0.2)
 		float xmin = *std::min_element(values->begin(),values->end());	//minimum value
 		float xrange = *std::max_element(values->begin(), values->end())-xmin;
         if(xrange<VERY_SMALL){
@@ -235,6 +234,7 @@ namespace solim {
 		addKnot(x_pre, y_pre);
 		double ymax = y_pre, ymin = y_pre;
 		int interval_num = xrange / h * 10;
+        if(interval_num>100) interval_num = 100;
 		double interval= xrange/interval_num;	//10*h interval
 		double x = xmin + interval;
 		double y = KernelEst(x, n, h, values);

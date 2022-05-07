@@ -32,8 +32,8 @@ namespace solim {
 
 	public:
 		Prototype();
-        Prototype(EnvDataset* eds, int iSoilIDField, string prototypeBasename, OGRFeature* poFeature, int fid);
-        Prototype(EnvDataset* eds, int iSoilIDField, string prototypeBasename, OGRLayer* poLayer, vector<int> fids);
+        Prototype(EnvDataset* eds, int iSoilIDField, string prototypeBasename, OGRFeature* poFeature, int fid,string soilIDName);
+        Prototype(EnvDataset* eds, int iSoilIDField, string prototypeBasename, OGRLayer* poLayer, vector<int> fids,string soilIDName);
         static vector<Prototype> *getPrototypesFromSample(string filename, EnvDataset* eds, string prototypeBaseName="", string xfield="x", string yfield="y");
         static vector<Prototype> *getPrototypesFromMining_soilType(string filename, EnvDataset* eds, string soilIDFieldName, string prototypeBasename, QProgressBar *progressBar);
         static vector<Prototype> *getPrototypesFromMining_polygon(string filename, EnvDataset *eds, string soilIDFieldName, string prototypeBasename, QProgressBar *progressBar);

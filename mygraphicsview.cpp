@@ -21,6 +21,7 @@ MyGraphicsView::MyGraphicsView(QWidget *parent):
     knotX.shrink_to_fit();
     knotY.clear();
     knotY.shrink_to_fit();
+    offsetSize = 3;
 }
 void MyGraphicsView::mousePressEvent(QMouseEvent * e)
 {
@@ -47,8 +48,10 @@ void MyGraphicsView::mousePressEvent(QMouseEvent * e)
             py=yEnd-sceneHeight;
         }
         for(int i = 0;i<knotX.size();i++){
-            if(fabs(knotX[i]-x)/(curveXMax-curveXMin)<0.01){
-                if(fabs(knotY[i]-y)<0.05){
+            int knotXPt = (knotX[i]-curveXMin)/(curveXMax-curveXMin)*graphWidth+xStart;
+            int knotYPt = yEnd - knotY[i]*graphHeight;
+            if(fabs(knotXPt-pt.x())<offsetSize){
+                if(fabs(knotYPt-pt.y())<offsetSize){
                     moveKnotNum=i;
                     return;
                 }
@@ -71,9 +74,10 @@ void MyGraphicsView::mousePressEvent(QMouseEvent * e)
         if(y>1||y<0) return;
         x = x * (curveXMax-curveXMin) + curveXMin;
         for(int i = 0;i<knotX.size();i++){
-            if(fabs(knotX[i]-x)<0.1){
-                    moveKnotNum=i;
-                    return;
+            int knotXPt = (knotX[i]-curveXMin)/(curveXMax-curveXMin)*graphWidth+xStart;
+            if(fabs(knotXPt-pt.x())<offsetSize){
+                moveKnotNum=i;
+                return;
             }
         }
     }
@@ -136,7 +140,8 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent * e){
         }
         for(int i = 0;i<knotX.size();i++){
             if(i!=moveKnotNum){
-                if(fabs(knotX[i]-x)<0.01){
+                int knotXPt = (knotX[i]-curveXMin)/(curveXMax-curveXMin)*graphWidth+xStart;
+                if(fabs(knotXPt-pt.x())<offsetSize){
                     return;
                 }
             }
@@ -161,7 +166,8 @@ void MyGraphicsView::mouseMoveEvent(QMouseEvent * e){
         x = x * (curveXMax-curveXMin) + curveXMin;
         for(int i = 0;i<knotX.size();i++){
             if(i!=moveKnotNum){
-                if(fabs(knotX[i]-x)<0.1){
+                int knotXPt = (knotX[i]-curveXMin)/(curveXMax-curveXMin)*graphWidth+xStart;
+                if(fabs(knotXPt-pt.x())<offsetSize){
                     knotX.erase(knotX.begin()+moveKnotNum);
                     knotX.shrink_to_fit();
                     emit addEnumPoint();
@@ -223,8 +229,10 @@ void MyGraphicsView::mouseDoubleClickEvent(QMouseEvent *e){
             py=yEnd-sceneHeight;
         }
         for(int i = 0;i<knotX.size();i++){
-            if(fabs(knotX[i]-x)<0.01){
-                if(fabs(knotY[i]-y)<0.05){
+            int knotXPt = (knotX[i]-curveXMin)/(curveXMax-curveXMin)*graphWidth+xStart;
+            int knotYPt = yEnd - knotY[i]*graphHeight;
+            if(fabs(knotXPt-pt.x())<offsetSize){
+                if(fabs(knotYPt-pt.y())<offsetSize){
                     knotX.erase(knotX.begin()+i);
                     knotY.erase(knotY.begin()+i);
                     knotX.shrink_to_fit();
@@ -252,7 +260,8 @@ void MyGraphicsView::mouseDoubleClickEvent(QMouseEvent *e){
         if(y>1||y<0) return;
         x = x * (curveXMax-curveXMin) + curveXMin;
         for(int i = 0;i<knotX.size();i++){
-            if(fabs(knotX[i]-x)<0.1){
+            int knotXPt = (knotX[i]-curveXMin)/(curveXMax-curveXMin)*graphWidth+xStart;
+            if(fabs(knotXPt-pt.x())<offsetSize){
                 knotX.erase(knotX.begin()+i);
                 knotY.erase(knotY.begin()+i);
                 knotX.shrink_to_fit();

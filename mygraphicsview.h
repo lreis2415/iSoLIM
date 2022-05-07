@@ -45,6 +45,7 @@ public slots:
     void mouseReleaseEvent(QMouseEvent *event) override;
 private:
     QGraphicsScene *scene;
+    int offsetSize; // the pixel distance within which two knots are deemed as the same one
 };
 
 #endif // MYGRAPHICSVIEW_H

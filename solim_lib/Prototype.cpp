@@ -102,7 +102,7 @@ namespace solim {
 		return prototypes;
 	}
 
-    Prototype::Prototype(EnvDataset* eds, int iSoilIDField, string prototypeBasename, OGRFeature* poFeature, int fid){
+    Prototype::Prototype(EnvDataset* eds, int iSoilIDField, string prototypeBasename, OGRFeature* poFeature, int fid, string soilIDName){
         envConditions.clear();
         properties.clear();
         envConsIsSorted = false;
@@ -128,6 +128,9 @@ namespace solim {
         int nx = eds->XSize;
         int ny = eds->YSize;
         for (int i = 0; i < block_size; ++i) {
+            for (int k = 0; k < eds->Layers.size(); ++k) {
+                eds->Layers.at(k)->ReadByBlock(i);
+            }
             // check if this block is within the extent of the feature
             if (i == (block_size - 1)) {
                 ny = eds->TotalY - i * eds->YSize;
@@ -186,7 +189,6 @@ namespace solim {
         }
         // add soil id to prototypeID and soil properties
         OGRFieldDefn *poFieldDefn = poFeature->GetFieldDefnRef(iSoilIDField);
-        string soilIDName = poFieldDefn->GetNameRef();
         for (int iField = 0; iField < poFeature->GetFieldCount(); iField++)
         {
             if (iField == iSoilIDField) {
@@ -208,7 +210,7 @@ namespace solim {
         //GDALClose(poDS);
     }
 
-    Prototype::Prototype(EnvDataset* eds, int iSoilIDField, string prototypeBasename, OGRLayer* poLayer, vector<int> fids){
+    Prototype::Prototype(EnvDataset* eds, int iSoilIDField, string prototypeBasename, OGRLayer* poLayer, vector<int> fids,string soilIDName){
         envConditions.clear();
         properties.clear();
         envConsIsSorted = false;
@@ -237,6 +239,9 @@ namespace solim {
             int nx = eds->XSize;
             int ny = eds->YSize;
             for (int i = 0; i < block_size; ++i) {
+                for (int k = 0; k < eds->Layers.size(); ++k) {
+                    eds->Layers.at(k)->ReadByBlock(i);
+                }
                 // check if this block is within the extent of the feature
                 if (i == (block_size - 1)) {
                     ny = eds->TotalY - i * eds->YSize;
@@ -286,7 +291,6 @@ namespace solim {
             }
             if(iFid==0){
                 OGRFieldDefn *poFieldDefn = poFeature->GetFieldDefnRef(iSoilIDField);
-                string soilIDName = poFieldDefn->GetNameRef();
                 for (int iField = 0; iField < poFeature->GetFieldCount(); iField++)
                 {
                     if (iField == iSoilIDField) {
@@ -383,7 +387,7 @@ namespace solim {
                     for(size_t iPolyLabel = 0; iPolyLabel<polygonLabels.size();iPolyLabel++){
                         if(polygonLabels[iPolyLabel]==soilIDs[iSoilType]) polyIDs.push_back(iPolyLabel);
                     }
-                    Prototype p(eds,iIdField,prototypeBasename,poLayer,polyIDs);
+                    Prototype p(eds,iIdField,prototypeBasename,poLayer,polyIDs,soilIDFieldName);
                     if(p.envConditionSize==0) continue;
                     for (size_t i = 0; i < eds->Layers.size(); i++) {
                         p.envConditions.at(i).range=ranges[i];
@@ -396,7 +400,7 @@ namespace solim {
         if(polyAsTypeFlag){
             for (int feature_num = 0; feature_num < feature_count; feature_num++) {
                 // iterate over features
-                Prototype p(eds,iIdField,prototypeBasename,poLayer->GetFeature(feature_num),feature_num);
+                Prototype p(eds,iIdField,prototypeBasename,poLayer->GetFeature(feature_num),feature_num,soilIDFieldName);
                 if(p.envConditionSize==0) continue;
                 for (size_t i = 0; i < eds->Layers.size(); i++) {
                     p.envConditions.at(i).range=ranges[i];
@@ -454,7 +458,7 @@ namespace solim {
 //#pragma omp parallel for schedule(dynamic)
         for (int feature_num = 0; feature_num < feature_count; feature_num++) {
             // iterate over features
-            Prototype p(eds,iIdField,prototypeBasename,poLayer->GetFeature(feature_num),feature_num);
+            Prototype p(eds,iIdField,prototypeBasename,poLayer->GetFeature(feature_num),feature_num, soilIDFieldName);
 
             if(p.envConditionSize==0) continue;
             for (size_t i = 0; i < eds->Layers.size(); i++) {

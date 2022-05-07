@@ -208,6 +208,9 @@ void AddPrototype_Expert::on_comboBox_cov_activated(const QString &arg1)
                     ui->comboBox_cov->setCurrentIndex(i);
             }
         }
+        ui->radioButton_enum->setChecked(false);
+        ui->radioButton_freehand->setChecked(false);
+        ui->radioButton_range->setChecked(false);
     }
     for(int i = 0;i<proj->layernames.size();i++){
         if(proj->layernames[i]==ui->comboBox_cov->currentText().toStdString()){
@@ -232,6 +235,12 @@ void AddPrototype_Expert::on_comboBox_cov_activated(const QString &arg1)
                 }
                 delete lyr;
             }
+            if(ui->radioButton_range->isChecked())
+                on_radioButton_range_toggled(true);
+            if(ui->radioButton_freehand->isChecked())
+                on_radioButton_freehand_toggled(true);
+            if(ui->radioButton_range->isChecked())
+                on_radioButton_enum_toggled(true);
             return;
         }
     }
@@ -401,6 +410,7 @@ void AddPrototype_Expert::drawMembershipFunction(solim::Curve *c) {
     QGraphicsTextItem *xaxis0 = scene->addText(QString::number(rangeMin));
     xaxis0->setFont(QFont("Times", 10, QFont::Bold));
     xaxis0->setPos(0.10*sceneWidth-4*xaxis0->toPlainText().size(),0.85*sceneHeight);
+    if(c==nullptr) return;
     double previousx,previousy;
     previousy = c->getOptimality(myview->curveXMin);
     previousx = myview->curveXMin;
@@ -552,7 +562,7 @@ void AddPrototype_Expert::onAddFreehandPoint(){
     }
     else {
         myview->getScene()->clear();
-        drawEnumRange();
+        drawMembershipFunction(nullptr);
         for(int i = 0; i<freeKnotX->size();i++){
             double x = (freeKnotX->at(i)-myview->curveXMin)/(myview->curveXMax-myview->curveXMin);
             double y = freeKnotY->at(i);
@@ -654,8 +664,11 @@ void AddPrototype_Expert::on_lineEdit_max_cov_textChanged(const QString &arg1)
     if(max<min||fabs(max-min)<0.0001) return;
     rangeMax=max;
     rangeMin=min;
-    if(ui->radioButton_freehand->isChecked()||ui->radioButton_enum->isChecked()){
+    if(ui->radioButton_enum->isChecked()){
         drawEnumRange();
+    }
+    if(ui->radioButton_freehand->isChecked()){
+        drawMembershipFunction(nullptr);
     }
 }
 
