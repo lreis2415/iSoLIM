@@ -1,7 +1,7 @@
 #include "simpledialog.h"
 #include "ui_simpledialog.h"
 
-SimpleDialog::SimpleDialog(int mode, SoLIMProject *proj, QWidget *parent) :
+SimpleDialog::SimpleDialog(simpleDialogMode mode, SoLIMProject *proj, QWidget *parent) :
     mode(mode),QDialog(parent),
     ui(new Ui::SimpleDialog)
 {

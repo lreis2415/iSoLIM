@@ -7,7 +7,7 @@
 #include <QTimer>
 #include <QCheckBox>
 #include "project.h"
-#include "editprototypebases.h"
+#include "itemselectionwindow.h"
 #include "simpledialog.h"
 #include "solim_lib/inference.h"
 

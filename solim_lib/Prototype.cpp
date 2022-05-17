@@ -11,7 +11,7 @@ namespace solim {
         prototypeBaseName="";
 	}
 
-    vector<Prototype> *Prototype::getPrototypesFromSample(string filename, EnvDataset* eds, string prototypeName, string xfield, string yfield) {
+    vector<Prototype> *Prototype::getPrototypesFromSample(string filename, EnvDataset* eds, string prototypeName, string xfield, string yfield,vector<string> categoricalProps) {
         vector<Prototype> *prototypes = new vector<Prototype>;
         /*ifstream file(filename); // declare file stream:
         if(!file.is_open()) return nullptr;
@@ -83,10 +83,21 @@ namespace solim {
                         cout << "Exception in create membership function";
                     }
 				}
-				for (int i = 0; i < values.size(); ++i) {
-					if (i == pos_X || i == pos_Y || i == pos_idName) continue;
-					pt.addProperties(names[i], atof(values[i].c_str()));
-				}
+                if(categoricalProps.size()==0){
+                    for (int i = 0; i < values.size(); ++i) {
+                        if (i == pos_X || i == pos_Y || i == pos_idName) continue;
+                        pt.addProperties(names[i], atof(values[i].c_str()));
+                    }
+                } else {
+                    for (int i = 0; i < values.size(); ++i) {
+                        if (i == pos_X || i == pos_Y || i == pos_idName) continue;
+                        if(std::find(categoricalProps.begin(),categoricalProps.end(),names[i])!=categoricalProps.end()){
+                            pt.addProperties(names[i], int(atof(values[i].c_str())),CATEGORICAL);
+                        } else{
+                            pt.addProperties(names[i], atof(values[i].c_str()));
+                        }
+                    }
+                }
                 pt.prototypeBaseName = prototypeName;
                 if(id_found)
                     pt.prototypeID = values[pos_idName];

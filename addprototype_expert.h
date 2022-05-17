@@ -87,7 +87,7 @@ private:
     string currentBasename;
     void drawMembershipFunction(solim::Curve *c);
     void drawEnumRange();
-    bool getPointRule(solim::Curve &c);
+    bool getPointRule(solim::Curve &c, bool &warn);
     void warn(QString msg){
         QMessageBox qb;
         qb.setText(msg);

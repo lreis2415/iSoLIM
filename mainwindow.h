@@ -25,6 +25,7 @@
 #include "simpledialog.h"
 #include "changecovname.h"
 #include "validation.h"
+#include "legendwindow.h"
 #include <iostream>
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -69,6 +70,7 @@ private slots:
     void onModifyCovName();
     void onModifyCovFile();
     void onEditRule();
+    void onDeleteRule();
     void saveEditRuleChange();
     void onAddFreehandPoint();
     void resetEditRule();
@@ -81,6 +83,8 @@ private slots:
     //graphics view
     void onZoomin();
     void onZoomout();
+    void onLookup();
+    void onShowLegend(bool disableLegend = false);
     void onInferResults();
     void createImg();
     void finishedCreateImg();
@@ -101,8 +105,11 @@ private slots:
     void on_actionAdd_prototypes_from_expert_triggered();
     void on_actionAdd_prototypes_from_Data_Mining_triggered();
 
+    void on_actionClose_Project_triggered();
+
 private:
     Ui::MainWindow *ui;
+    LegendWindow *legendView;
     QTreeView *projectView;
     QDockWidget *projectDock;
     QDockWidget *dataDetailsDock;
@@ -122,6 +129,7 @@ private:
     string currentBaseName;
     string currentProtoName;
     string currentLayerName;
+    string gisDataName;
     AddPrototype_Expert *addRule;
     BaseIO *lyr;
     double imgMax;
@@ -142,5 +150,6 @@ private:
     }
     void initParas();
     void saveSetting();
+    void clearView();
 };
 #endif // MAINWINDOW_H

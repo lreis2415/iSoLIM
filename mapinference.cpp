@@ -212,11 +212,10 @@ void mapInference::on_cancel_btn_clicked()
 
 void mapInference::on_editPrototypeBase_btn_clicked()
 {
-    //todo
     QStringList names;
     for(size_t i = 0;i<project->prototypeBaseNames.size();i++)
         names.append(project->prototypeBaseNames[i].c_str());
-    editPrototypeBases editDialog(names,ui->prototypeBaseName_lineEdit->text(),this);
+    itemSelectionWindow editDialog(itemSelectionWindow::PROTOTYPEBASESELECTION, names,ui->prototypeBaseName_lineEdit->text(),this);
     editDialog.exec();
     init = false;
     ui->prototypeBaseName_lineEdit->setText(editDialog.selectedNames);

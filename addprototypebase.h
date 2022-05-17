@@ -11,6 +11,7 @@
 #include <QtConcurrent/QtConcurrent>
 #include "project.h"
 #include "simpledialog.h"
+#include "itemselectionwindow.h"
 using solim::Prototype;
 namespace Ui {
 class AddPrototypeBase;
@@ -44,10 +45,14 @@ private slots:
 
     void on_covariate_tableWidget_itemSelectionChanged();
 
+    void on_PropType_btn_clicked();
+
 private:
     addPrototypeBaseMode mode;
     Ui::AddPrototypeBase *ui;
     SoLIMProject *project;
+    QStringList propnames;
+    QStringList categoricalProps;
     void warn(QString msg){
         QMessageBox qb;
         qb.setText(msg);

@@ -17,7 +17,7 @@ class SimpleDialog : public QDialog
 
 public:
     enum simpleDialogMode{ADDGISDATA,ADDCOVARIATE,ADDPROTOTYPEBASE,EDITSTUDYAREA,MODIFYGISDATA,RESAMPLE,RESETRANGE,CHANGEBASENAME,MODIFYLAYERNAME};
-    explicit SimpleDialog(int mode, SoLIMProject *proj, QWidget *parent = nullptr);
+    explicit SimpleDialog(simpleDialogMode mode, SoLIMProject *proj, QWidget *parent = nullptr);
     ~SimpleDialog();
     QString filename;
     QString covariate;

@@ -18,6 +18,8 @@ AddPrototypeBase::AddPrototypeBase(addPrototypeBaseMode mode,SoLIMProject *proj,
     ui->covariate_tableWidget->setHorizontalHeaderItem(1,new QTableWidgetItem("Covariate"));
     ui->covariate_tableWidget->setHorizontalHeaderItem(2,new QTableWidgetItem("Categorical?"));
     ui->deleteCovariate_btn->setDisabled(true);
+    ui->PropType_btn->setEnabled(false);
+
     QTableWidgetItem *item_tmp;
     for(size_t i = 0; i<proj->filenames.size();i++){
         if(proj->filenames[i].empty()) continue;
@@ -49,6 +51,7 @@ AddPrototypeBase::AddPrototypeBase(addPrototypeBaseMode mode,SoLIMProject *proj,
         ui->label_3->setVisible(false);
         ui->yFiled_comboBox->setVisible(false);
         setWindowTitle("Get Prototype base from map");
+        ui->PropType_btn->setVisible(false);
     }
     this->layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
@@ -60,31 +63,6 @@ AddPrototypeBase::~AddPrototypeBase()
 
 void AddPrototypeBase::on_addCovariate_btn_clicked()
 {
-//    QStringList filenames = QFileDialog::getOpenFileNames(this,
-//                                                   tr("Open environmental covariate file"),
-//                                                   "./",
-//                                                   tr("Covariate file(*.tif *.3dr *.img *.sdat *.bil *.bin *.tiff)"));
-//    if(filenames.size()==0) return;
-//    for(QString filename : filenames){
-//        ui->covariate_tableWidget->insertRow(ui->covariate_tableWidget->rowCount());
-//        ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1,
-//                                                0,
-//                                                new QTableWidgetItem(filename));
-//        std::size_t first = filename.toStdString().find_last_of('/');
-//        if (first==std::string::npos){
-//            first = filename.toStdString().find_last_of('\\');
-//        }
-//        std::size_t end = filename.toStdString().find_last_of('.');
-//        QString covariate = filename.toStdString().substr(first+1,end-first-1).c_str();
-//        ui->covariate_tableWidget->setItem(ui->covariate_tableWidget->rowCount()-1,
-//                                                1,
-//                                                new QTableWidgetItem(covariate));
-//        QCheckBox *categoriacl_cb = new QCheckBox();
-//        categoriacl_cb->setChecked(false);
-//        ui->covariate_tableWidget->setCellWidget(ui->covariate_tableWidget->rowCount()-1,
-//                                                2,
-//                                                categoriacl_cb);
-//    }
     SimpleDialog addGisData(SimpleDialog::ADDGISDATA,project,this);
     addGisData.exec();
     if(addGisData.filename.isEmpty()) return;
@@ -102,9 +80,7 @@ void AddPrototypeBase::on_addCovariate_btn_clicked()
             return;
         }
     }
-    /*project->layertypes.push_back(addGisData.datatype);
-    project->layernames.push_back(addGisData.covariate.toStdString());
-    project->filenames.push_back(addGisData.filename.toStdString());*/
+
     ui->covariate_tableWidget->insertRow(ui->covariate_tableWidget->rowCount());
     QTableWidgetItem *item_tmp;
     item_tmp = new QTableWidgetItem(addGisData.filename);
@@ -139,7 +115,7 @@ void AddPrototypeBase::on_browseSampleFile_btn_clicked()
         project->workingDir=QFileInfo(filename).absoluteDir().absolutePath();
         QTextCodec *code = QTextCodec::codecForName("UTF-8");
 
-       //std::string filename_str = code->fromUnicode(filename.toStdString().c_str()).data();
+        //std::string filename_str = code->fromUnicode(filename.toStdString().c_str()).data();
         QString filename1 = QString::fromStdString(code->fromUnicode(filename).data());
         QFile file(filename1);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -151,20 +127,14 @@ void AddPrototypeBase::on_browseSampleFile_btn_clicked()
         QTextStream txtInput(&file);
         string line= txtInput.readLine().toStdString();
 
-        /*ifstream file(filename_str);
-        if(!file.is_open()){
-            warn("Cannot open sample file");
-            ui->sampleFile_lineEdit->clear();
-            return;
-        }
-        string line;
-        getline(file, line);*/
         vector<string> names;
         solim::ParseStr(line, ',', names);
         QStringList columnNames;
         for(size_t i = 0;i<names.size();i++){
             columnNames.append(names[i].c_str());
         }
+        propnames = columnNames;
+        ui->PropType_btn->setEnabled(true);
         ui->xFiled_comboBox->addItems(columnNames);
         ui->yFiled_comboBox->addItems(columnNames);
         for (size_t i = 0;i<names.size();i++){
@@ -205,6 +175,8 @@ void AddPrototypeBase::on_browseSampleFile_btn_clicked()
             fieldnames.push_back(poFDefn->GetFieldDefn(i)->GetNameRef());
         }
         ui->xFiled_comboBox->addItems(fieldnames);
+        propnames = fieldnames;
+        ui->PropType_btn->setEnabled(true);
     }
     int first = filename.lastIndexOf('/');
     if (first == -1){
@@ -306,9 +278,15 @@ void AddPrototypeBase::on_ok_btn_clicked()
     if(mode == AddPrototypeBase::SAMPLE){
         ui->progressBar->setValue(1);
         //ui->progressBar->setRange(0,0);
+
+        std::vector<std::string> cate_props_vec;
+        for(int i=0;i<categoricalProps.size();i++){
+            cate_props_vec.push_back(categoricalProps.at(i).toStdString());
+        }
         vector<Prototype>* prototypes = Prototype::getPrototypesFromSample(sampleFile,eds, prototypeBaseName,
                                                                            ui->xFiled_comboBox->currentText().toStdString(),
-                                                                           ui->yFiled_comboBox->currentText().toStdString());
+                                                                           ui->yFiled_comboBox->currentText().toStdString(),
+                                                                           cate_props_vec);
         if(prototypes==nullptr) warn("Sample file open failed!");
         //project->prototypeBaseNames.push_back(prototypeBaseName);
         int protoNum=prototypes->size();
@@ -415,4 +393,12 @@ void AddPrototypeBase::on_covariate_tableWidget_itemSelectionChanged()
             ui->deleteCovariate_btn->setEnabled(true);
         else ui->deleteCovariate_btn->setDisabled(true);
     } else ui->deleteCovariate_btn->setDisabled(true);
+}
+
+void AddPrototypeBase::on_PropType_btn_clicked()
+{
+
+    itemSelectionWindow editDialog(itemSelectionWindow::CATEGORICALPROPERTYSELECTION,propnames,"",this);
+    editDialog.exec();
+    categoricalProps = editDialog.selectedNames.split(";");
 }

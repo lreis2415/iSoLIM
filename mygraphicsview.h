@@ -27,6 +27,8 @@ public:
     bool showMembership;
     bool editFreehandRule;
     bool editEnumRule;
+    bool lookupValue;
+    string gisDataName;
     QTableView *dataDetailsView;
     QStandardItemModel *dataDetailsModel;
     QGraphicsScene *getScene(){ return scene; }

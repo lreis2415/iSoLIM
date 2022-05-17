@@ -24,6 +24,10 @@ MainWindow::MainWindow(QWidget *parent)
     // setup data details dock
     initDataDetailsView();
     addDockWidget(Qt::LeftDockWidgetArea,dataDetailsDock);
+
+    // setup legend window
+    legendView = nullptr;
+
     // setup main menu
     connect(&createImgThread, SIGNAL(finished()), this, SLOT(finishedCreateImg())); //cant have parameter sorry, when using connect
     connect(&createImgThread, SIGNAL(started()), this, SLOT(createImg())); //cant have parameter sorry, when using connect
@@ -36,16 +40,24 @@ MainWindow::MainWindow(QWidget *parent)
     connect(myGraphicsView,SIGNAL(addFreehandPoint()),this,SLOT(onAddFreehandPoint()));
     connect(myGraphicsView,SIGNAL(addEnumPoint()),this,SLOT(onAddEnumPoint()));
     zoomToolBar = addToolBar(tr("Zoom In"));
-    const QIcon zoomInIcon = QIcon("./imgs/zoomin.svg");//QIcon::fromTheme("document-new", QIcon(":/images/new.png"));
+    const QIcon zoomInIcon = QIcon("./imgs/zoomin.svg");
     QAction *zoomInAct = new QAction(zoomInIcon, tr("&Zoom In"), this);
     zoomInAct->setStatusTip(tr("Zoom In"));
     connect(zoomInAct, SIGNAL(triggered()), this, SLOT(onZoomin()));
     zoomToolBar->addAction(zoomInAct);
-    const QIcon zoomOutIcon = QIcon("./imgs/zoomout.svg");//QIcon::fromTheme("document-open", QIcon(":/images/open.png"));
+    const QIcon zoomOutIcon = QIcon("./imgs/zoomout.svg");
     QAction *zoomOutAct = new QAction(zoomOutIcon, tr("&Zoom Out"), this);
     zoomOutAct->setStatusTip(tr("Zoom Out"));
     connect(zoomOutAct, SIGNAL(triggered()), this, SLOT(onZoomout()));
     zoomToolBar->addAction(zoomOutAct);
+    const QIcon lookupIcon = QIcon("./imgs/lookup.svg");
+    QAction *lookupAct = new QAction(lookupIcon, tr("&Look up"), this);
+    lookupAct->setStatusTip(tr("Look up raster value"));
+    connect(lookupAct, SIGNAL(triggered()), this, SLOT(onLookup()));
+    zoomToolBar->addAction(lookupAct);
+    QAction *showLegendAct = new QAction("Show legend",this);
+    zoomToolBar->addAction(showLegendAct);
+    connect(showLegendAct, SIGNAL(triggered()), this, SLOT(onShowLegend()));
     zoomToolBar->setVisible(false);
     resetRangeToolBar = addToolBar(tr("reset membership function range"));
     QAction *resetRangeAct = new QAction("reset range", this);
@@ -85,6 +97,7 @@ void MainWindow::on_actionNew_triggered(){
     QString projName = newProject.projectName;
     QString studyArea = newProject.studyArea;
     if(projName.isEmpty()) return;
+    clearView();
     proj = new SoLIMProject();
     proj->projFilename = newProject.projectFilename.toStdString();
     proj->projName = projName.toStdString();
@@ -182,8 +195,9 @@ void MainWindow::on_actionOpen_triggered(){
     if(projectFile.isEmpty()){
         return;
     }
-   workingDir=QFileInfo(projectFile).absoluteDir().absolutePath();
-   TiXmlDocument doc(projectFile.toStdString().c_str());
+    clearView();
+    workingDir=QFileInfo(projectFile).absoluteDir().absolutePath();
+    TiXmlDocument doc(projectFile.toStdString().c_str());
     bool loadOK = doc.LoadFile();
     if (!loadOK) {
         QMessageBox msg;
@@ -361,13 +375,13 @@ void MainWindow::onCustomContextMenu(const QPoint & point){
         currentBaseName=index.parent().data().toString().mid(16).toStdString();
         prototypeMenu->exec(projectView->viewport()->mapToGlobal(point));
     }
-    else if(index.isValid()&&index.data().toString().startsWith("Membership")){
+    else if(index.isValid()&&index.parent().data().toString().startsWith("Covariate membership functions")){
         int prefixLength = 11;
         int idPrefixLength = 14;
         int basePrefixLength = 16;
-        currentBaseName = index.parent().parent().parent().parent().data().toString().toStdString().substr(basePrefixLength);
-        currentProtoName = index.parent().parent().parent().data().toString().toStdString().substr(idPrefixLength);
-        currentLayerName = index.parent().data().toString().toStdString().substr(prefixLength);
+        currentBaseName = index.parent().parent().parent().data().toString().toStdString().substr(basePrefixLength);
+        currentProtoName = index.parent().parent().data().toString().toStdString().substr(idPrefixLength);
+        currentLayerName = index.data().toString().toStdString().substr(prefixLength);
         if(myGraphicsView->editFreehandRule == true || myGraphicsView->editEnumRule == true){
             editRule->setEnabled(false);
             saveRule->setEnabled(true);
@@ -712,7 +726,7 @@ void MainWindow::onDeleteGisLayer() {
             break;
         }
     }
-    dataDetailsView->setModel(new QStandardItemModel(dataDetailsView));
+    clearView();
     onGetGisData();
 }
 
@@ -889,7 +903,7 @@ void MainWindow::onGetPrototype(){
                     property_item->setFlags(property_item->flags()^Qt::ItemIsEditable);
                     properties->setChild(properties->rowCount()-1,0,property_item);
                 }
-                QStandardItem* covariates = new QStandardItem("Covariates");
+                QStandardItem* covariates = new QStandardItem("Covariate membership functions");
                 covariates->setFlags(covariates->flags()^Qt::ItemIsEditable);
                 prototype->setChild(2,0,covariates);
                 covariates->setColumnCount(1);
@@ -942,7 +956,10 @@ void MainWindow::onInferResults(){
 
 //=========================== Main Graphics View function===============================
 bool MainWindow::drawLayer(string filename){
-    dataDetailsView->setModel(new QStandardItemModel(dataDetailsView));
+    myGraphicsView->gisDataName = filename;
+    onShowLegend(true);
+    //dataDetailsDock->setWindowTitle("Raster Values");
+    //dataDetailsView->setModel(new QStandardItemModel(dataDetailsView));
     graphicFilename=filename;
     if(filename.empty()) return false;
     QFileInfo fileinfo(filename.c_str());
@@ -971,12 +988,15 @@ bool MainWindow::drawLayer(string filename){
                                    +QString::number(lyr->getYMin())+") (TopLeft)");
 
         delete lyr;
-        int viewHeight = myGraphicsView->height();
-        int viewWidth = myGraphicsView->width();
-        myGraphicsView->getScene()->setSceneRect(0,0,viewWidth+30,viewHeight);
+        lyr = nullptr;
+        int viewHeight = myGraphicsView->height()-5;
+        int viewWidth = myGraphicsView->width()-5;
+        myGraphicsView->getScene()->setSceneRect(0,0,viewWidth,viewHeight);
         QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(*img).scaled(viewWidth,viewHeight,Qt::KeepAspectRatio,Qt::SmoothTransformation));
         myGraphicsView->getScene()->addItem(item);
-        item->setPos(30,0);
+        item->setPos(0,0);
+        //draw legend
+        /*
         QLinearGradient linear(QPoint(5,15),QPoint(5,65));
         linear.setColorAt(0,Qt::white);
         linear.setColorAt(1,Qt::black);
@@ -987,6 +1007,7 @@ bool MainWindow::drawLayer(string filename){
         minLabel->setPos(15,50);
         QGraphicsTextItem *maxLabel = myGraphicsView->getScene()->addText(QString::number(imgMax));
         maxLabel->setPos(15,0);
+        */
         myGraphicsView->img = img;
         myGraphicsView->imgMax = imgMax;
         myGraphicsView->imgMin = imgMin;
@@ -1051,6 +1072,7 @@ void MainWindow::createImg(){
     if(imgData)
         delete []imgData;
     delete lyr;
+    lyr = nullptr;
     createImgThread.exit(0);
 }
 
@@ -1093,6 +1115,7 @@ void MainWindow::onResetRange(){
 }
 
 void MainWindow::drawMembershipFunction(float max, float min, solim::Curve *c){
+    dataDetailsDock->setWindowTitle("Data details");
     bool predefined_range = false;
     if((max-NODATA)>VERY_SMALL && (min-NODATA)>VERY_SMALL)
         predefined_range=true;
@@ -1311,7 +1334,7 @@ void MainWindow::onZoomin()
 {
     if(!img)
         return;
-    int viewWidth = myGraphicsView->getScene()->width()-30;
+    int viewWidth = myGraphicsView->getScene()->width();
     int viewHeight = myGraphicsView->getScene()->height();
     if(!(viewWidth<2*img->width()||viewHeight<2*img->height()))
         return;
@@ -1324,27 +1347,17 @@ void MainWindow::onZoomin()
     if(viewHeight<2*img->height()){
         height+=0.25*myGraphicsView->height();
     }
-    myGraphicsView->getScene()->setSceneRect(0,0,width+30,height);
+    myGraphicsView->getScene()->setSceneRect(0,0,width,height);
     QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(*img).scaled(width,height,Qt::KeepAspectRatio,Qt::SmoothTransformation));
-    item->setPos(30,0);
+    item->setPos(0,0);
     myGraphicsView->getScene()->addItem(item);
-    // add legend
-    QLinearGradient linear(QPoint(5,15),QPoint(5,65));
-    linear.setColorAt(0,Qt::white);
-    linear.setColorAt(1,Qt::black);
-    linear.setSpread(QGradient::PadSpread);
-    myGraphicsView->getScene()->addRect(5,15,10,50,QPen(QColor(255,255,255),0),linear);
-    QGraphicsTextItem *minLabel = myGraphicsView->getScene()->addText(QString::number(myGraphicsView->imgMin));
-    minLabel->setPos(15,50);
-    QGraphicsTextItem *maxLabel = myGraphicsView->getScene()->addText(QString::number(myGraphicsView->imgMax));
-    maxLabel->setPos(15,0);
 }
 
 void MainWindow::onZoomout()
 {
     if(!img)
         return;
-    int viewWidth = myGraphicsView->getScene()->width()-30;
+    int viewWidth = myGraphicsView->getScene()->width();
     int viewHeight =myGraphicsView->getScene()->height();
     if(!(viewWidth>myGraphicsView->width()/4||viewHeight>myGraphicsView->height()/4))
         return;
@@ -1357,20 +1370,40 @@ void MainWindow::onZoomout()
     if(viewHeight>myGraphicsView->width()/4){
         height-=0.25*myGraphicsView->height();
     }
-    myGraphicsView->getScene()->setSceneRect(0,0,width+30,height);
+    myGraphicsView->getScene()->setSceneRect(0,0,width,height);
     QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(*img).scaled(width,height,Qt::KeepAspectRatio,Qt::SmoothTransformation));
-    item->setPos(30,0);
+    item->setPos(0,0);
     myGraphicsView->getScene()->addItem(item);
-    QLinearGradient linear(QPoint(5,15),QPoint(5,65));
-    linear.setColorAt(0,Qt::white);
-    linear.setColorAt(1,Qt::black);
-    linear.setSpread(QGradient::PadSpread);
-    myGraphicsView->getScene()->addRect(5,15,10,50,QPen(QColor(255,255,255),0),linear);
-    //std::ostringstream maxss;
-    QGraphicsTextItem *minLabel = myGraphicsView->getScene()->addText(QString::number(myGraphicsView->imgMin));
-    minLabel->setPos(15,50);
-    QGraphicsTextItem *maxLabel = myGraphicsView->getScene()->addText(QString::number(myGraphicsView->imgMax));
-    maxLabel->setPos(15,0);
+}
+
+void MainWindow::onLookup(){
+    if(myGraphicsView->lookupValue){
+        myGraphicsView->lookupValue = false;
+        dataDetailsDock->setWindowTitle("Data Details");
+    }
+    myGraphicsView->lookupValue = true;
+    dataDetailsDock->setWindowTitle("Raster Value");
+}
+
+void MainWindow::onShowLegend(bool disableLegend){
+    //todo:debug
+    if(disableLegend){
+        if(legendView)
+            legendView->close();
+        return;
+    }
+    if(!img)
+        return;
+    if(legendView==nullptr)
+        legendView = new LegendWindow(this);
+    legendView->move(this->width()-70,20);
+    if(legendView->isVisible()){
+        legendView->close();
+    } else {
+        legendView->updateview(imgMax,imgMin);
+        legendView->show();
+    }
+
 }
 
 //=========================== non-slot functions ============================================
@@ -1438,6 +1471,7 @@ void MainWindow::initialProjectView(){
     connect(projectView,SIGNAL(customContextMenuRequested(const QPoint &)),this,SLOT(onCustomContextMenu(const QPoint &)));
     connect(projectView, SIGNAL(expanded(QModelIndex)), this, SLOT(onExpanded(QModelIndex)));
     connect(projectView, SIGNAL(collapsed(QModelIndex)), this, SLOT(onExpanded(QModelIndex)));
+
     // prototype menu
     prototypesMenu = new QMenu(projectView);
     QAction *prototypesFromSamples = new QAction("Add new prototype base from samples",prototypesMenu);
@@ -1456,12 +1490,14 @@ void MainWindow::initialProjectView(){
     prototypesMenu->addAction(importPrototypeBase);
     projectView->addAction(importPrototypeBase);
     connect(importPrototypeBase,SIGNAL(triggered()),this,SLOT(onImportPrototypeBase()));
+
     // Covariates menu
     gisDataMenu = new QMenu(projectView);
     QAction *addGisData = new QAction("Add Covariates", gisDataMenu);
     gisDataMenu->addAction(addGisData);
     projectView->addAction(addGisData);
     connect(addGisData,SIGNAL(triggered()),this,SLOT(onAddGisData()));
+
     // gis layer menu
     gisLayerMenu = new QMenu(projectView);
     // delete this layer
@@ -1514,7 +1550,7 @@ void MainWindow::initialProjectView(){
     // prototype menu
     prototypeMenu = new QMenu(projectView);
     // add rules action
-    addRules = new QAction("Add rules to this prototype", prototypeMenu);
+    addRules = new QAction("Add properties or rules to this prototype", prototypeMenu);
     prototypeMenu->addAction(addRules);
     projectView->addAction(addRules);
     connect(addRules,SIGNAL(triggered()),this,SLOT(onAddRules()));
@@ -1523,6 +1559,7 @@ void MainWindow::initialProjectView(){
     prototypeMenu->addAction(deletePrototype);
     projectView->addAction(deletePrototype);
     connect(deletePrototype,SIGNAL(triggered()),this,SLOT(onDeletePrototype()));
+
     // prototype menu
     membershipMenu = new QMenu(projectView);
     // add rules action
@@ -1538,7 +1575,12 @@ void MainWindow::initialProjectView(){
     membershipMenu->addAction(resetRule);
     projectView->addAction(resetRule);
     connect(resetRule,SIGNAL(triggered()),this,SLOT(resetEditRule()));
-   projectViewInitialized = true;
+    QAction *deleteRule = new QAction("Delete this function", prototypeMenu);
+    membershipMenu->addAction(deleteRule);
+    projectView->addAction(deleteRule);
+    connect(deleteRule,SIGNAL(triggered()),this,SLOT(onDeleteRule()));
+
+    projectViewInitialized = true;
 }
 
 void MainWindow::onEditRule(){
@@ -1547,8 +1589,30 @@ void MainWindow::onEditRule(){
         onAddFreehandPoint();
     } else
         myGraphicsView->editEnumRule = true;
-
 }
+
+void MainWindow::onDeleteRule(){
+    //todo
+    int protoPos = -1;
+    int covPos = -1;
+    for(size_t i = 0;i<proj->prototypes.size();i++){
+        if(proj->prototypes[i].prototypeBaseName==currentBaseName
+                && proj->prototypes[i].prototypeID==currentProtoName){
+            protoPos = i;
+            for(int j = 0; j<proj->prototypes[i].envConditionSize;j++){
+                if(proj->prototypes[i].envConditions[j].covariateName==currentLayerName){
+                    covPos = j;
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    proj->prototypes[protoPos].envConditions.erase(proj->prototypes[protoPos].envConditions.begin()+covPos);
+    proj->prototypes[protoPos].envConditionSize--;
+    onGetPrototype();
+}
+
 
 void MainWindow::onAddFreehandPoint(){
     vector<double> *freeKnotX = new vector<double>;
@@ -1802,4 +1866,35 @@ void MainWindow::on_actionValidation_triggered()
     Validation valid(proj, this);
     valid.exec();
 
+}
+
+void MainWindow::on_actionClose_Project_triggered()
+{
+    if(!saveWarning())
+        return;
+    ui->actionAdd_prototypes_from_samples->setDisabled(true);
+    //ui->menuSample_Design->setDisabled(true);
+    ui->actionAdd_prototypes_from_Data_Mining->setDisabled(true);
+    ui->actionAdd_prototypes_from_expert->setDisabled(true);
+    ui->actionSave->setDisabled(true);
+    ui->actionSave_as->setDisabled(true);
+    ui->actionClose_Project->setDisabled(true);
+    ui->actionDefine_Study_Area->setDisabled(true);
+    ui->action_infer->setDisabled(true);
+    projectSaved = true;
+    delete proj;
+    proj = nullptr;
+    projectView->setModel(new QStandardItemModel());
+    clearView();
+}
+
+void MainWindow::clearView(){
+    myGraphicsView->showImage = false;
+    myGraphicsView->editFreehandRule = false;
+    myGraphicsView->editEnumRule = false;
+    dataDetailsDock->setWindowTitle("Data details");
+    myGraphicsView->getScene()->clear();
+    dataDetailsView->setModel(new QStandardItemModel());
+    zoomToolBar->setVisible(false);
+    onShowLegend(true);
 }

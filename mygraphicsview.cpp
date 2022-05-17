@@ -17,14 +17,64 @@ MyGraphicsView::MyGraphicsView(QWidget *parent):
     showImage = false;
     editFreehandRule=false;
     editEnumRule=false;
+    lookupValue=false;
     knotX.clear();
     knotX.shrink_to_fit();
     knotY.clear();
     knotY.shrink_to_fit();
-    offsetSize = 3;
+    offsetSize = 4;
 }
 void MyGraphicsView::mousePressEvent(QMouseEvent * e)
 {
+    if(lookupValue&&showImage){
+        if(img&&dataDetailsView){
+            string lyrname="";
+            if(lyr) {
+                lyrname = lyr->getFilename();
+                if(lyrname!=gisDataName){
+                    delete lyr;
+                    lyr = nullptr;
+                }
+            }
+            if (lyrname!=gisDataName)
+                lyr = new BaseIO(gisDataName);
+
+            QPointF pt = mapToScene(e->pos());
+            QImage tempimg = img->scaled(scene->width(),scene->height(),Qt::KeepAspectRatio);
+            int strechWidth = tempimg.width();
+            int strechHeight = tempimg.height();
+            int row = pt.y()/strechHeight*lyr->getYSize();
+            int col = pt.x()/strechWidth*lyr->getXSize();
+            double nodata = lyr->getNoDataValue();
+            if(row<lyr->getYSize()-1&&col<lyr->getXSize()-1&&row>0&&col>0){
+                QStandardItemModel*model = new QStandardItemModel(dataDetailsView);
+                int neighbor=3;
+                if(row-neighbor<0 || col-neighbor<0 || row+neighbor>lyr->getYSize()-1 || col+neighbor>lyr->getXSize()-1)
+                    return;
+                float *dest = new float[2*neighbor+1];
+                for(int i = 0-neighbor; i<=neighbor;i++){
+                    lyr->read(col-neighbor,row+i,1,2*neighbor+1,dest);
+                    for(int j = 0-neighbor;j<=neighbor;j++){
+                        float val = dest[j+neighbor];
+                        if(fabs(val-nodata)<VERY_SMALL)
+                            model->setItem(i+neighbor,j+neighbor,new QStandardItem("NA"));
+                        else if(imgMax>100 || fabs(val-int(val))<0.001||fabs(val-int(val)-1)<0.001)
+                            model->setItem(i+neighbor,j+neighbor,new QStandardItem(QString::number(int(val))));
+                        else {
+                            if (fabs(imgMax) < 1)
+                                model->setItem(i+neighbor,j+neighbor,new QStandardItem(QString::number(val,'f',3)));
+                            else
+                                model->setItem(i+neighbor,j+neighbor,new QStandardItem(QString::number(val,'f',2)));
+                        }
+                        if(i==0&&j==0)
+                            model->item(i+neighbor,j+neighbor)->setForeground(QBrush(QColor(255, 0, 0)));
+                    }
+                }
+                dataDetailsView->setModel(model);
+                dataDetailsView->resizeColumnsToContents();
+            }
+        }
+    }
     if(editFreehandRule){
         moveKnotNum=-1;
         QPointF pt = mapToScene(e->pos());
@@ -84,39 +134,7 @@ void MyGraphicsView::mousePressEvent(QMouseEvent * e)
 }
 
 void MyGraphicsView::mouseMoveEvent(QMouseEvent * e){
-    if(showImage){
-        if(img&&dataDetailsView){
-            QPointF pt = mapToScene(e->pos());
-            QImage tempimg = img->scaled(scene->width()-30,scene->height(),Qt::KeepAspectRatio);
-            int strechWidth = tempimg.width();
-            int strechHeight = tempimg.height();
-            int row = pt.y()/strechHeight*tempimg.height();
-            int col = (pt.x()-30)/strechWidth*(tempimg.width());
-            if(row<tempimg.height()-1&&col<tempimg.width()-1&&row>0&&col>0){
-                QStandardItemModel*model = new QStandardItemModel(dataDetailsView);
-                int neighbor=3;
-                for(int i = 0-neighbor; i<=neighbor;i++){
-                    for(int j = 0-neighbor;j<=neighbor;j++){
-                        int pixel = tempimg.pixelColor(col+i,row+j).red();
-                        if(pixel == 255){
-                                        //dataDetailsModel->setItem(i,j, new QStandardItem(""));
-                            model->setItem(i+neighbor,j+neighbor, new QStandardItem("NoData"));
-                        } else {
-                            if(imgMax>10)
-                                model->setItem(i+neighbor,j+neighbor,new QStandardItem(QString::number(int(pixel*range+imgMin))));
-                            else
-                                model->setItem(i+neighbor,j+neighbor,new QStandardItem(QString::number(pixel*range+imgMin,'g',4)));
-                            //((QStandardItemModel*)dataDetailsView->model())->item(i+1,j+1)->setData(QString::number(int(pixel*range+imgMin)));
-                        }
-                        if(i==0&&j==0)
-                            model->item(i+neighbor,j+neighbor)->setForeground(QBrush(QColor(255, 0, 0)));
-                    }
-                }
-                dataDetailsView->setModel(model);
-                dataDetailsView->resizeColumnsToContents();
-            }
-        }
-    }
+
     if(editFreehandRule&&moveKnotNum>-1){
         QPointF pt = mapToScene(e->pos());
         int sceneWidth = scene->width();

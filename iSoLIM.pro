@@ -19,7 +19,8 @@ SOURCES += \
     addprototype_expert.cpp \
     addprototypebase.cpp \
     changecovname.cpp \
-    editprototypebases.cpp \
+    itemselectionwindow.cpp \
+    legendwindow.cpp \
     main.cpp \
     mainwindow.cpp \
     mapinference.cpp \
@@ -45,7 +46,8 @@ HEADERS += \
     addprototype_expert.h \
     addprototypebase.h \
     changecovname.h \
-    editprototypebases.h \
+    itemselectionwindow.h \
+    legendwindow.h \
     mainwindow.h \
     mapinference.h \
     mygraphicsview.h \
@@ -73,7 +75,8 @@ FORMS += \
     addprototype_expert.ui \
     addprototypebase.ui \
     changecovname.ui \
-    editprototypebases.ui \
+    itemselectionwindow.ui \
+    legendwindow.ui \
     mainwindow.ui \
     mapinference.ui \
     newprojectdialog.ui \

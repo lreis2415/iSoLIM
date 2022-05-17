@@ -306,7 +306,22 @@ void AddPrototype_Expert::on_btn_add_rule_clicked()
     }
     if(ui->radioButton_range->isChecked()){
         solim::Curve c;
-        if(getPointRule(c)){
+        bool warn;
+        if(getPointRule(c,warn)){
+            if(warn){
+                QMessageBox warn;
+                warn.setText("The ranges of the rule is inconsistent with the range of the covariate. Are you sure to add this rule?");
+                warn.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
+                warn.setDefaultButton(QMessageBox::Yes);
+                int ret = warn.exec();
+                switch(ret){
+                case QMessageBox::Cancel:
+                    return;
+                case QMessageBox::Yes:
+                default:
+                    break;
+                }
+            }
             c.range=fabs(rangeMax)>fabs(rangeMin)?fabs(rangeMax):fabs(rangeMin);
             proj->prototypes[protoNum].addConditions(c);
             //drawMembershipFunction(&c);
@@ -528,7 +543,8 @@ void AddPrototype_Expert::on_btn_reset_clicked()
         on_lineEdit_max_cov_textChanged(ui->lineEdit_max_cov->text());
     } else if(ui->radioButton_range->isChecked()){
         solim::Curve c;
-        if(getPointRule(c))
+        bool warn;
+        if(getPointRule(c,warn))
             drawMembershipFunction(&c);
     }
 }
@@ -672,12 +688,21 @@ void AddPrototype_Expert::on_lineEdit_max_cov_textChanged(const QString &arg1)
     }
 }
 
-bool AddPrototype_Expert::getPointRule(solim::Curve &c){
+bool AddPrototype_Expert::getPointRule(solim::Curve &c, bool &warn){
+    warn = false;
     if(!ui->radioButton_range->isChecked()) return false;
     solim::CurveTypeEnum type=solim::BELL_SHAPED;
-    double lu=-1,lc=-1,hu=-1,hc=-1;
+    float lu=-1,lc=-1,hu=-1,hc=-1;
+    bool*toNumFlag = new bool;
+    int checkflag = true;
+    float max,min;
+    max = ui->lineEdit_max_cov->text().toDouble(toNumFlag);
+    if(!*toNumFlag) checkflag = false;
+    if(checkflag) {
+        min = ui->lineEdit_min_cov->text().toDouble(toNumFlag);
+        if(!*toNumFlag) checkflag = false;
+    }
     if(ui->comboBox_curve->currentText()=="Bell-shaped"){
-        bool*toNumFlag = new bool;
         lu=ui->lineEdit_lu->text().toDouble(toNumFlag);
         if(!*toNumFlag) return false;
         lc=ui->lineEdit_lc->text().toDouble(toNumFlag);
@@ -690,8 +715,11 @@ bool AddPrototype_Expert::getPointRule(solim::Curve &c){
         if(!(lu>lc)) return false;
         if(hu<lu) return false;
         type = solim::BELL_SHAPED;
+        if(checkflag){
+            if(hc<min || lc>max)
+                warn = true;
+        }
     } else if(ui->comboBox_curve->currentText()=="S-shaped"){
-        bool*toNumFlag = new bool;
         lu=ui->lineEdit_lu->text().toDouble(toNumFlag);
         if(!*toNumFlag) return false;
         lc=ui->lineEdit_lc->text().toDouble(toNumFlag);
@@ -700,7 +728,11 @@ bool AddPrototype_Expert::getPointRule(solim::Curve &c){
         hu=-1;
         hc=-1;
         type=solim::S_SHAPED;
-            } else if(ui->comboBox_curve->currentText()=="Z-shaped"){
+        if(checkflag){
+            if(lu<min || lc>max)
+                warn = true;
+        }
+    } else if(ui->comboBox_curve->currentText()=="Z-shaped"){
         bool*toNumFlag = new bool;
         hu=ui->lineEdit_hu->text().toDouble(toNumFlag);
         if(!*toNumFlag) return false;
@@ -710,6 +742,10 @@ bool AddPrototype_Expert::getPointRule(solim::Curve &c){
         lu=-1;
         lc=-1;
         type=solim::Z_SHAPED;
+        if(checkflag){
+            if(hc<min || hu>max)
+                warn = true;
+        }
     }
     c=solim::Curve(ui->comboBox_cov->currentText().toStdString(),lu,hu,lc,hc,type);
     return true;
@@ -788,34 +824,39 @@ void AddPrototype_Expert::on_btn_create_clicked()
 void AddPrototype_Expert::on_lineEdit_lc_textChanged(const QString &arg1)
 {
     solim::Curve c;
-    if(getPointRule(c))
+    bool warn;
+    if(getPointRule(c,warn))
         drawMembershipFunction(&c);
 }
 
 void AddPrototype_Expert::on_lineEdit_lu_textChanged(const QString &arg1)
 {
     solim::Curve c;
-    if(getPointRule(c))
+    bool warn;
+    if(getPointRule(c,warn))
         drawMembershipFunction(&c);
 }
 
 void AddPrototype_Expert::on_lineEdit_hu_textChanged(const QString &arg1)
 {
     solim::Curve c;
-    if(getPointRule(c))
+    bool warn;
+    if(getPointRule(c,warn))
         drawMembershipFunction(&c);
 }
 
 void AddPrototype_Expert::on_lineEdit_hc_textChanged(const QString &arg1)
 {
     solim::Curve c;
-    if(getPointRule(c))
+    bool warn;
+    if(getPointRule(c,warn))
         drawMembershipFunction(&c);
 }
 
 void AddPrototype_Expert::on_comboBox_curve_activated(int index)
 {
     solim::Curve c;
-    if(getPointRule(c))
+    bool warn;
+    if(getPointRule(c,warn))
         drawMembershipFunction(&c);
 }

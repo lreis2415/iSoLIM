@@ -1,12 +1,12 @@
-#include "editprototypebases.h"
-#include "ui_editprototypebases.h"
+#include "itemselectionwindow.h"
+#include "ui_itemselectionwindow.h"
 
-editPrototypeBases::editPrototypeBases(QStringList names, QString selected, QWidget *parent) :
+itemSelectionWindow::itemSelectionWindow(itemSelectionMode mode, QStringList names, QString selected, QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::editPrototypeBases)
+    ui(new Ui::itemSelectionWindow)
 {
-    QStringList selectedNameList = selected.split(';');
     ui->setupUi(this);
+    QStringList selectedNameList = selected.split(';');
     QStringListIterator it(names);
     while (it.hasNext())
     {
@@ -19,14 +19,22 @@ editPrototypeBases::editPrototypeBases(QStringList names, QString selected, QWid
           ui->listWidget->addItem(listItem);
     }
     selectedNames=selected;
+
+    if(mode==PROTOTYPEBASESELECTION){
+        setWindowTitle("Select prototype base used for inference");
+    }
+    if(mode==CATEGORICALPROPERTYSELECTION){
+        setWindowTitle("Select property treated as categorical data");
+    }
+
 }
 
-editPrototypeBases::~editPrototypeBases()
+itemSelectionWindow::~itemSelectionWindow()
 {
     delete ui;
 }
 
-void editPrototypeBases::on_buttonBox_accepted()
+void itemSelectionWindow::on_buttonBox_accepted()
 {
     selectedNames="";
     for(int i = 0; i < ui->listWidget->count(); ++i)
