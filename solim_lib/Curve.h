@@ -36,9 +36,10 @@ namespace solim {
 		vector <double> vecDDY;
 		vector <double> vecS;
 		int iKnotNum;
+        bool isNullCurve;
 	public:
 		Curve();
-		Curve(string covName, DataTypeEnum type);
+        Curve(string covName, DataTypeEnum type, bool isNull = false);
         Curve(string covName, DataTypeEnum type, int knotNum, string coords, double valueRange=0);
 		Curve(string covName, DataTypeEnum type, vector<double> *x, vector<double> *y);	// freehand rule
         Curve(string covName, double lowUnity, double highUnity, double lowCross, double highCross, CurveTypeEnum curveType);	// range rule

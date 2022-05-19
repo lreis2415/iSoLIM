@@ -12,10 +12,12 @@ namespace solim {
 		iKnotNum = 0;
         range = 0;
 		typicalValue = NODATA;
+        isNullCurve = false;
 	}
 
 	Curve::Curve(string covName, DataTypeEnum type, vector<double> *x, vector<double> *y) {
 		// knowledge from experts: freehand rule
+        isNullCurve = false;
 		covariateName = covName;
 		dataType = type;
 		vecKnotX = *x;
@@ -39,7 +41,8 @@ namespace solim {
         }
 	}
 
-	Curve::Curve(string covName, DataTypeEnum type) {
+    Curve::Curve(string covName, DataTypeEnum type, bool isNull) {
+        isNullCurve = isNull;
 		covariateName = covName;
 		dataType = type;	
 		vecKnotX.clear();
@@ -54,6 +57,7 @@ namespace solim {
 
     Curve::Curve(string covName, DataTypeEnum type, int knotNum, string coords, double valueRange) {
 		// knowledge from experts: word rule
+        isNullCurve = false;
 		covariateName = covName;
 		dataType = type;
 		vecKnotX.clear();
@@ -87,6 +91,7 @@ namespace solim {
 
     Curve::Curve(string covName, double lowUnity, double highUnity, double lowCross, double highCross, CurveTypeEnum curveType) {
 		// knowledge from experts: range rule
+        isNullCurve = false;
 		covariateName = covName;
 		dataType = CONTINUOUS;
 		vecKnotX.clear();
@@ -143,6 +148,7 @@ namespace solim {
 	Curve::Curve(string covName, double x, double y, EnvLayer *layer) {
 		// knowledge from sample
 		// knowledge from experts: point rule
+        isNullCurve = false;
 		covariateName = covName;
 		dataType = layer->DataType;
 		iKnotNum = 0;
@@ -199,7 +205,8 @@ namespace solim {
 	}
 
 	Curve::Curve(string covName, vector<float> *values) {	// add rules from data mining-continuous
-		covariateName = covName;
+        isNullCurve = false;
+        covariateName = covName;
 		dataType = CONTINUOUS;
 		iKnotNum = 0;
 		vecKnotX.clear();
@@ -276,6 +283,7 @@ namespace solim {
 		calcSpline();
 	}
 	Curve::Curve(string covName, vector<Curve> *curves) {
+        isNullCurve = false;
         covariateName = covName;
         dataType = curves->at(0).dataType;
         iKnotNum = 0;
@@ -357,6 +365,7 @@ namespace solim {
 	}
 
 	Curve::Curve(string covName, vector<int> *values) {	// add rules from data mining-categorical
+        isNullCurve = false;
         int count = values->size();
         sort(values->begin(),values->end());
         std::vector<int>::iterator unique_it;
@@ -439,6 +448,7 @@ namespace solim {
         typicalValue = c->typicalValue;
     }
 	double Curve::getOptimality(double envValue) {
+        if(isNullCurve) return 1;
 		// for categorical value
 		if (dataType == CATEGORICAL) {
 			for (int i = 0; i < iKnotNum; ++i)

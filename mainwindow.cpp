@@ -995,19 +995,6 @@ bool MainWindow::drawLayer(string filename){
         QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(*img).scaled(viewWidth,viewHeight,Qt::KeepAspectRatio,Qt::SmoothTransformation));
         myGraphicsView->getScene()->addItem(item);
         item->setPos(0,0);
-        //draw legend
-        /*
-        QLinearGradient linear(QPoint(5,15),QPoint(5,65));
-        linear.setColorAt(0,Qt::white);
-        linear.setColorAt(1,Qt::black);
-        linear.setSpread(QGradient::PadSpread);
-        myGraphicsView->getScene()->addRect(5,15,10,50,QPen(QColor(255,255,255),0),linear);
-        //std::ostringstream maxss;
-        QGraphicsTextItem *minLabel = myGraphicsView->getScene()->addText(QString::number(imgMin));
-        minLabel->setPos(15,50);
-        QGraphicsTextItem *maxLabel = myGraphicsView->getScene()->addText(QString::number(imgMax));
-        maxLabel->setPos(15,0);
-        */
         myGraphicsView->img = img;
         myGraphicsView->imgMax = imgMax;
         myGraphicsView->imgMin = imgMin;
@@ -1082,22 +1069,12 @@ void MainWindow::finishedCreateImg(){
     zoomToolBar->setVisible(true);
     resetRangeToolBar->setVisible(false);
     myGraphicsView->getScene()->clear();
-    int viewHeight = myGraphicsView->height();
-    int viewWidth = myGraphicsView->width();
-    myGraphicsView->getScene()->setSceneRect(0,0,viewWidth+30,viewHeight);
+    int viewHeight = myGraphicsView->height()-5;
+    int viewWidth = myGraphicsView->width()-5;
+    myGraphicsView->getScene()->setSceneRect(0,0,viewWidth,viewHeight);
     QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(*img).scaled(viewWidth,viewHeight,Qt::KeepAspectRatio,Qt::SmoothTransformation));
     myGraphicsView->getScene()->addItem(item);
-    item->setPos(30,0);
-    QLinearGradient linear(QPoint(5,15),QPoint(5,65));
-    linear.setColorAt(0,Qt::white);
-    linear.setColorAt(1,Qt::black);
-    linear.setSpread(QGradient::PadSpread);
-    myGraphicsView->getScene()->addRect(5,15,10,50,QPen(QColor(255,255,255),0),linear);
-    //std::ostringstream maxss;
-    QGraphicsTextItem *minLabel = myGraphicsView->getScene()->addText(QString::number(imgMin));
-    minLabel->setPos(15,50);
-    QGraphicsTextItem *maxLabel = myGraphicsView->getScene()->addText(QString::number(imgMax));
-    maxLabel->setPos(15,0);
+    item->setPos(0,0);
     myGraphicsView->img = img;
     myGraphicsView->imgMax = imgMax;
     myGraphicsView->imgMin = imgMin;

@@ -169,8 +169,20 @@ void mapInference::on_Inference_OK_btn_clicked()
     ui->Inference_OK_btn->setEnabled(false);
     vector<solim::Prototype> *selectedPrototypes = new vector<solim::Prototype>;
     for(size_t i = 0;i<project->prototypes.size();i++){
-        if(ui->prototypeBaseName_lineEdit->text().split(';').contains(project->prototypes[i].prototypeBaseName.c_str()))
-            selectedPrototypes->push_back(project->prototypes[i]);
+        if(ui->prototypeBaseName_lineEdit->text().split(';').contains(project->prototypes[i].prototypeBaseName.c_str())){
+            solim::Prototype tmp = project->prototypes[i];
+            if(tmp.envConditionSize != envFileNames.size()){
+                QStringList ruleLayernames;
+                for(int i = 0; i<tmp.envConditionSize;i++)
+                    ruleLayernames.push_back(tmp.envConditions[i].covariateName.c_str());
+                if(ruleLayernames.empty()) continue;
+                for(int i = 0; i<envFileNames.size();i++){
+                    if(ruleLayernames.contains(layernames[i].c_str())) continue;
+                    tmp.addConditions(solim::Curve(layernames[i],solim::getDatatypeFromString(datatypes[i]),true));
+                }
+            }
+            selectedPrototypes->push_back(tmp);
+        }
     }
     if(membershipFolder!=""){
         // adjust ramefficient to save memory for writing membership maps
@@ -187,10 +199,22 @@ void mapInference::on_Inference_OK_btn_clicked()
         }
     }
 
-    if(isCategorical == false)
-        solim::Inference::inferMap(eds, selectedPrototypes, targetName, threshold, outSoil, outUncer,ui->progressBar);
-    else{
-        solim::Inference::inferCategoricalMap(eds, selectedPrototypes, targetName, threshold, outSoil, outUncer,membershipFolder,ui->progressBar);
+    if(isCategorical == false){
+        try{
+            solim::Inference::inferMap(eds, selectedPrototypes, targetName, threshold, outSoil, outUncer,ui->progressBar);
+        } catch (invalid_argument e) {
+            QMessageBox warn;
+            warn.setText("Prototype rules inconsistent with covariates used for inference, please check again!");
+            return;
+        }
+    } else {
+        try{
+            solim::Inference::inferCategoricalMap(eds, selectedPrototypes, targetName, threshold, outSoil, outUncer,membershipFolder,ui->progressBar);
+        } catch (invalid_argument e) {
+            QMessageBox warn;
+            warn.setText("Prototype rules inconsistent with covariates used for inference, please check again!");
+            return;
+        }
         if(membershipFolder!=""){
             QDir membershipDir(membershipFolder.c_str());
             QFileInfoList membershipMaps = membershipDir.entryInfoList();
@@ -235,41 +259,45 @@ void mapInference::on_InferedProperty_comboBox_currentTextChanged(const QString 
 {
     if(outputAutoFill){
         QString dir = project->workingDir;
+        QString ext = ".tif";
+        if(project->filenames.size()>0)
+            if(QString(project->filenames[0].c_str()).endsWith(".3dr"))
+                ext = ".3dr";
         if(dir.indexOf("/")>-1){
-            QString soilFile = dir+"/"+arg1+".tif";
+            QString soilFile = dir+"/"+arg1+ext;
             QFileInfo soilFileInfo(soilFile);
             int i = 1;
             while(soilFileInfo.exists()){
-                soilFile = dir+"/"+arg1+"("+QString::number(i)+").tif";
+                soilFile = dir+"/"+arg1+"("+QString::number(i)+")"+ext;
                 soilFileInfo.setFile(soilFile);
                 i++;
             }
             ui->OutputSoilFile_lineEdit->setText(soilFile);
-            QString uncerFile = dir+"/"+arg1+"_uncer.tif";
+            QString uncerFile = dir+"/"+arg1+"_uncer"+ext;
             QFileInfo uncerFileInfo(uncerFile);
             i = 1;
             while(uncerFileInfo.exists()){
-                uncerFile = dir+"/"+arg1+"_uncer("+QString::number(i)+").tif";
+                uncerFile = dir+"/"+arg1+"_uncer("+QString::number(i)+")"+ext;
                 uncerFileInfo.setFile(uncerFile);
                 i++;
             }
             ui->OutputUncerFile_lineEdit->setText(uncerFile);
         }
         if(workingDir.indexOf("\\")>-1){
-            QString soilFile = dir+"\\"+arg1+".tif";
+            QString soilFile = dir+"\\"+arg1+ext;
             QFileInfo soilFileInfo(soilFile);
             int i = 1;
             while(soilFileInfo.exists()){
-                soilFile = dir+"\\"+arg1+"("+QString::number(i)+").tif";
+                soilFile = dir+"\\"+arg1+"("+QString::number(i)+")"+ext;
                 soilFileInfo.setFile(soilFile);
                 i++;
             }
             ui->OutputSoilFile_lineEdit->setText(soilFile);
-            QString uncerFile = dir+"\\"+arg1+"_uncer.tif";
+            QString uncerFile = dir+"\\"+arg1+"_uncer"+ext;
             QFileInfo uncerFileInfo(uncerFile);
             i = 1;
             while(uncerFileInfo.exists()){
-                uncerFile = dir+"\\"+arg1+"_uncer("+QString::number(i)+").tif";
+                uncerFile = dir+"\\"+arg1+"_uncer("+QString::number(i)+")"+ext;
                 uncerFileInfo.setFile(uncerFile);
                 i++;
             }
