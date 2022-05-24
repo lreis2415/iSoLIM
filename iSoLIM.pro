@@ -89,12 +89,13 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 # include GDAL
-win32:CONFIG(release, debug|release): LIBS += -LC:/gdal304/lib/ -lgdal_i
-else:win32:CONFIG(debug, debug|release): LIBS += -LC:/gdal304/lib/ -lgdal_i
+win32:CONFIG(release, debug|release|profile): LIBS += -LC:/gdal204-64/lib/ -lgdal_i
+else:win32:CONFIG(debug, debug|release|profile): LIBS += -LC:/gdal204-64/lib/ -lgdal_i
+else:win32:CONFIG(profile,debug|release|profile): LIBS += -LC:/gdal204-64/lib/ -lgdal_i
 else:unix: LIBS += -LC:/gdal304/lib/ -lgdal_i
 
-INCLUDEPATH += C:/gdal304/include
-DEPENDPATH += C:/gdal304/include
+INCLUDEPATH += C:/gdal204-64/include
+DEPENDPATH += C:/gdal204-64/include
 
 # enable openmp
 QMAKE_CXXFLAGS+= -openmp

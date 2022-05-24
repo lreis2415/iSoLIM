@@ -21,9 +21,6 @@ mapInference::mapInference(SoLIMProject *proj, QWidget *parent) :
     } else {
         ui->setupUi(this);
         init = true;
-        if(!isCategorical){
-            ui->membershipMaps_checkBox->setVisible(false);
-        }
         ui->membership_label->setVisible(false);
         ui->membershipFolder_btn->setVisible(false);
         ui->membershipFolder_lineEdit->setVisible(false);
@@ -71,7 +68,6 @@ mapInference::mapInference(SoLIMProject *proj, QWidget *parent) :
                                                               selected_cb);
             }
             connect(ui->CovariateFiles_tableWidget, SIGNAL(cellDoubleClicked(int,int)), this, SLOT(tableItemClicked(int,int)));
-
         }
     }
 }
@@ -257,6 +253,26 @@ void mapInference::tableItemClicked(int row,int col){
 
 void mapInference::on_InferedProperty_comboBox_currentTextChanged(const QString &arg1)
 {
+    QStringList basenames = ui->prototypeBaseName_lineEdit->text().split(';',Qt::SkipEmptyParts);
+    for(int i = 0; i<project->prototypes.size();i++){
+        if(project->prototypes[i].prototypeBaseName==basenames.at(0).toStdString()){
+            for(int j = 0;j<project->prototypes[i].properties.size();j++){
+                if(project->prototypes[i].properties[j].propertyName.c_str()==arg1){
+                    if(project->prototypes[i].properties[j].soilPropertyType==solim::CATEGORICAL){
+                        isCategorical = true;
+                        ui->membershipMaps_checkBox->setVisible(true);
+                    } else {
+                        isCategorical = false;
+                        ui->membershipMaps_checkBox->setVisible(false);
+                        ui->membershipFolder_btn->setVisible(false);
+                        ui->membership_label->setVisible(false);
+                        ui->membershipFolder_lineEdit->setVisible(false);
+                    }
+                }
+            }
+            break;
+        }
+    }
     if(outputAutoFill){
         QString dir = project->workingDir;
         QString ext = ".tif";
@@ -338,30 +354,6 @@ void mapInference::on_membershipFolder_btn_clicked()
     if(!dir.isEmpty())    project->workingDir = dir;
 }
 
-void mapInference::on_InferedProperty_comboBox_activated(const QString &arg1)
-{
-    QStringList basenames = ui->prototypeBaseName_lineEdit->text().split(';',Qt::SkipEmptyParts);
-    for(int i = 0; i<project->prototypes.size();i++){
-        if(project->prototypes[i].prototypeBaseName==basenames.at(0).toStdString()){
-            for(int j = 0;j<project->prototypes[i].properties.size();j++){
-                if(project->prototypes[i].properties[j].propertyName.c_str()==arg1){
-                    if(project->prototypes[i].properties[j].soilPropertyType==solim::CATEGORICAL){
-                        isCategorical = true;
-                        ui->membershipMaps_checkBox->setVisible(true);
-                    } else {
-                        isCategorical = false;
-                        ui->membershipMaps_checkBox->setVisible(false);
-                        ui->membershipFolder_btn->setVisible(false);
-                        ui->membership_label->setVisible(false);
-                        ui->membershipFolder_lineEdit->setVisible(false);
-                    }
-                }
-            }
-            break;
-        }
-    }
-}
-
 void mapInference::on_prototypeBaseName_lineEdit_textChanged(const QString &arg1)
 {
     QStringList basenames = ui->prototypeBaseName_lineEdit->text().split(';',Qt::SkipEmptyParts);
@@ -403,5 +395,6 @@ void mapInference::on_prototypeBaseName_lineEdit_textChanged(const QString &arg1
     }
     ui->InferedProperty_comboBox->clear();
     ui->InferedProperty_comboBox->addItems(propertyList);
+    ui->InferedProperty_comboBox->setCurrentIndex(0);
     ui->Inference_OK_btn->setEnabled(true);
 }

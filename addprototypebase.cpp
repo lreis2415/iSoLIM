@@ -20,6 +20,7 @@ AddPrototypeBase::AddPrototypeBase(addPrototypeBaseMode mode,SoLIMProject *proj,
     ui->deleteCovariate_btn->setDisabled(true);
     ui->PropType_btn->setEnabled(false);
 
+    categoricalProps = QStringList();
     QTableWidgetItem *item_tmp;
     for(size_t i = 0; i<proj->filenames.size();i++){
         if(proj->filenames[i].empty()) continue;
@@ -134,6 +135,7 @@ void AddPrototypeBase::on_browseSampleFile_btn_clicked()
             columnNames.append(names[i].c_str());
         }
         propnames = columnNames;
+        categoricalProps.clear();
         ui->PropType_btn->setEnabled(true);
         ui->xFiled_comboBox->addItems(columnNames);
         ui->yFiled_comboBox->addItems(columnNames);
@@ -176,6 +178,7 @@ void AddPrototypeBase::on_browseSampleFile_btn_clicked()
         }
         ui->xFiled_comboBox->addItems(fieldnames);
         propnames = fieldnames;
+        categoricalProps.clear();
         ui->PropType_btn->setEnabled(true);
     }
     int first = filename.lastIndexOf('/');
@@ -397,8 +400,9 @@ void AddPrototypeBase::on_covariate_tableWidget_itemSelectionChanged()
 
 void AddPrototypeBase::on_PropType_btn_clicked()
 {
-
-    itemSelectionWindow editDialog(itemSelectionWindow::CATEGORICALPROPERTYSELECTION,propnames,"",this);
+    QString selected = "";
+    if(categoricalProps.size()>0) selected = categoricalProps.join(';');
+    itemSelectionWindow editDialog(itemSelectionWindow::CATEGORICALPROPERTYSELECTION,propnames,selected,this);
     editDialog.exec();
     categoricalProps = editDialog.selectedNames.split(";");
 }

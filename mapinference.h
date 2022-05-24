@@ -46,8 +46,6 @@ private slots:
 
     void on_membershipFolder_btn_clicked();
 
-    void on_InferedProperty_comboBox_activated(const QString &arg1);
-
     void on_prototypeBaseName_lineEdit_textChanged(const QString &arg1);
 
 private:

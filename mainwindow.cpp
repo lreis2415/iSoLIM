@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->actionClose_Project->setDisabled(true);
     ui->actionDefine_Study_Area->setDisabled(true);
     ui->action_infer->setDisabled(true);
-    setWindowIcon(QIcon("./imgs/solim.jpg"));
+    setWindowIcon(QIcon("./imgs/solim.svg"));
     // setup dock view
     projectViewInitialized = false;
     initialProjectView();
@@ -325,14 +325,14 @@ void MainWindow::onSelectionChanged(const QItemSelection& current,const QItemSel
         }
         drawLayer(filename);
     }
-    else if(index.isValid()&&index.data().toString().compare("Membership Function")==0){
+    else if(index.isValid()&&index.parent().data().toString().startsWith("Covariate membership functions")){
         string prototype = index.parent().parent().parent().data().toString().toStdString();
         int prefixLength = 11;
         int idPrefixLength = 14;
         int basePrefixLength = 16;
-        currentBaseName = index.parent().parent().parent().parent().data().toString().toStdString().substr(basePrefixLength);
-        currentProtoName = prototype.substr(idPrefixLength);
-        currentLayerName = index.parent().data().toString().toStdString().substr(prefixLength);
+        currentBaseName = index.parent().parent().parent().data().toString().toStdString().substr(basePrefixLength);
+        currentProtoName = index.parent().parent().data().toString().toStdString().substr(idPrefixLength);
+        currentLayerName = index.data().toString().toStdString().substr(prefixLength);
         drawMembershipFunction();
     }
 }
@@ -921,10 +921,6 @@ void MainWindow::onGetPrototype(){
                         typ_v->setFlags(typ_v->flags()^Qt::ItemIsEditable);
                         covItem->setChild(covItem->rowCount(),0,typ_v);
                     }
-                    // set membership function
-                    QStandardItem * mem_f = new QStandardItem("Membership Function");
-                    mem_f->setFlags(mem_f->flags()^Qt::ItemIsEditable);
-                    covItem->setChild(covItem->rowCount(),0,mem_f);
                 }
             }
         }
@@ -1561,6 +1557,9 @@ void MainWindow::initialProjectView(){
 }
 
 void MainWindow::onEditRule(){
+    if(!myGraphicsView->showMembership){
+        drawMembershipFunction();
+    }
     if(myGraphicsView->membership->dataType==solim::CONTINUOUS){
         myGraphicsView->editFreehandRule = true;
         onAddFreehandPoint();

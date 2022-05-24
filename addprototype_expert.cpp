@@ -239,7 +239,7 @@ void AddPrototype_Expert::on_comboBox_cov_activated(const QString &arg1)
                 on_radioButton_range_toggled(true);
             if(ui->radioButton_freehand->isChecked())
                 on_radioButton_freehand_toggled(true);
-            if(ui->radioButton_range->isChecked())
+            if(ui->radioButton_enum->isChecked())
                 on_radioButton_enum_toggled(true);
             return;
         }

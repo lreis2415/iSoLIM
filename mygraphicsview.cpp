@@ -7,6 +7,7 @@ MyGraphicsView::MyGraphicsView(QWidget *parent):
     scene = new QGraphicsScene;
     this->setScene(scene);
     setSceneRect(scene->sceneRect());
+    moveKnotNum = -1;
     filename = "";
     lyr = nullptr;
     img = nullptr;
@@ -15,6 +16,7 @@ MyGraphicsView::MyGraphicsView(QWidget *parent):
     imgMax = 0;
     imgMin = 0;
     showImage = false;
+    showMembership = false;
     editFreehandRule=false;
     editEnumRule=false;
     lookupValue=false;
