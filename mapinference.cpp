@@ -184,6 +184,9 @@ void mapInference::on_Inference_OK_btn_clicked()
         // adjust ramefficient to save memory for writing membership maps
         ramEfficient = ramEfficient*envFileNames.size()/(envFileNames.size()+selectedPrototypes->size());
     }
+#ifdef EXPERIMENT
+    QTime start = QTime::currentTime();
+#endif
     solim::EnvDataset *eds = new solim::EnvDataset(envFileNames,datatypes,layernames,ramEfficient);
     // update filename
     for(size_t i = 0; i<eds->Layers.size(); i++){
@@ -219,6 +222,12 @@ void mapInference::on_Inference_OK_btn_clicked()
             }
         }
     }
+#ifdef EXPERIMENT
+    QTime end = QTime::currentTime();
+    QMessageBox timer;
+    timer.setText("Elasped time: "+QString::number(start.msecsTo(end)/1000.0)+"s");
+    timer.exec();
+#endif
     project->addResult(outSoil);
     project->addResult(outUncer);
     project->currentResultName = outSoil;

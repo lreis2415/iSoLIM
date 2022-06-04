@@ -133,7 +133,7 @@ void MainWindow::on_actionSave_triggered(){
         layer_node->SetAttribute("Name",proj->layernames[i].c_str());
         layer_node->SetAttribute("Type",proj->layertypes[i].c_str());
         layer_node->SetAttribute("DataMax",proj->layerDataMax[i]);
-        layer_node->SetAttribute("DataMax",proj->layerDataMin[i]);
+        layer_node->SetAttribute("DataMin",proj->layerDataMin[i]);
         gisData_node->LinkEndChild(layer_node);
 
         TiXmlText *layer_text = new TiXmlText(proj->filenames[i].c_str());

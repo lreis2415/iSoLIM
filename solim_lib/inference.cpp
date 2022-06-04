@@ -44,7 +44,8 @@ void Inference::inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string 
             eds->Layers.at(k)->ReadByBlock(i);
         }
         long long int pixelCount = nx*ny;
-#pragma omp parallel for schedule(dynamic) num_threads(4)
+        int numcores = omp_get_num_procs();
+#pragma omp parallel for schedule(dynamic) num_threads(numcores*2)
         for (int n = 0; n < nx*ny; ++n) {
             // for each unit in the block, calculate their predicted value and uncertainty
             bool validEnvUnitFlag = TRUE;
@@ -251,7 +252,8 @@ void Inference::inferCategoricalMap(EnvDataset *eds, vector<Prototype>* prototyp
             eds->Layers.at(k)->ReadByBlock(i);
         }
         long long int pixelCount = nx*ny;
-#pragma omp parallel for schedule(dynamic) num_threads(4)
+        int numcores = omp_get_num_procs();
+#pragma omp parallel for schedule(dynamic) num_threads(numcores*2)
         for (int n = 0; n < nx*ny; ++n) {
             // for each unit in the block, calculate their predicted value and uncertainty
             bool validEnvUnitFlag = TRUE;

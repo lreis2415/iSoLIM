@@ -10,6 +10,7 @@
 #include "itemselectionwindow.h"
 #include "simpledialog.h"
 #include "solim_lib/inference.h"
+#include "QTime"
 
 namespace Ui {
 class mapInference;
