@@ -262,7 +262,7 @@ void mapInference::tableItemClicked(int row,int col){
 
 void mapInference::on_InferedProperty_comboBox_currentTextChanged(const QString &arg1)
 {
-    QStringList basenames = ui->prototypeBaseName_lineEdit->text().split(';',Qt::SkipEmptyParts);
+    QStringList basenames = ui->prototypeBaseName_lineEdit->text().split(';'/*, Qt::SkipEmptyParts*/);
     for(int i = 0; i<project->prototypes.size();i++){
         if(project->prototypes[i].prototypeBaseName==basenames.at(0).toStdString()){
             for(int j = 0;j<project->prototypes[i].properties.size();j++){
@@ -365,10 +365,11 @@ void mapInference::on_membershipFolder_btn_clicked()
 
 void mapInference::on_prototypeBaseName_lineEdit_textChanged(const QString &arg1)
 {
-    QStringList basenames = ui->prototypeBaseName_lineEdit->text().split(';',Qt::SkipEmptyParts);
+    QStringList basenames = ui->prototypeBaseName_lineEdit->text().split(';'/*, Qt::SkipEmptyParts*/);
     if(basenames.empty()) return;
     QStringList propertyList;
     for(int k = 0;k < basenames.size();k++){
+        if(basenames.at(k).isEmpty()) continue;
         QStringList propertyList_tmp;
         for(int i = 0; i<project->prototypes.size();i++){
             if(project->prototypes[i].prototypeBaseName==basenames.at(k).toStdString()){

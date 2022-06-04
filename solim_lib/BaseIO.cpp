@@ -534,6 +534,8 @@ void BaseIO::blockInit(double divide) {
 	if (blockIsInitialized) {
 		return;
 	} else {
+        //windows
+        /*
 		MEMORYSTATUSEX statusex;
 		unsigned long long avl = 0;
 		statusex.dwLength = sizeof(statusex);
@@ -544,7 +546,10 @@ void BaseIO::blockInit(double divide) {
 		}
 		else {
 			blockRows = 100;
-		}
+        }*/
+        unsigned long long avl = sysconf(_SC_AVPHYS_PAGES) * sysconf(_SC_PAGE_SIZE);
+        unsigned long long memoryForOneBlock = avl * divide;
+        blockRows = memoryForOneBlock / sizeof(float) / xSize;
 
 		blockX = xSize;
 

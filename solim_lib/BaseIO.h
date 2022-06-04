@@ -14,7 +14,7 @@ BaseIO: base structure for block io
 #include <iostream>
 #include <string>
 #include <stdlib.h>
-#include <Windows.h>
+#include <unistd.h>
 //#define MCW MPI_COMM_WORLD
 #define VERY_SMALL 0.0001
 #define NODATA -9999

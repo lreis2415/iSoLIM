@@ -612,8 +612,8 @@ namespace solim {
 	void Prototype::writeRules(string fileName) {
 		char *cFileName = new char[fileName.length() + 1];
 		strcpy(cFileName, fileName.c_str());
-		char *ext = strlwr(strrchr(cFileName, '.') + 1);
-		if (strcmp(ext, "xml") != 0) {
+        string ext = fileName.substr(fileName.find_last_of(".") + 1);
+        if (ext!="xml" && ext != "XML") {
 			strcat(cFileName, ".xml");
 		}
 
@@ -658,8 +658,8 @@ namespace solim {
 	void Prototype::writePrototype(string fileName) {
 		char *cFileName = new char[fileName.length() + 1];
 		strcpy(cFileName, fileName.c_str());
-		char *ext = strlwr(strrchr(cFileName, '.') + 1);
-		if (strcmp(ext, "xml") != 0) {
+        string ext = fileName.substr(fileName.find_last_of(".") + 1);
+        if (ext!="xml" && ext != "XML") {
 			strcat(cFileName, ".xml");
 		}
 

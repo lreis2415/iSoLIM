@@ -6,11 +6,12 @@
 #include <QMessageBox>
 #include <QTimer>
 #include <QCheckBox>
+#include <QDir>
+#include <Qt>
 #include "project.h"
 #include "itemselectionwindow.h"
 #include "simpledialog.h"
 #include "solim_lib/inference.h"
-#include "QTime"
 
 namespace Ui {
 class mapInference;
