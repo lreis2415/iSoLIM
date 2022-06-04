@@ -92,12 +92,11 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 win32:CONFIG(release, debug|release|profile): LIBS += -LC:/gdal204-64/lib/ -lgdal_i
 else:win32:CONFIG(debug, debug|release|profile): LIBS += -LC:/gdal204-64/lib/ -lgdal_i
 else:win32:CONFIG(profile,debug|release|profile): LIBS += -LC:/gdal204-64/lib/ -lgdal_i
-else:unix: LIBS += -LC:/gdal304/lib/ -lgdal_i
-
-INCLUDEPATH += C:/gdal204-64/include
-#DEPENDPATH += C:/gdal204-64/include
+else:unix: LIBS += -L/home/user/local/lib/ -lgdal
+win32:INCLUDEPATH += C:/gdal204-64/include
 
 # enable openmp
-QMAKE_CXXFLAGS+= -openmp
+win32:QMAKE_CXXFLAGS+= -openmp
+else:unix:QMAKE_CXXFLAGS += -fopenmp
 
 RC_ICONS = solim.ico
