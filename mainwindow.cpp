@@ -132,6 +132,8 @@ void MainWindow::on_actionSave_triggered(){
         TiXmlElement *layer_node = new TiXmlElement("Layer");
         layer_node->SetAttribute("Name",proj->layernames[i].c_str());
         layer_node->SetAttribute("Type",proj->layertypes[i].c_str());
+        layer_node->SetAttribute("DataMax",proj->layerDataMax[i]);
+        layer_node->SetAttribute("DataMax",proj->layerDataMin[i]);
         gisData_node->LinkEndChild(layer_node);
 
         TiXmlText *layer_text = new TiXmlText(proj->filenames[i].c_str());
@@ -223,12 +225,8 @@ void MainWindow::on_actionOpen_triggered(){
         layer; layer = layer->NextSiblingElement("Layer")){
         QFileInfo fileinfo(layer->GetText());
         if(fileinfo.exists()){
-            proj->layernames.push_back(layer->Attribute("Name"));
-            proj->layertypes.push_back(layer->Attribute("Type"));
             proj->filenames.push_back(layer->GetText());
         } else {
-            proj->layernames.push_back(layer->Attribute("Name"));
-            proj->layertypes.push_back(layer->Attribute("Type"));
             proj->filenames.push_back("");
             QMessageBox warn;
             string layername = layer->Attribute("Name");
@@ -236,6 +234,10 @@ void MainWindow::on_actionOpen_triggered(){
             warn.setStandardButtons(QMessageBox::Ok);
             warn.exec();
         }
+        proj->layernames.push_back(layer->Attribute("Name"));
+        proj->layertypes.push_back(layer->Attribute("Type"));
+        proj->layerDataMax.push_back(atof(layer->Attribute("DataMax")));
+        proj->layerDataMin.push_back(atof(layer->Attribute("DataMin")));
     }
     onGetGisData();
     // add prototypes
@@ -419,6 +421,8 @@ void MainWindow::onAddGisData(){
     proj->filenames.push_back(addGisData.filename.toStdString());
     proj->layernames.push_back(addGisData.covariate.toStdString());
     proj->layertypes.push_back(addGisData.datatype);
+    proj->layerDataMax.push_back(NODATA);
+    proj->layerDataMin.push_back(NODATA);
     drawLayer(addGisData.filename.toStdString());
     onGetGisData();
 }
@@ -722,6 +726,8 @@ void MainWindow::onDeleteGisLayer() {
             proj->layernames.erase(proj->layernames.begin()+i);
             proj->filenames.erase(proj->filenames.begin()+i);
             proj->layertypes.erase(proj->layertypes.begin()+i);
+            proj->layerDataMax.erase(proj->layerDataMax.begin()+i);
+            proj->layerDataMin.erase(proj->layerDataMin.begin()+i);
             projectSaved = false;
             break;
         }
@@ -965,13 +971,26 @@ bool MainWindow::drawLayer(string filename){
     QTextCodec *code = QTextCodec::codecForName("UTF-8");
     QString imagename_q = QString::fromStdString(code->fromUnicode(QString(imagename.c_str())).data());
     img = new QImage(imagename_q);
-    lyr = new BaseIO(filename);
-    if(!lyr->isOpened()) return false;
-    imgMax = lyr->getDataMax();
-    imgMin = lyr->getDataMin();
+    bool flagLayerOpen = false;
+    for(int i = 0; i<proj->filenames.size();i++){
+        if(filename==proj->filenames[i]){
+            imgMax = proj->layerDataMax[i];
+            imgMin = proj->layerDataMin[i];
+            if(fabs(imgMax-NODATA)<VERY_SMALL || fabs(imgMin-NODATA)<VERY_SMALL){
+                lyr = new BaseIO(filename);
+                if(!lyr->isOpened()) return false;
+                flagLayerOpen = true;
+                imgMax = lyr->getDataMax();
+                imgMin = lyr->getDataMin();
+                proj->layerDataMax[i]=imgMax;
+                proj->layerDataMin[i]=imgMin;
+            }
+        }
+    }
     if(img->isNull()){
         ui->statusBar->showMessage("Loading Data...");
         delete img;
+        if(!flagLayerOpen) lyr = new BaseIO(filename);
         createImgThread.start();
 
     } else {
@@ -980,13 +999,14 @@ bool MainWindow::drawLayer(string filename){
         zoomToolBar->setVisible(true);
         resetRangeToolBar->setVisible(false);
         myGraphicsView->getScene()->clear();
-        ui->statusBar->showMessage("coordinate: ("+QString::number(lyr->getXMin())+", "
-                                   +QString::number(lyr->getYMin())+") (TopLeft)");
-
-        delete lyr;
-        lyr = nullptr;
         int viewHeight = myGraphicsView->height()-5;
         int viewWidth = myGraphicsView->width()-5;
+        if(flagLayerOpen){
+            ui->statusBar->showMessage("coordinate: ("+QString::number(lyr->getXMin())+", "
+                                       +QString::number(lyr->getYMin())+") (TopLeft)");
+            delete lyr;
+            lyr = nullptr;
+        }
         myGraphicsView->getScene()->setSceneRect(0,0,viewWidth,viewHeight);
         QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(*img).scaled(viewWidth,viewHeight,Qt::KeepAspectRatio,Qt::SmoothTransformation));
         myGraphicsView->getScene()->addItem(item);

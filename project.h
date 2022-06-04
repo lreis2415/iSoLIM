@@ -14,6 +14,8 @@ public:
     vector<string> filenames;
     vector<string> layernames;
     vector<string> layertypes;
+    vector<float> layerDataMax;
+    vector<float> layerDataMin;
     vector<solim::Prototype> prototypes;
     //vector<solim::Exception> exceptions;
     vector<string> prototypeBaseNames;
@@ -33,6 +35,8 @@ public:
         prototypes.clear();
         //exceptions.clear();
         prototypeBaseNames.clear();
+        layerDataMax.clear();
+        layerDataMin.clear();
     }
     bool addLayer(string layername, string datatype, string filename=""){
         for(int i = 0;i<layernames.size();i++){
@@ -45,6 +49,8 @@ public:
         layernames.push_back(layername);
         layertypes.push_back(datatype);
         filenames.push_back(filename);
+        layerDataMax.push_back(NODATA);
+        layerDataMin.push_back(NODATA);
         return true;
     }
     bool addResult(string filename){

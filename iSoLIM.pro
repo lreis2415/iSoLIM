@@ -95,7 +95,7 @@ else:win32:CONFIG(profile,debug|release|profile): LIBS += -LC:/gdal204-64/lib/ -
 else:unix: LIBS += -LC:/gdal304/lib/ -lgdal_i
 
 INCLUDEPATH += C:/gdal204-64/include
-DEPENDPATH += C:/gdal204-64/include
+#DEPENDPATH += C:/gdal204-64/include
 
 # enable openmp
 QMAKE_CXXFLAGS+= -openmp

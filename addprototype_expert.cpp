@@ -221,9 +221,20 @@ void AddPrototype_Expert::on_comboBox_cov_activated(const QString &arg1)
             ui->lineEdit_max_cov->setReadOnly(false);
             ui->lineEdit_min_cov->setReadOnly(false);
             ui->comboBox_datatype->setEnabled(true);
-            if(QFileInfo(proj->filenames[i].c_str()).exists()){
+            float dataMax, dataMin;
+            dataMax =proj->layerDataMax[i];
+            dataMin = proj->layerDataMin[i];
+            if(fabs(dataMax-NODATA)>VERY_SMALL && fabs(dataMax-NODATA)>VERY_SMALL){
+                ui->lineEdit_max_cov->setText(QString::number(dataMax));
+                ui->lineEdit_min_cov->setText(QString::number(dataMin));
+                rangeMax = dataMax;
+                rangeMin = dataMin;
+            }
+            else if(QFileInfo(proj->filenames[i].c_str()).exists()){
                 BaseIO *lyr = new BaseIO(proj->filenames[i]);
                 if(lyr->isOpened()){
+                    proj->layerDataMax[i] = lyr->getDataMax();
+                    proj->layerDataMin[i] = lyr->getDataMin();
                     ui->lineEdit_max_cov->setText(QString::number(lyr->getDataMax()));
                     ui->lineEdit_min_cov->setText(QString::number(lyr->getDataMin()));
                     rangeMax = lyr->getDataMax();
