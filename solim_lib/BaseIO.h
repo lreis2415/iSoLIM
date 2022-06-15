@@ -52,6 +52,7 @@ private:
 	double dataMax;
 	double dataMin;
 	double dataRange;
+    double dataStdDev;
 	double adfGeoTransform[6];
 	double xllCenter;
 	double yllCenter;
@@ -77,7 +78,6 @@ private:
     char fileType[FN_LEN];
     char gridUnits[FN_LEN];
 	double dataMean;
-	double dataStd;
 	int firstDataByte;
 	int dataEndLoc;
 
@@ -124,7 +124,9 @@ public:
 	}
 	double getDataMax() { return dataMax; }
 	double getDataMin() { return dataMin; }
-	double getDataRange() { return dataRange; }
+    double getDataMean() { return dataMean; }
+    double getDataStdDev() { return dataStdDev; }
+    double getDataRange() { return dataRange; }
 
 	//int getParallelX() { return parallelX; }
 	//int getParallelY() { return parallelY; }

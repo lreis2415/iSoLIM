@@ -21,6 +21,7 @@ string ConvertToString(double value) {
  * @param tokens
  */
 void ParseStr(const string& str, char c, vector<string>& tokens) {
+    if(str=="") return;
     unsigned int posL = 0;
     unsigned int posR = 0;
     while (posR < str.length() - 1) {

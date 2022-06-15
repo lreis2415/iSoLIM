@@ -34,6 +34,8 @@ public:
     DataTypeEnum DataType;
     double Data_Max;
     double Data_Min;
+    double Data_Mean;
+    double Data_StdDev;
     double Data_Range;
     double NoDataValue;
     double GeoTransform[6];

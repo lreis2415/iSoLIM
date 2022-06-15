@@ -77,7 +77,7 @@ BaseIO::BaseIO(string filename) {
 				fscanf(threeDRfp, "%lf", &dataMean);
 			}
 			else if (strcmp(utilityString, "DataStd:") == 0) {
-				fscanf(threeDRfp, "%lf", &dataStd);
+                fscanf(threeDRfp, "%lf", &dataStdDev);
 			}
 			else if (strcmp(utilityString, "NumberOfColors:") == 0) {
 				int NumberOfColors;		// todo: meaning?
@@ -193,7 +193,7 @@ BaseIO::BaseIO(string filename) {
             cout << "Cannot get Nodata Value from Input file " << filename << endl;
         }
 		// calculate max, min
-		int fGotMax = 0;
+        /*int fGotMax = 0;
 		int fGotMin = 0;
         dataMax = band->GetMaximum(&fGotMax);//GDALGetRasterMaximum(bandh, &fGotMax);
         dataMin = band->GetMinimum(&fGotMin);//GDALGetRasterMinimum(bandh, &fGotMin);
@@ -205,8 +205,19 @@ BaseIO::BaseIO(string filename) {
                 dataMin = adfMinMax[0];
                 dataMax = adfMinMax[1];
             }
-		}
+        }*/
 		dataRange = dataMax - dataMin;
+        int approxOK = FALSE;
+        int force = TRUE;
+        CPLErr result = band->GetStatistics(approxOK, force, &dataMin, &dataMax, &dataMean, &dataStdDev);
+        if(result == CE_None)	dataRange = dataMax - dataMin;
+        else {
+            dataMin = NODATA;
+            dataMax = NODATA;
+            dataMean = NODATA;
+            dataStdDev = NODATA;
+            dataRange = NODATA;
+        }
 	}
     blockRows = ySize;
     blockSize = 1;
@@ -225,7 +236,7 @@ BaseIO::BaseIO(BaseIO *lyr){
         unexpectedFieldFlag = lyr->unexpectedFieldFlag;
         NumberOfRecords = lyr->NumberOfRecords;
         dataMean = lyr->dataMean;
-        dataStd = lyr->dataStd;
+        dataStdDev = lyr->dataStdDev;
         firstDataByte = lyr->firstDataByte;
         dataEndLoc = lyr->dataEndLoc;
     } else {

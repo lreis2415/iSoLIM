@@ -103,7 +103,7 @@ void MainWindow::on_actionNew_triggered(){
     proj->projName = projName.toStdString();
     proj->studyArea=studyArea.toStdString();
     initModel();
-    workingDir=workingDir=QFileInfo(newProject.projectFilename).absoluteDir().absolutePath();
+    workingDir=QFileInfo(newProject.projectFilename).absoluteDir().absolutePath();
     proj->workingDir=workingDir;
 }
 
@@ -1026,8 +1026,8 @@ void MainWindow::createImg(){
     int stretch=1;
     int xsize=lyr->getXSize();
     int ysize=lyr->getYSize();
-    if(xsize*ysize>1000000){
-        stretch=sqrt(xsize*ysize/1000000);
+    if(1.0*xsize*ysize>1000000){
+        stretch=sqrt(1.0*xsize*ysize/1000000);
         xsize=xsize/stretch;
         if(lyr->getXSize()%stretch>0) xsize=xsize+1;
         ysize=ysize/stretch;

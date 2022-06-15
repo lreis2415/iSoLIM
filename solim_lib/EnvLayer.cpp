@@ -10,7 +10,7 @@ using std::string;
 namespace solim {
 EnvLayer::EnvLayer()
     : LayerId(-1), DataType(CONTINUOUS), baseRef(nullptr), Data_Max(NODATA),
-	Data_Min(NODATA), Data_Range(NODATA), NoDataValue(NODATA),
+    Data_Min(NODATA), Data_Mean(NODATA), Data_StdDev(NODATA),Data_Range(NODATA), NoDataValue(NODATA),
 	XSize(-1), YSize(-1) {
     for (int i = 0; i < 6; i++) GeoTransform[i] = NODATA;
 }
@@ -38,6 +38,8 @@ EnvLayer::EnvLayer(const int layerId, string layerName, const string& filename, 
 	}
 	Data_Min = baseRef->getDataMin();
 	Data_Max = baseRef->getDataMax();
+    Data_Mean = baseRef->getDataMean();
+    Data_StdDev = baseRef->getDataStdDev();
 	Data_Range = baseRef->getDataRange();
 	CellSize = baseRef->getCellSize();
 	NoDataValue = baseRef->getNoDataValue();

@@ -168,39 +168,41 @@ namespace solim {
 			addKnot(typicalValue, 1);
 			return;
 		}
-		int cellNum = 0;
-		double sum = 0;
-		double squareSum = 0;
-		double SDjSquareSum = 0;
-		for (int k = 0; k < layer->BlockSize; ++k) {
-			layer->ReadByBlock(k);
-			int n = layer->XSize*layer->GetYSizeByBlock(k);
-			for (int i = 0; i < n; ++i) {
-				double value = layer->EnvData[i];
-				if (fabs(value - layer->NoDataValue) < VERY_SMALL||value<NODATA) continue;
-				sum += value;
-				squareSum += value*value;
-				SDjSquareSum += pow(value - typicalValue, 2);
-				++cellNum;
-			}
-		}
-		double mean = sum / (double)cellNum;
-		double SDSquare = squareSum / (double)cellNum - mean * mean;
-		double SDjSquare = SDjSquareSum / (double)cellNum;
+        double mean = layer->Data_Mean;
+        double stdDev = layer->Data_StdDev;
+        if(fabs(mean-NODATA)<VERY_SMALL || fabs(stdDev-NODATA)<VERY_SMALL || stdDev<NODATA || mean < NODATA)
+        {
+            int cellNum = 0;
+            double sum = 0;
+            double squareSum = 0;
+            for (int k = 0; k < layer->BlockSize; ++k) {
+                layer->ReadByBlock(k);
+                int n = layer->XSize*layer->GetYSizeByBlock(k);
+                for (int i = 0; i < n; ++i) {
+                    double value = layer->EnvData[i];
+                    if (fabs(value - layer->NoDataValue) < VERY_SMALL||value<NODATA) continue;
+                    sum += value;
+                    squareSum += value*value;
+                    ++cellNum;
+                }
+            }
+            mean = sum / (double)cellNum;
+            stdDev = sqrt(squareSum / (double)cellNum - mean * mean);
+            layer->Data_Mean = mean;
+            layer->Data_StdDev = stdDev;
+        }
+        double se = typicalValue;
+        double sqrDev = stdDev * stdDev;
 
-        double zeroPar = SDSquare/sqrt(SDjSquare)*3.03485425877029270172;    // 3.034=sqrt(-2*ln0.01);
-        double _1stQuaPar = SDSquare/sqrt(SDjSquare)*1.66510922231539551270; // 1.665=sqrt(-2*ln0.25);
-        double halfPar = SDSquare/sqrt(SDjSquare)*1.17741002251547469101;    // 1.117=sqrt(-2*ln0.5);
-        double _3rdQuaPar = SDSquare/sqrt(SDjSquare)*0.75852761644093213257; // 1.665=sqrt(-2*ln0.75);
-        addKnot(typicalValue - zeroPar,0);
-        addKnot(typicalValue - _1stQuaPar, 0.25);
-        addKnot(typicalValue - halfPar,0.5);
-        addKnot(typicalValue - _3rdQuaPar, 0.75);
+        addKnot(se -sqrt(-2*log(0.01)/ (se * se + sqrDev + mean * mean - 2 * se*mean))*sqrDev,0.01);
+        addKnot(se -sqrt(-2*log(0.25)/ (se * se + sqrDev + mean * mean - 2 * se*mean))*sqrDev,0.25);
+        addKnot(se -sqrt(-2*log(0.5)/ (se * se + sqrDev + mean * mean - 2 * se*mean))*sqrDev,0.5);
+        addKnot(se -sqrt(-2*log(0.75)/ (se * se + sqrDev + mean * mean - 2 * se*mean))*sqrDev,0.75);
         addKnot(typicalValue,1);
-        addKnot(typicalValue + _3rdQuaPar, 0.75);
-        addKnot(typicalValue + halfPar, 0.5);
-        addKnot(typicalValue + _1stQuaPar, 0.25);
-        addKnot(typicalValue + zeroPar, 0);
+        addKnot(se +sqrt(-2*log(0.75)/ (se * se + sqrDev + mean * mean - 2 * se*mean))*sqrDev,0.75);
+        addKnot(se +sqrt(-2*log(0.5)/ (se * se + sqrDev + mean * mean - 2 * se*mean))*sqrDev,0.5);
+        addKnot(se +sqrt(-2*log(0.25)/ (se * se + sqrDev + mean * mean - 2 * se*mean))*sqrDev,0.25);
+        addKnot(se +sqrt(-2*log(0.01)/ (se * se + sqrDev + mean * mean - 2 * se*mean))*sqrDev,0.01);
 		calcSpline();
 	}
 
@@ -283,6 +285,16 @@ namespace solim {
 		calcSpline();
 	}
 	Curve::Curve(string covName, vector<Curve> *curves) {
+        for (size_t i = 0; i < curves->size(); ++i) {
+            if(curves->at(i).isNullCurve){
+                curves->erase(curves->begin()+i);
+            }
+        }
+        curves->shrink_to_fit();
+        if(curves->size()==0) {
+            isNullCurve = true;
+            return;
+        }
         isNullCurve = false;
         covariateName = covName;
         dataType = curves->at(0).dataType;
@@ -310,7 +322,11 @@ namespace solim {
             knotNumSum += curves->at(i).iKnotNum;
             vecXCollect.insert(vecXCollect.end(), curves->at(i).vecKnotX.begin(), curves->at(i).vecKnotX.end());
         }
+        if(vecXCollect.size()==0) { isNullCurve = true; return;}
         std::sort(vecXCollect.begin(), vecXCollect.end());
+        vector<float>::iterator last = std::unique(vecXCollect.begin(), vecXCollect.end());
+        vecXCollect.erase(last, vecXCollect.end());
+        vecXCollect.shrink_to_fit();
         float x_pre = vecXCollect[0];
         float y_pre = curves->at(0).getOptimality(x_pre);
         float x, y, x_next, y_next;
@@ -336,6 +352,7 @@ namespace solim {
                     float y_tmp = curves->at(n).getOptimality(x_next);
                     if (y_tmp > y_next) y_next = y_tmp;
                 }
+                if(k==0) addKnot(x, y);
                 if ((y - y_pre)*(y - y_next) < 0);
                 else if (fabs(y - y_pre) < VERY_SMALL&&fabs(y - y_next) < VERY_SMALL);
                 else {
@@ -458,7 +475,7 @@ namespace solim {
 		}
 		// for continuous value
         else{
-            if (iKnotNum < 3){
+            if (iKnotNum == 1){
                 for (int i = 0; i < iKnotNum; ++i)
                     if (fabs(envValue - vecKnotX[i]) < VERY_SMALL)
                         return vecKnotY[i];
