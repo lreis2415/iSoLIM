@@ -84,9 +84,10 @@ namespace solim {
 		// Read tiff data into partitions and blocks
 
 		if (ramEfficent > 0.9999)
-			LayerRef->blockNull();
-		else
-			LayerRef->blockInit(ramEfficent / double(layerNum));
+            ramEfficent=0.25;
+            //LayerRef->blockNull();
+        //else
+        LayerRef->blockInit(ramEfficent / double(layerNum));
 		// Get the size of current block;
 		XSize = LayerRef->getBlockX();
 		YSize = LayerRef->getBlockY();

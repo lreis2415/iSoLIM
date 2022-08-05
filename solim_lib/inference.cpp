@@ -1,5 +1,5 @@
 #include "inference.h"
-
+#include "QTime"
 namespace solim {
 void Inference::inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string targetVName, double threshold, string outSoilFile, string outUncerFile, QProgressBar *progressBar,IntegrationMethod integrate) {
     // check the consistency of prototype rules and envdataset
@@ -31,7 +31,7 @@ void Inference::inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string 
     //EnvUnit *e;
     progressBar->setMinimum(0);
     progressBar->setMaximum(block_size*100);
-
+    double compute_time = 0;
     for (int i = 0; i < block_size; ++i) {
         // for each block, this circle is to ensure every block is processed
 
@@ -43,9 +43,13 @@ void Inference::inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string 
         for (int k = 0; k < eds->Layers.size(); ++k) {
             eds->Layers.at(k)->ReadByBlock(i);
         }
+        QTime start = QTime::currentTime();
         long long int pixelCount = nx*ny;
         int numcores = omp_get_num_procs();
-#pragma omp parallel for schedule(dynamic) num_threads(numcores*2)
+        //#ifdef EXPERIMENT
+        cout<<i<<" number of processors: "<<numcores<<endl;
+        //#endif
+#pragma omp parallel for schedule(dynamic) num_threads(numcores)
         for (int n = 0; n < nx*ny; ++n) {
             // for each unit in the block, calculate their predicted value and uncertainty
             bool validEnvUnitFlag = TRUE;
@@ -128,7 +132,8 @@ void Inference::inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string 
                 uncertaintyValue[n] = 1 - maxSimi;
             }
         }
-
+        QTime end = QTime::currentTime();
+        compute_time += start.msecsTo(end)/1000.0;
         eds->LayerRef->localToGlobal(i, 0, 0, Xstart, Ystart);
         outSoilMap->write(Xstart, Ystart, ny, nx, predictedValue);
         outUncerMap->write(Xstart, Ystart, ny, nx, uncertaintyValue);//
@@ -138,6 +143,7 @@ void Inference::inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string 
     delete []nodata;
     delete predictedValue;
     delete uncertaintyValue;
+    eds->CellSizeY = compute_time;
 }
 
 void Inference::inferCategoricalMap(EnvDataset *eds, vector<Prototype>* prototypes, string targetVName, double threshold,
@@ -253,7 +259,7 @@ void Inference::inferCategoricalMap(EnvDataset *eds, vector<Prototype>* prototyp
         }
         long long int pixelCount = nx*ny;
         int numcores = omp_get_num_procs();
-#pragma omp parallel for schedule(dynamic) num_threads(numcores*2)
+#pragma omp parallel for schedule(dynamic) num_threads(numcores)
         for (int n = 0; n < nx*ny; ++n) {
             // for each unit in the block, calculate their predicted value and uncertainty
             bool validEnvUnitFlag = TRUE;
