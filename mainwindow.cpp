@@ -132,8 +132,8 @@ void MainWindow::on_actionSave_triggered(){
         TiXmlElement *layer_node = new TiXmlElement("Layer");
         layer_node->SetAttribute("Name",proj->layernames[i].c_str());
         layer_node->SetAttribute("Type",proj->layertypes[i].c_str());
-        layer_node->SetAttribute("DataMax",proj->layerDataMax[i]);
-        layer_node->SetAttribute("DataMin",proj->layerDataMin[i]);
+        layer_node->SetDoubleAttribute("DataMax",proj->layerDataMax[i]);
+        layer_node->SetDoubleAttribute("DataMin",proj->layerDataMin[i]);
         gisData_node->LinkEndChild(layer_node);
 
         TiXmlText *layer_text = new TiXmlText(proj->filenames[i].c_str());
@@ -156,8 +156,8 @@ void MainWindow::on_actionSave_triggered(){
         results_node->LinkEndChild(result_node);
         TiXmlText *result_text = new TiXmlText(proj->results[i].c_str());
         result_node->LinkEndChild(result_text);
-        result_node->SetAttribute("DataMax",proj->resultDataMax[i]);
-        result_node->SetAttribute("DataMin",proj->resultDataMin[i]);
+        result_node->SetDoubleAttribute("DataMax",proj->resultDataMax[i]);
+        result_node->SetDoubleAttribute("DataMin",proj->resultDataMin[i]);
     }
     if(doc->SaveFile(filename.c_str()))
         projectSaved = true;
@@ -976,10 +976,12 @@ bool MainWindow::drawLayer(string filename){
     QString imagename_q = QString::fromStdString(code->fromUnicode(QString(imagename.c_str())).data());
     img = new QImage(imagename_q);
     bool flagLayerOpen = false;
+    bool flagMinMaxAssigned = false;
     for(int i = 0; i<proj->filenames.size();i++){
         if(filename==proj->filenames[i]){
             imgMax = proj->layerDataMax[i];
             imgMin = proj->layerDataMin[i];
+            flagMinMaxAssigned = true;
             if(fabs(imgMax-NODATA)<VERY_SMALL || fabs(imgMin-NODATA)<VERY_SMALL){
                 lyr = new BaseIO(filename);
                 if(!lyr->isOpened()) return false;
@@ -988,6 +990,24 @@ bool MainWindow::drawLayer(string filename){
                 imgMin = lyr->getDataMin();
                 proj->layerDataMax[i]=imgMax;
                 proj->layerDataMin[i]=imgMin;
+            }
+        }
+    }
+    if(!flagMinMaxAssigned){
+        for(int i = 0; i<proj->results.size();i++){
+            if(filename==proj->results[i]){
+                imgMax = proj->resultDataMax[i];
+                imgMin = proj->resultDataMin[i];
+                flagMinMaxAssigned = true;
+                if(fabs(imgMax-NODATA)<VERY_SMALL || fabs(imgMin-NODATA)<VERY_SMALL){
+                    lyr = new BaseIO(filename);
+                    if(!lyr->isOpened()) return false;
+                    flagLayerOpen = true;
+                    imgMax = lyr->getDataMax();
+                    imgMin = lyr->getDataMin();
+                    proj->resultDataMax[i]=imgMax;
+                    proj->resultDataMin[i]=imgMin;
+                }
             }
         }
     }

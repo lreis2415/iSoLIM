@@ -200,9 +200,11 @@ void mapInference::on_Inference_OK_btn_clicked()
         }
     }
 
+    solim::Inference *infer = new solim::Inference(eds,selectedPrototypes,threshold,outSoil,outUncer);
     if(isCategorical == false){
         try{
-            solim::Inference::inferMap(eds, selectedPrototypes, targetName, threshold, outSoil, outUncer,ui->progressBar);
+            infer->Mapping(targetName,ui->progressBar);
+            //solim::Inference::inferMap(eds, selectedPrototypes, targetName, threshold, outSoil, outUncer,ui->progressBar);
         } catch (invalid_argument e) {
             QMessageBox warn;
             warn.setText("Prototype rules inconsistent with covariates used for inference, please check again!");
@@ -210,7 +212,8 @@ void mapInference::on_Inference_OK_btn_clicked()
         }
     } else {
         try{
-            solim::Inference::inferCategoricalMap(eds, selectedPrototypes, targetName, threshold, outSoil, outUncer,membershipFolder,ui->progressBar);
+            infer->MappingCategorical(targetName,membershipFolder,ui->progressBar);
+            //solim::Inference::inferCategoricalMap(eds, selectedPrototypes, targetName, threshold, outSoil, outUncer,membershipFolder,ui->progressBar);
         } catch (invalid_argument e) {
             QMessageBox warn;
             warn.setText("Prototype rules inconsistent with covariates used for inference, please check again!");
@@ -234,7 +237,7 @@ void mapInference::on_Inference_OK_btn_clicked()
     msg.exec();
 
 #endif
-    project->addResult(outSoil,NODATA, NODATA);
+    project->addResult(outSoil,infer->outSoilMap->getDataMax(), infer->outSoilMap->getDataMin());
     project->addResult(outUncer,1,0);
     project->currentResultName = outSoil;
     this->close();
