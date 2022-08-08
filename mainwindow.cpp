@@ -156,6 +156,8 @@ void MainWindow::on_actionSave_triggered(){
         results_node->LinkEndChild(result_node);
         TiXmlText *result_text = new TiXmlText(proj->results[i].c_str());
         result_node->LinkEndChild(result_text);
+        result_node->SetAttribute("DataMax",proj->resultDataMax[i]);
+        result_node->SetAttribute("DataMin",proj->resultDataMin[i]);
     }
     if(doc->SaveFile(filename.c_str()))
         projectSaved = true;
@@ -256,6 +258,8 @@ void MainWindow::on_actionOpen_triggered(){
     for(TiXmlElement* result = resultHandle.FirstChildElement("ResultFile").ToElement();
         result; result = result->NextSiblingElement("ResultFile")){
         proj->results.push_back(result->GetText());
+        proj->resultDataMax.push_back(atof(result->Attribute("DataMax")));
+        proj->resultDataMin.push_back(atof(result->Attribute("DataMin")));
     }
     onInferResults();
     projectSaved = true;

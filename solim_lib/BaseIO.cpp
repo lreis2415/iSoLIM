@@ -205,8 +205,32 @@ BaseIO::BaseIO(string filename) {
                 dataMin = adfMinMax[0];
                 dataMax = adfMinMax[1];
             }
-        }*/
+        }
 		dataRange = dataMax - dataMin;
+        */
+        computeStatistics();
+	}
+    blockRows = ySize;
+    blockSize = 1;
+    blockX = xSize;
+    blockY = ySize;
+	blockIsInitialized = false;
+	isFileInititialized = false;
+}
+void BaseIO::computeStatistics(){
+    if(is3dr==false){
+        if(ds==NULL){
+            ds = (GDALDataset *) GDALOpen(fileName.c_str(), GA_ReadOnly );//fh = GDALOpen(fileName.c_str(), GA_Update);
+            if(ds==NULL){
+                dataMin = NODATA;
+                dataMax = NODATA;
+                dataMean = NODATA;
+                dataStdDev = NODATA;
+                dataRange = NODATA;
+                return;
+            }
+            band = ds->GetRasterBand(1);//bandh = GDALGetRasterBand(fh, 1);
+        }
         int approxOK = FALSE;
         int force = TRUE;
         CPLErr result = band->GetStatistics(approxOK, force, &dataMin, &dataMax, &dataMean, &dataStdDev);
@@ -218,13 +242,32 @@ BaseIO::BaseIO(string filename) {
             dataStdDev = NODATA;
             dataRange = NODATA;
         }
-	}
-    blockRows = ySize;
-    blockSize = 1;
-    blockX = xSize;
-    blockY = ySize;
-	blockIsInitialized = false;
-	isFileInititialized = false;
+    } else {
+        float*values = new float[xSize*ySize];
+        read(0,0,ySize,xSize,values);
+        float sum = 0;
+        float squareSum = 0;
+        int validVal = 0;
+        float max = NODATA;
+        float min = NODATA;
+        for(int i = 0;i<xSize*ySize;i++){
+            if(values[i]>NODATA && fabs(values[i]-noDataValue)>VERY_SMALL){
+                validVal++;
+                sum+=values[i];
+                squareSum+=values[i]*values[i];
+                if(fabs(max-NODATA)<VERY_SMALL) max = values[i];
+                else if(max<values[i]) max = values[i];
+                if(fabs(min-NODATA)<VERY_SMALL) min = values[i];
+                else if(min>values[i]) min = values[i];
+            }
+        }
+        delete []values;
+        dataMin = min;
+        dataMax = max;
+        dataMean = sum/validVal;
+        dataStdDev = sqrt(squareSum/validVal-dataMean*dataMean);
+        dataRange = max-min;
+    }
 }
 
 BaseIO::BaseIO(BaseIO *lyr){
@@ -488,7 +531,7 @@ void BaseIO::write(long xStart, long yStart, long numRows, long numCols, float *
 		}
         GDALFlushCache(ds);  //  DGT effort get large files properly written
         GDALClose(ds);
-
+        ds=NULL;
 	}
 }
 

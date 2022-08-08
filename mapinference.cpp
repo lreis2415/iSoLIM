@@ -184,9 +184,9 @@ void mapInference::on_Inference_OK_btn_clicked()
         // adjust ramefficient to save memory for writing membership maps
         ramEfficient = ramEfficient*envFileNames.size()/(envFileNames.size()+selectedPrototypes->size());
     }
-//#ifdef EXPERIMENT
+#ifdef EXPERIMENT
     QTime start = QTime::currentTime();
-//#endif
+#endif
     solim::EnvDataset *eds = new solim::EnvDataset(envFileNames,datatypes,layernames,ramEfficient);
     cout<<"Block size: "<<eds->Layers[0]->BlockSize<<endl;
     cout<<"raster size: "<<eds->XSize<<" "<<eds->LayerRef->getYSize()<<endl;
@@ -224,7 +224,7 @@ void mapInference::on_Inference_OK_btn_clicked()
             }
         }
     }
-//#ifdef EXPERIMENT
+#ifdef EXPERIMENT
     QTime end = QTime::currentTime();
     cout<<"Start:"<<start.minute()<<":"<<start.second()<<endl;
     cout<<"end:"<<end.minute()<<":"<<end.second()<<endl;
@@ -233,9 +233,9 @@ void mapInference::on_Inference_OK_btn_clicked()
     msg.setText(QString::number(eds->LayerRef->getBlockSize())+"blocks; Elasped time:"+QString::number(start.msecsTo(end)/1000.0)+" compute time: "+QString::number(eds->CellSizeY));
     msg.exec();
 
-//#endif
-    project->addResult(outSoil);
-    project->addResult(outUncer);
+#endif
+    project->addResult(outSoil,NODATA, NODATA);
+    project->addResult(outUncer,1,0);
     project->currentResultName = outSoil;
     this->close();
 }

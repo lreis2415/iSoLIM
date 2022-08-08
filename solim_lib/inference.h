@@ -16,6 +16,13 @@
 namespace solim {
     class Inference {
     public:
+        EnvDataset *eds;
+        vector<Prototype>* prototypes;
+        string outSoilFile;
+        BaseIO outSoilLayer;
+        string outUncerFile;
+        BaseIO outUncerLayer;
+    public:
         static void inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string targetVName, double threshold,
                              string outSoilFile, string outUncerFile, QProgressBar *progressBar, IntegrationMethod integrate = MINIMUM);
         static void inferCategoricalMap(EnvDataset *eds, vector<Prototype>* prototypes, string targetVName, double threshold,

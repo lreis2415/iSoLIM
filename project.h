@@ -21,6 +21,8 @@ public:
     vector<string> prototypeBaseNames;
     vector<string> prototypeBaseTypes;
     vector<string> results;
+    vector<float> resultDataMax;
+    vector<float> resultDataMin;
     QString workingDir;
 public:
     SoLIMProject(){
@@ -37,6 +39,8 @@ public:
         prototypeBaseNames.clear();
         layerDataMax.clear();
         layerDataMin.clear();
+        resultDataMax.clear();
+        resultDataMin.clear();
     }
     bool addLayer(string layername, string datatype, string filename=""){
         for(int i = 0;i<layernames.size();i++){
@@ -53,7 +57,7 @@ public:
         layerDataMin.push_back(NODATA);
         return true;
     }
-    bool addResult(string filename){
+    bool addResult(string filename, float dataMax=NODATA, float dataMin=NODATA){
         bool fileExist = false;
         for(size_t i = 0; i< results.size(); i++){
             if(results[i]==filename){
@@ -68,6 +72,8 @@ public:
         }
         if(!fileExist){
             results.push_back(filename);
+            resultDataMax.push_back(dataMax);
+            resultDataMin.push_back(dataMin);
             return true;
         }
     }

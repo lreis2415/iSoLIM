@@ -101,7 +101,8 @@ public:
 	bool globalToLocal(int blockRank, int globalX, int globalY, int &localX, int &localY);
 //	void localToGlobal(int localX, int localY, int &globalX, int &globalY);
 	void localToGlobal(int block_rank, int localX, int localY, int &globalX, int &globalY);
-	bool compareIO(BaseIO *layer);
+    void computeStatistics();
+    bool compareIO(BaseIO *layer);
 	float getValue(long col, long row);
 
 	int getXSize() { return xSize; }
