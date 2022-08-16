@@ -230,11 +230,18 @@ namespace solim {
 		std::nth_element(values->begin() + Q1 + 1, values->begin() + Q3, values->end());
 		double quartile = values->at(Q3)-values->at(Q1);
 		double p = (stdev < quartile) ? stdev : quartile;
+        if(p<VERY_SMALL) p = (stdev > quartile) ? stdev : quartile;
         double h = 1.06*p*pow(n, -0.2);	// 1.06min(std,quartile range)n^(-0.2)
 		float xmin = *std::min_element(values->begin(),values->end());	//minimum value
 		float xrange = *std::max_element(values->begin(), values->end())-xmin;
         if(xrange<VERY_SMALL){
+            //addKnot(xmin-9999,0);
+            addKnot(xmin-VERY_SMALL*10,0);
             addKnot(xmin, 1);
+            addKnot(xmin+VERY_SMALL*10,0);
+            //addKnot(xmin+9999,0);
+            calcSpline();
+            typicalValue=xmin;
             return;
         }
         range = (fabs(xrange+xmin)>fabs(xmin))?fabs(xrange+xmin):fabs(xmin);
@@ -282,6 +289,11 @@ namespace solim {
 		bubbleSort();
         if(1 - vecKnotY[0]>VERY_SMALL) vecKnotY[0] = 0;
         if(1-vecKnotY[iKnotNum-1]>VERY_SMALL) vecKnotY[iKnotNum-1]=0;
+        if(iKnotNum<3){
+            isNullCurve = true;
+            throw std::invalid_argument("Cannot generete curve from values");
+            return;
+        }
 		calcSpline();
 	}
 	Curve::Curve(string covName, vector<Curve> *curves) {
@@ -467,7 +479,7 @@ namespace solim {
 	double Curve::getOptimality(double envValue) {
         if(isNullCurve) return 1;
 		// for categorical value
-		if (dataType == CATEGORICAL) {
+        if (dataType == CATEGORICAL||iKnotNum<3) {
 			for (int i = 0; i < iKnotNum; ++i)
                 if (fabs(envValue - vecKnotX[i]) < VERY_SMALL)
 					return vecKnotY[i];
@@ -475,12 +487,12 @@ namespace solim {
 		}
 		// for continuous value
         else{
-            if (iKnotNum == 1){
+            /*if (iKnotNum == 1){
                 for (int i = 0; i < iKnotNum; ++i)
                     if (fabs(envValue - vecKnotX[i]) < VERY_SMALL)
                         return vecKnotY[i];
                 return 0;
-            }
+            }*/
             double result;
             if (envValue < vecKnotX[0]){
                 if(vecKnotY[0]<VERY_SMALL || fabs(vecKnotY[0]-1) < VERY_SMALL) return vecKnotY[0];

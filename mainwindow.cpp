@@ -1159,6 +1159,12 @@ void MainWindow::drawMembershipFunction(float max, float min, solim::Curve *c){
     }
     if(protoPos==-1||covPos==-1){
         return;
+    }else{
+        if(proj->prototypes[protoPos].envConditions[covPos].dataType==solim::CONTINUOUS &&
+                proj->prototypes[protoPos].envConditions[covPos].getKnotNum()<3){
+            warn("Error with curve");
+            return;
+        }
     }
     if(c==nullptr){
         myGraphicsView->showMembership=true;
@@ -1316,8 +1322,9 @@ void MainWindow::drawMembershipFunction(float max, float min, solim::Curve *c){
         return;
     }
 
-    if(myGraphicsView->membership->getKnotNum() < 3)
+    if(myGraphicsView->membership->getKnotNum() < 3){
         return;
+    }
 
     double previousx = myGraphicsView->curveXMin;
     double previousy = myGraphicsView->membership->getOptimality(previousx);

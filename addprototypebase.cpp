@@ -337,6 +337,7 @@ void AddPrototypeBase::on_ok_btn_clicked()
                 //project->prototypes.insert(project->prototypes.end(),prototypes->begin(),prototypes->end());
             }
         } else {// if(ui->radioButton_poly->isChecked()){
+            try{
             vector<Prototype>* prototypes = Prototype::getPrototypesFromMining_polygon(sampleFile,eds,
                                                                                        ui->xFiled_comboBox->currentText().toStdString(),
                                                                                        prototypeBaseName,ui->progressBar);
@@ -357,6 +358,9 @@ void AddPrototypeBase::on_ok_btn_clicked()
                     }
                 }
                 //project->prototypes.insert(project->prototypes.end(),prototypes->begin(),prototypes->end());
+            }
+            } catch(invalid_argument msg){
+                //warn(msg);
             }
         }
     }

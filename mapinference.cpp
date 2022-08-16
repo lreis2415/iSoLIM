@@ -410,6 +410,7 @@ void mapInference::on_prototypeBaseName_lineEdit_textChanged(const QString &arg1
         }
         ui->prototypeBaseName_lineEdit->clear();
         ui->Inference_OK_btn->setEnabled(false);
+        return;
     }
     ui->InferedProperty_comboBox->clear();
     ui->InferedProperty_comboBox->addItems(propertyList);
