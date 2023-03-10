@@ -20,6 +20,11 @@ BaseIO::BaseIO(string filename) {
         else fscanf(threeDRfp, "%d", &NumberOfRecords);
 		int getMaxMin = 0;
         int getGeo = 0;
+        dataMin = NODATA;
+        dataMax = NODATA;
+        dataMean = NODATA;
+        dataStdDev = NODATA;
+        dataRange = NODATA;
 		for (int nl = 0; nl < NumberOfRecords; nl++) {
 			fscanf(threeDRfp, "%s", utilityString);
 			if (strcmp(utilityString, "NumberOfColumns:") == 0) {
@@ -588,7 +593,7 @@ void BaseIO::blockInit(double divide) {
 	if (blockIsInitialized) {
 		return;
 	} else {
-		MEMORYSTATUSEX statusex;
+        /*MEMORYSTATUSEX statusex;
 		unsigned long long avl = 0;
 		statusex.dwLength = sizeof(statusex);
 		if (GlobalMemoryStatusEx(&statusex)) {
@@ -598,18 +603,20 @@ void BaseIO::blockInit(double divide) {
 		}
 		else {
 			blockRows = 100;
-		}
+        }*/
 
 		blockX = xSize;
 
-		if (blockRows < ySize) {
+        /*if (blockRows < ySize) {
 			blockSize = ySize / blockRows;
 			if (ySize % blockRows > 0)
 				++blockSize;
 		} else {
 			blockSize = 1;
 			blockRows = ySize;
-		}
+        }*/
+        blockSize = 1; // non-block
+        blockRows = ySize;//non-block
 		blockY = blockRows;
 		blockIsInitialized = true;
 	}

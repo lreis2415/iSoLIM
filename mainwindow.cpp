@@ -977,27 +977,11 @@ bool MainWindow::drawLayer(string filename){
     img = new QImage(imagename_q);
     bool flagLayerOpen = false;
     bool flagMinMaxAssigned = false;
-    for(int i = 0; i<proj->filenames.size();i++){
-        if(filename==proj->filenames[i]){
-            imgMax = proj->layerDataMax[i];
-            imgMin = proj->layerDataMin[i];
-            flagMinMaxAssigned = true;
-            if(fabs(imgMax-NODATA)<VERY_SMALL || fabs(imgMin-NODATA)<VERY_SMALL){
-                lyr = new BaseIO(filename);
-                if(!lyr->isOpened()) return false;
-                flagLayerOpen = true;
-                imgMax = lyr->getDataMax();
-                imgMin = lyr->getDataMin();
-                proj->layerDataMax[i]=imgMax;
-                proj->layerDataMin[i]=imgMin;
-            }
-        }
-    }
-    if(!flagMinMaxAssigned){
-        for(int i = 0; i<proj->results.size();i++){
-            if(filename==proj->results[i]){
-                imgMax = proj->resultDataMax[i];
-                imgMin = proj->resultDataMin[i];
+    if(proj){
+        for(int i = 0; i<proj->filenames.size();i++){
+            if(filename==proj->filenames[i]){
+                imgMax = proj->layerDataMax[i];
+                imgMin = proj->layerDataMin[i];
                 flagMinMaxAssigned = true;
                 if(fabs(imgMax-NODATA)<VERY_SMALL || fabs(imgMin-NODATA)<VERY_SMALL){
                     lyr = new BaseIO(filename);
@@ -1005,11 +989,36 @@ bool MainWindow::drawLayer(string filename){
                     flagLayerOpen = true;
                     imgMax = lyr->getDataMax();
                     imgMin = lyr->getDataMin();
-                    proj->resultDataMax[i]=imgMax;
-                    proj->resultDataMin[i]=imgMin;
+                    proj->layerDataMax[i]=imgMax;
+                    proj->layerDataMin[i]=imgMin;
                 }
             }
         }
+
+        if(!flagMinMaxAssigned){
+            for(int i = 0; i<proj->results.size();i++){
+                if(filename==proj->results[i]){
+                    imgMax = proj->resultDataMax[i];
+                    imgMin = proj->resultDataMin[i];
+                    flagMinMaxAssigned = true;
+                    if(fabs(imgMax-NODATA)<VERY_SMALL || fabs(imgMin-NODATA)<VERY_SMALL){
+                        lyr = new BaseIO(filename);
+                        if(!lyr->isOpened()) return false;
+                        flagLayerOpen = true;
+                        imgMax = lyr->getDataMax();
+                        imgMin = lyr->getDataMin();
+                        proj->resultDataMax[i]=imgMax;
+                        proj->resultDataMin[i]=imgMin;
+                    }
+                }
+            }
+        }
+    } else {
+        lyr = new BaseIO(filename);
+        if(!lyr->isOpened()) return false;
+        flagLayerOpen = true;
+        imgMax = lyr->getDataMax();
+        imgMin = lyr->getDataMin();
     }
     if(img->isNull()){
         ui->statusBar->showMessage("Loading Data...");

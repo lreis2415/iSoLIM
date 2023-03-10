@@ -276,7 +276,6 @@ void MyGraphicsView::mouseDoubleClickEvent(QMouseEvent *e){
         if(pt.x()<xStart||pt.x()>xStart+graphWidth) return;
         double x = 1.0*(pt.x()-xStart)/graphWidth;
         double y = 1.0*(yEnd-pt.y())/graphHeight;
-        int py=pt.y();
         if(y>1||y<0) return;
         x = x * (curveXMax-curveXMin) + curveXMin;
         for(int i = 0;i<knotX.size();i++){

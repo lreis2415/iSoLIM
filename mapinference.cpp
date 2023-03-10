@@ -1,6 +1,8 @@
 #include "mapinference.h"
 #include "ui_mapinference.h"
 
+//#define EXPERIMENT
+
 mapInference::mapInference(SoLIMProject *proj, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::mapInference),
@@ -199,7 +201,9 @@ void mapInference::on_Inference_OK_btn_clicked()
             }
         }
     }
-
+#ifdef EXPERIMENT
+    QTime start1 = QTime::currentTime();
+#endif
     solim::Inference *infer = new solim::Inference(eds,selectedPrototypes,threshold,outSoil,outUncer);
     if(isCategorical == false){
         try{
@@ -232,8 +236,9 @@ void mapInference::on_Inference_OK_btn_clicked()
     cout<<"Start:"<<start.minute()<<":"<<start.second()<<endl;
     cout<<"end:"<<end.minute()<<":"<<end.second()<<endl;
     cout<<"Elasped time: "<<(start.msecsTo(end)/1000.0)<<"s"<<endl;
+    cout<<"compute time:"<<infer->compute_time<<"s"<<endl;
     QMessageBox msg;
-    msg.setText(QString::number(eds->LayerRef->getBlockSize())+"blocks; Elasped time:"+QString::number(start.msecsTo(end)/1000.0)+" compute time: "+QString::number(eds->CellSizeY));
+    msg.setText(QString::number(eds->LayerRef->getBlockSize())+"blocks; Elasped time:"+QString::number(start.msecsTo(end)/1000.0)+" compute time: "+QString::number(infer->compute_time));
     msg.exec();
 
 #endif

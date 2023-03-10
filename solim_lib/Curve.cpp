@@ -170,7 +170,7 @@ namespace solim {
 		}
         double mean = layer->Data_Mean;
         double stdDev = layer->Data_StdDev;
-        if(fabs(mean-NODATA)<VERY_SMALL || fabs(stdDev-NODATA)<VERY_SMALL || stdDev<NODATA || mean < NODATA)
+        if(fabs(mean-NODATA)<VERY_SMALL || fabs(stdDev-NODATA)<VERY_SMALL || mean>max || mean < min || stdDev<VERY_SMALL)
         {
             int cellNum = 0;
             double sum = 0;
@@ -193,7 +193,6 @@ namespace solim {
         }
         double se = typicalValue;
         double sqrDev = stdDev * stdDev;
-
         addKnot(se -sqrt(-2*log(0.01)/ (se * se + sqrDev + mean * mean - 2 * se*mean))*sqrDev,0.01);
         addKnot(se -sqrt(-2*log(0.25)/ (se * se + sqrDev + mean * mean - 2 * se*mean))*sqrDev,0.25);
         addKnot(se -sqrt(-2*log(0.5)/ (se * se + sqrDev + mean * mean - 2 * se*mean))*sqrDev,0.5);
@@ -437,7 +436,7 @@ namespace solim {
         vecKnotY.push_back(1);
 	}
 
-	void Curve::addKnot(double x, double y) {
+    void Curve::addKnot(double x, double y) {
 		for (int i = 0; i < iKnotNum; ++i) {
 			if (fabs(vecKnotX[i] - x) < VERY_SMALL)
                 return;

@@ -1,5 +1,6 @@
 #include "inference.h"
 #include "QTime"
+
 namespace solim {
 Inference::Inference(EnvDataset *eds, vector<Prototype>* prototypes, double threshold,
                      string outSoilFile, string outUncerFile,IntegrationMethod integrate):
@@ -36,7 +37,9 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
     //EnvUnit *e;
     progressBar->setMinimum(0);
     progressBar->setMaximum(block_size*100);
-    double compute_time = 0;
+#ifdef EXPERIMENT
+    compute_time = 0;
+#endif
     for (int i = 0; i < block_size; ++i) {
         // for each block, this circle is to ensure every block is processed
 
@@ -48,12 +51,14 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
         for (int k = 0; k < EDS->Layers.size(); ++k) {
             EDS->Layers.at(k)->ReadByBlock(i);
         }
-        //QTime start = QTime::currentTime();
+#ifdef EXPERIMENT
+        QTime start = QTime::currentTime();
+#endif
         long long int pixelCount = nx*ny;
         int numcores = omp_get_num_procs();
-        #ifdef EXPERIMENT
+#ifdef EXPERIMENT
         cout<<i<<" number of processors: "<<numcores<<endl;
-        #endif
+#endif
 #pragma omp parallel for schedule(dynamic) num_threads(numcores)
         for (int n = 0; n < nx*ny; ++n) {
             // for each unit in the block, calculate their predicted value and uncertainty
@@ -137,13 +142,18 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
                 uncertaintyValue[n] = 1 - maxSimi;
             }
         }
-        //QTime end = QTime::currentTime();
-        //compute_time += start.msecsTo(end)/1000.0;
+#ifdef EXPERIMENT
+        QTime end = QTime::currentTime();
+        compute_time += start.msecsTo(end)/1000.0;
+#endif
         EDS->LayerRef->localToGlobal(i, 0, 0, Xstart, Ystart);
         outSoilMap->write(Xstart, Ystart, ny, nx, predictedValue);
         outUncerMap->write(Xstart, Ystart, ny, nx, uncertaintyValue);//
 
     }
+#ifdef EXPERIMENT
+    cout<<"compute time:"<<compute_time<<endl;
+#endif
     outSoilMap->computeStatistics();
     delete []envValues;
     delete []nodata;

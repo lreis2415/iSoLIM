@@ -12,7 +12,7 @@
 #define NODATA -9999
 #define MAXLN 128
 #define MAXLN_LAYERS 128
-
+//#define EXPERIMENT
 namespace solim {
     class Inference {
     public:
@@ -24,6 +24,9 @@ namespace solim {
         BaseIO *outUncerMap;
         double Threshold;
         IntegrationMethod Integrate;
+#ifdef EXPERIMENT
+        double compute_time;
+#endif
     public:
         Inference(EnvDataset *eds, vector<Prototype>* prototypes, double threshold,
                   string outSoilFile, string outUncerFile,IntegrationMethod integrate = MINIMUM);
