@@ -26,6 +26,7 @@
 #include "changecovname.h"
 #include "validation.h"
 #include "legendwindow.h"
+#include "intelligentInfer.h"
 #include <iostream>
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -106,6 +107,8 @@ private slots:
     void on_actionAdd_prototypes_from_Data_Mining_triggered();
 
     void on_actionClose_Project_triggered();
+
+    void on_actionSpatial_prediction_with_intelligent_modelling_triggered();
 
 private:
     Ui::MainWindow *ui;

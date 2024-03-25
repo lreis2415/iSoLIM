@@ -55,11 +55,10 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
         QTime start = QTime::currentTime();
 #endif
         long long int pixelCount = nx*ny;
-        int numcores = omp_get_num_procs();
 #ifdef EXPERIMENT
         cout<<i<<" number of processors: "<<numcores<<endl;
 #endif
-#pragma omp parallel for schedule(dynamic) num_threads(numcores)
+//#pragma omp parallel for num_threads(numcores)
         for (int n = 0; n < nx*ny; ++n) {
             // for each unit in the block, calculate their predicted value and uncertainty
             bool validEnvUnitFlag = TRUE;

@@ -1934,3 +1934,10 @@ void MainWindow::clearView(){
     zoomToolBar->setVisible(false);
     onShowLegend(true);
 }
+
+void MainWindow::on_actionSpatial_prediction_with_intelligent_modelling_triggered()
+{
+    intelligentInfer intell(proj,this);
+    intell.exec();
+}
+

@@ -19,6 +19,7 @@ SOURCES += \
     addprototype_expert.cpp \
     addprototypebase.cpp \
     changecovname.cpp \
+    intelligentInfer.cpp \
     itemselectionwindow.cpp \
     legendwindow.cpp \
     main.cpp \
@@ -46,6 +47,7 @@ HEADERS += \
     addprototype_expert.h \
     addprototypebase.h \
     changecovname.h \
+    intelligentInfer.h \
     itemselectionwindow.h \
     legendwindow.h \
     mainwindow.h \
@@ -75,6 +77,7 @@ FORMS += \
     addprototype_expert.ui \
     addprototypebase.ui \
     changecovname.ui \
+    intelligentInfer.ui \
     itemselectionwindow.ui \
     legendwindow.ui \
     mainwindow.ui \
