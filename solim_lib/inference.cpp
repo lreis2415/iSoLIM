@@ -55,18 +55,18 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
         QTime start = QTime::currentTime();
 #endif
         long long int pixelCount = nx*ny;
-        int numcores = omp_get_num_procs();
+        //int numcores = omp_get_num_procs();
 #ifdef EXPERIMENT
         cout<<i<<" number of processors: "<<numcores<<endl;
 #endif
-#pragma omp parallel for schedule(dynamic) num_threads(numcores)
+//#pragma omp parallel for schedule(dynamic) num_threads(numcores)
         for (int n = 0; n < nx*ny; ++n) {
             // for each unit in the block, calculate their predicted value and uncertainty
             bool validEnvUnitFlag = TRUE;
 
             double progressPara = 100.0/pixelCount;
             if (n % int(pixelCount*0.01)==0 && n > 0) {
-                if(omp_get_thread_num()==0)
+                //if(omp_get_thread_num()==0)
                     progressBar->setValue(n*progressPara+i*100);
             }
             for (int k = 0; k < EDS->Layers.size(); ++k) {
@@ -271,15 +271,15 @@ void Inference::MappingCategorical(string targetVName,string membershipFolder,QP
             EDS->Layers.at(k)->ReadByBlock(i);
         }
         long long int pixelCount = nx*ny;
-        int numcores = omp_get_num_procs();
-#pragma omp parallel for schedule(dynamic) num_threads(numcores)
+        /*int numcores = omp_get_num_procs();
+#pragma omp parallel for schedule(dynamic) num_threads(numcores)*/
         for (int n = 0; n < nx*ny; ++n) {
             // for each unit in the block, calculate their predicted value and uncertainty
             bool validEnvUnitFlag = TRUE;
 
             double progressPara = 100.0/pixelCount;
             if (n % int(pixelCount*0.01)==0 && n > 0) {
-                if(omp_get_thread_num()==0)
+                //if(omp_get_thread_num()==0)
                     progressBar->setValue(n*progressPara+i*100);
             }
             for (int k = 0; k < EDS->Layers.size(); ++k) {
@@ -392,18 +392,19 @@ void Inference::inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string 
         }
         //QTime start = QTime::currentTime();
         long long int pixelCount = nx*ny;
-        int numcores = omp_get_num_procs();
+/*        int numcores = omp_get_num_procs();
         #ifdef EXPERIMENT
         cout<<i<<" number of processors: "<<numcores<<endl;
         #endif
 #pragma omp parallel for schedule(dynamic) num_threads(numcores)
+*/
         for (int n = 0; n < nx*ny; ++n) {
             // for each unit in the block, calculate their predicted value and uncertainty
             bool validEnvUnitFlag = TRUE;
 
             double progressPara = 100.0/pixelCount;
             if (n % int(pixelCount*0.01)==0 && n > 0) {
-                if(omp_get_thread_num()==0)
+                //if(omp_get_thread_num()==0)
                     progressBar->setValue(n*progressPara+i*100);
             }
             for (int k = 0; k < eds->Layers.size(); ++k) {
@@ -606,15 +607,15 @@ void Inference::inferCategoricalMap(EnvDataset *eds, vector<Prototype>* prototyp
             eds->Layers.at(k)->ReadByBlock(i);
         }
         long long int pixelCount = nx*ny;
-        int numcores = omp_get_num_procs();
-#pragma omp parallel for schedule(dynamic) num_threads(numcores)
+        /*int numcores = omp_get_num_procs();
+#pragma omp parallel for schedule(dynamic) num_threads(numcores)*/
         for (int n = 0; n < nx*ny; ++n) {
             // for each unit in the block, calculate their predicted value and uncertainty
             bool validEnvUnitFlag = TRUE;
 
             double progressPara = 100.0/pixelCount;
             if (n % int(pixelCount*0.01)==0 && n > 0) {
-                if(omp_get_thread_num()==0)
+                //if(omp_get_thread_num()==0)
                     progressBar->setValue(n*progressPara+i*100);
             }
             for (int k = 0; k < eds->Layers.size(); ++k) {
