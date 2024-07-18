@@ -90,8 +90,14 @@ void mapInference::on_SoilFileCreate_btn_clicked()
     ui->OutputSoilFile_lineEdit->setText(soilFile);
     string uncerFile = soilFile.toStdString();
     std::size_t end = uncerFile.find_last_of('.');
-    uncerFile = uncerFile.substr(0,end)+"_uncer"+uncerFile.substr(end);
-    ui->OutputUncerFile_lineEdit->setText(uncerFile.c_str());
+    string uncerFile1 = uncerFile.substr(0,end)+"_uncer_minus_avg"+uncerFile.substr(end);
+    string uncerFile2 = uncerFile.substr(0,end)+"_uncer_minus_weighted"+uncerFile.substr(end);
+    string uncerFile3 = uncerFile.substr(0,end)+"_uncer_weighted_dis"+uncerFile.substr(end);
+    ui->uncer_minus_avg_lineEdit->setText(uncerFile1.c_str());
+    ui->uncer_minus_wei_lineEdit->setText(uncerFile2.c_str());
+    ui->uncer_wei_dis_lineEdit->setText(uncerFile3.c_str());
+
+
 }
 
 void mapInference::on_Inference_OK_btn_clicked()
@@ -102,7 +108,7 @@ void mapInference::on_Inference_OK_btn_clicked()
         warn.exec();
         return;
     }
-    if(ui->OutputSoilFile_lineEdit->text().isEmpty()||ui->OutputUncerFile_lineEdit->text().isEmpty()){
+    if(ui->OutputSoilFile_lineEdit->text().isEmpty()||ui->uncer_minus_avg_lineEdit->text().isEmpty()||ui->uncer_minus_wei_lineEdit->text().isEmpty()||ui->uncer_wei_dis_lineEdit->text().isEmpty()){
         warn("Please fill in the output filename!");
         return;
     }
@@ -155,11 +161,17 @@ void mapInference::on_Inference_OK_btn_clicked()
     double threshold=atof(ui->Threshold_lineEdit->text().toStdString().c_str());
     string targetName = ui->InferedProperty_comboBox->currentText().toStdString();
     string outSoil = ui->OutputSoilFile_lineEdit->text().toStdString();
-    string outUncer=ui->OutputUncerFile_lineEdit->text().toStdString();
+    string uncer1=ui->uncer_minus_avg_lineEdit->text().toStdString();
+    string uncer2=ui->uncer_minus_wei_lineEdit->text().toStdString();
+    string uncer3=ui->uncer_wei_dis_lineEdit->text().toStdString();
     QFile outsoil_img((outSoil+".png").c_str());
     if(outsoil_img.exists()) outsoil_img.remove();
-    QFile outuncer_img((outUncer+".png").c_str());
+    QFile outuncer_img((uncer1+".png").c_str());
     if(outuncer_img.exists()) outuncer_img.remove();
+    QFile outuncer_img2((uncer2+".png").c_str());
+    if(outuncer_img2.exists()) outuncer_img.remove();
+    QFile outuncer_img3((uncer3+".png").c_str());
+    if(outuncer_img3.exists()) outuncer_img.remove();
     ui->progressBar->setRange(0,100);
     ui->progressBar->setValue(0);
     ui->progressBar->setVisible(TRUE);
@@ -204,7 +216,7 @@ void mapInference::on_Inference_OK_btn_clicked()
 #ifdef EXPERIMENT
     QTime start1 = QTime::currentTime();
 #endif
-    solim::Inference *infer = new solim::Inference(eds,selectedPrototypes,threshold,outSoil,outUncer);
+    solim::Inference *infer = new solim::Inference(eds,selectedPrototypes,threshold,outSoil,uncer1,uncer2,uncer3);
     if(isCategorical == false){
         try{
             infer->Mapping(targetName,ui->progressBar);
@@ -243,7 +255,9 @@ void mapInference::on_Inference_OK_btn_clicked()
 
 #endif
     project->addResult(outSoil,infer->outSoilMap->getDataMax(), infer->outSoilMap->getDataMin());
-    project->addResult(outUncer,1,0);
+    project->addResult(uncer1,1,0);
+    project->addResult(uncer2,1,0);
+    project->addResult(uncer3,1,0);
     project->currentResultName = outSoil;
     this->close();
 }
@@ -312,15 +326,39 @@ void mapInference::on_InferedProperty_comboBox_currentTextChanged(const QString 
                 i++;
             }
             ui->OutputSoilFile_lineEdit->setText(soilFile);
-            QString uncerFile = dir+"/"+arg1+"_uncer"+ext;
+
+            //uncer 1
+            QString uncerFile = dir+"/"+arg1+"_uncer_minus_avg"+ext;
             QFileInfo uncerFileInfo(uncerFile);
             i = 1;
             while(uncerFileInfo.exists()){
-                uncerFile = dir+"/"+arg1+"_uncer("+QString::number(i)+")"+ext;
+                uncerFile = dir+"/"+arg1+"_uncer_minus_avg("+QString::number(i)+")"+ext;
                 uncerFileInfo.setFile(uncerFile);
                 i++;
             }
-            ui->OutputUncerFile_lineEdit->setText(uncerFile);
+            ui->uncer_minus_avg_lineEdit->setText(uncerFile);
+
+            //uncer 2
+            QString uncerFile2 = dir+"/"+arg1+"_uncer_minus_weighted"+ext;
+            QFileInfo uncerFileInfo2(uncerFile2);
+            i = 1;
+            while(uncerFileInfo2.exists()){
+                uncerFile2 = dir+"/"+arg1+"_uncer_minus_weighted("+QString::number(i)+")"+ext;
+                uncerFileInfo2.setFile(uncerFile2);
+                i++;
+            }
+            ui->uncer_minus_wei_lineEdit->setText(uncerFile2);
+
+            //uncer 3
+            QString uncerFile3 = dir+"/"+arg1+"_uncer_weighted_dis"+ext;
+            QFileInfo uncerFileInfo3(uncerFile3);
+            i = 1;
+            while(uncerFileInfo3.exists()){
+                uncerFile3 = dir+"/"+arg1+"_uncer_weighted_dis("+QString::number(i)+")"+ext;
+                uncerFileInfo3.setFile(uncerFile3);
+                i++;
+            }
+            ui->uncer_wei_dis_lineEdit->setText(uncerFile3);
         }
         if(workingDir.indexOf("\\")>-1){
             QString soilFile = dir+"\\"+arg1+ext;
@@ -332,15 +370,39 @@ void mapInference::on_InferedProperty_comboBox_currentTextChanged(const QString 
                 i++;
             }
             ui->OutputSoilFile_lineEdit->setText(soilFile);
-            QString uncerFile = dir+"\\"+arg1+"_uncer"+ext;
+
+            //uncer 1
+            QString uncerFile = dir+"\\"+arg1+"_uncer_minus_avg"+ext;
             QFileInfo uncerFileInfo(uncerFile);
             i = 1;
             while(uncerFileInfo.exists()){
-                uncerFile = dir+"\\"+arg1+"_uncer("+QString::number(i)+")"+ext;
+                uncerFile = dir+"\\"+arg1+"_uncer_minus_avg("+QString::number(i)+")"+ext;
                 uncerFileInfo.setFile(uncerFile);
                 i++;
             }
-            ui->OutputUncerFile_lineEdit->setText(uncerFile);
+            ui->uncer_minus_avg_lineEdit->setText(uncerFile);
+
+            //uncer 2
+            QString uncerFile2 = dir+"\\"+arg1+"_uncer_minus_weighted"+ext;
+            QFileInfo uncerFileInfo2(uncerFile2);
+            i = 1;
+            while(uncerFileInfo2.exists()){
+                uncerFile2 = dir+"\\"+arg1+"_uncer_minus_weighted("+QString::number(i)+")"+ext;
+                uncerFileInfo2.setFile(uncerFile2);
+                i++;
+            }
+            ui->uncer_minus_wei_lineEdit->setText(uncerFile2);
+
+            //uncer 3
+            QString uncerFile3 = dir+"\\"+arg1+"_uncer_weighted_dis"+ext;
+            QFileInfo uncerFileInfo3(uncerFile3);
+            i = 1;
+            while(uncerFileInfo3.exists()){
+                uncerFile3 = dir+"\\"+arg1+"_uncer_weighted_dis("+QString::number(i)+")"+ext;
+                uncerFileInfo3.setFile(uncerFile3);
+                i++;
+            }
+            ui->uncer_wei_dis_lineEdit->setText(uncerFile3);
         }
     }
 }

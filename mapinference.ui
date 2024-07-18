@@ -105,12 +105,40 @@
      <item>
       <widget class="QLabel" name="label_6">
        <property name="text">
-        <string>Output Uncertaintiy File:</string>
+        <string>Output Uncertaintiy File (1-avg):</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="OutputUncerFile_lineEdit"/>
+      <widget class="QLineEdit" name="uncer_minus_avg_lineEdit"/>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_11">
+     <item>
+      <widget class="QLabel" name="label_7">
+       <property name="text">
+        <string>Output Uncertaintiy File (1-weighted):</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="uncer_minus_wei_lineEdit"/>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_12">
+     <item>
+      <widget class="QLabel" name="label_9">
+       <property name="text">
+        <string>Output Uncertaintiy File (weighted_dis):</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="uncer_wei_dis_lineEdit"/>
      </item>
     </layout>
    </item>

@@ -3,9 +3,9 @@
 
 namespace solim {
 Inference::Inference(EnvDataset *eds, vector<Prototype>* prototypes, double threshold,
-                     string outSoilFile, string outUncerFile,IntegrationMethod integrate):
-EDS(eds),Prototypes(prototypes),Threshold(threshold),outSoilFilename(outSoilFile),
-  outUncerFilename(outUncerFile),Integrate(integrate),outSoilMap(nullptr),outUncerMap(nullptr){}
+                     string outSoilFile, string uncer1,string uncer2,string uncer3,IntegrationMethod integrate):
+    EDS(eds),Prototypes(prototypes),Threshold(threshold), outSoilFilename(outSoilFile),outUncerFilename1(uncer1),outUncerFilename2(uncer2),outUncerFilename3(uncer3),
+    Integrate(integrate),outSoilMap(nullptr),outUncerMap1(nullptr),outUncerMap2(nullptr),outUncerMap3(nullptr){}
 
 void Inference::Mapping(string targetVName,QProgressBar *progressBar){
     // check the consistency of prototype rules and envdataset
@@ -20,15 +20,23 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
     int block_size = EDS->Layers.at(0)->BlockSize;
     nx = EDS->XSize;
     ny = EDS->YSize;
-    float *uncertaintyValue, *predictedValue;
-    uncertaintyValue = new float[nx*ny];
+    float *uncertaintyValue1,*uncertaintyValue2,*uncertaintyValue3, *predictedValue;
+    uncertaintyValue1 = new float[nx*ny];
+    uncertaintyValue2 = new float[nx*ny];
+    uncertaintyValue3 = new float[nx*ny];
     predictedValue = new float[nx*ny];
     outSoilMap = new BaseIO(EDS->LayerRef);
     outSoilMap->setFileName(outSoilFilename);
     outSoilMap->setNodataValue(NODATA);
-    outUncerMap = new BaseIO(EDS->LayerRef);
-    outUncerMap->setFileName(outUncerFilename);
-    outUncerMap->setNodataValue(-1);
+    outUncerMap1 = new BaseIO(EDS->LayerRef);
+    outUncerMap1->setFileName(outUncerFilename1);
+    outUncerMap1->setNodataValue(-1);
+    outUncerMap2 = new BaseIO(EDS->LayerRef);
+    outUncerMap2->setFileName(outUncerFilename2);
+    outUncerMap2->setNodataValue(-1);
+    outUncerMap3 = new BaseIO(EDS->LayerRef);
+    outUncerMap3->setFileName(outUncerFilename3);
+    outUncerMap3->setNodataValue(-1);
     double *envValues = new double[MAXLN_LAYERS];
     double *nodata = new double[MAXLN_LAYERS];
     for (int k = 0; k < EDS->Layers.size(); k++) {
@@ -79,7 +87,9 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
                 envValues[k] = value;
             }
             if (!validEnvUnitFlag) {
-                uncertaintyValue[n] = -1;
+                uncertaintyValue1[n] = -1;
+                uncertaintyValue2[n] = -1;
+                uncertaintyValue3[n] = -1;
                 predictedValue[n] = NODATA;
                 //delete e;
                 continue;
@@ -87,34 +97,9 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
             double valueSum = 0;
             double weightSum = 0;
             double maxSimi = 0;
-            // adaptive threshold
-            /*double *simi_collect = new double[prototypes->size()];
-            double *value_collect = new double[prototypes->size()];
-            int k = 0;
-            for (vector<Prototype>::iterator it = prototypes->begin(); it != prototypes->end(); ++it) {
-                // calculate similarity to prototype
-                double tmpOptimity;
-                double minOptimity = (*it).envConditions[0].getOptimality(envValues[0]);
-                for (int i = 1; i < eds->Layers.size(); ++i) {
-                    tmpOptimity = (*it).envConditions[i].getOptimality(envValues[i]);
-                    if (tmpOptimity < minOptimity) minOptimity = tmpOptimity;
-                }
-                simi_collect[k] = minOptimity;
-                value_collect[k] = (*it).getProperty(targetVName);
-                k++;
-            }
-            std::sort(simi_collect, simi_collect + prototypes->size());
-            int threshold_loc = prototypes->size()-int(prototypes->size()/10+0.5)-1;
-            if(threshold_loc<0) threshold_loc = 0;
-            double threshold = simi_collect[threshold_loc];
-            for(int i = 0; i < prototypes->size(); i++){
-                if(simi_collect[i]>threshold){
-                    valueSum += simi_collect[i]*value_collect[i];
-                    weightSum += simi_collect[i];
-                    if (simi_collect[i] > maxSimi)
-                        maxSimi = simi_collect[i];
-                }
-            }*/
+            double simi_sq_sum=0;
+            int sample_count = 0;
+
             // calculate predicted value
             for (vector<Prototype>::iterator it = Prototypes->begin(); it != Prototypes->end(); ++it) {
                 // calculate similarity to prototype
@@ -127,19 +112,25 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
                 double simi = minOptimity;
                 //double simi = (*it).calcSimi_preChecked(e);
                 if (simi > Threshold) {
+                    sample_count++;
                     valueSum += simi*(*it).getProperty(targetVName);
                     weightSum += simi;
+                    simi_sq_sum += simi*simi;
                     if (simi > maxSimi)
                         maxSimi = simi;
                 }
             }
             if (fabs(weightSum) < VERY_SMALL) {
-                uncertaintyValue[n] = -1;
+                uncertaintyValue1[n] = -1;
+                uncertaintyValue2[n] = -1;
+                uncertaintyValue3[n] = -1;
                 predictedValue[n] = NODATA;
             }
             else {
                 predictedValue[n] = valueSum / weightSum;
-                uncertaintyValue[n] = 1 - maxSimi;
+                uncertaintyValue1[n] = 1 - weightSum/sample_count;
+                uncertaintyValue2[n] = 1 - simi_sq_sum/weightSum;
+                uncertaintyValue3[n] = (sample_count - 2*weightSum+simi_sq_sum)/(sample_count-weightSum);
             }
         }
 #ifdef EXPERIMENT
@@ -148,7 +139,9 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
 #endif
         EDS->LayerRef->localToGlobal(i, 0, 0, Xstart, Ystart);
         outSoilMap->write(Xstart, Ystart, ny, nx, predictedValue);
-        outUncerMap->write(Xstart, Ystart, ny, nx, uncertaintyValue);//
+        outUncerMap1->write(Xstart, Ystart, ny, nx, uncertaintyValue1);
+        outUncerMap2->write(Xstart, Ystart, ny, nx, uncertaintyValue2);
+        outUncerMap3->write(Xstart, Ystart, ny, nx, uncertaintyValue3);
 
     }
 #ifdef EXPERIMENT
@@ -158,7 +151,9 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
     delete []envValues;
     delete []nodata;
     delete predictedValue;
-    delete uncertaintyValue;
+    delete uncertaintyValue1;
+    delete uncertaintyValue2;
+    delete uncertaintyValue3;
 }
 
 void Inference::MappingCategorical(string targetVName,string membershipFolder,QProgressBar *progressBar){
@@ -232,9 +227,9 @@ void Inference::MappingCategorical(string targetVName,string membershipFolder,QP
     outSoilMap = new BaseIO(EDS->LayerRef);
     outSoilMap->setFileName(outSoilFilename);
     outSoilMap->setNodataValue(NODATA);
-    outUncerMap = new BaseIO(EDS->LayerRef);
-    outUncerMap->setFileName(outUncerFilename);
-    outUncerMap->setNodataValue(-1);
+    outUncerMap1 = new BaseIO(EDS->LayerRef);
+    outUncerMap1->setFileName(outUncerFilename1);
+    outUncerMap1->setNodataValue(-1);
     double *envValues = new double[MAXLN_LAYERS];
     double *nodata = new double[MAXLN_LAYERS];
     for (int k = 0; k < EDS->Layers.size(); k++) {
@@ -332,8 +327,8 @@ void Inference::MappingCategorical(string targetVName,string membershipFolder,QP
         EDS->LayerRef->localToGlobal(i, 0, 0, Xstart, Ystart);
         outSoilMap->setNodataValue(NODATA);
         outSoilMap->write(Xstart, Ystart, ny, nx, predictedValue);
-        outUncerMap->setNodataValue(-1);
-        outUncerMap->write(Xstart, Ystart, ny, nx, uncertaintyValue);//
+        outUncerMap1->setNodataValue(-1);
+        outUncerMap1->write(Xstart, Ystart, ny, nx, uncertaintyValue);//
         if(membershipFolder!=""){
             for(int proto_num = 0; proto_num<category_nums.size();proto_num++){
                 membershipMaps->at(proto_num).write(Xstart, Ystart, ny, nx,membershipData[proto_num]);
