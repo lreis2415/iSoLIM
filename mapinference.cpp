@@ -28,7 +28,7 @@ mapInference::mapInference(SoLIMProject *proj, QWidget *parent) :
         ui->membershipFolder_lineEdit->setVisible(false);
         ui->progressBar->setVisible(false);
         ui->RAMEfficient_low_rbtn->setChecked(true);
-        ui->Threshold_lineEdit->setText("0.0");
+        ui->Threshold_lineEdit->setText("0.001");
         if(project->prototypeBaseNames.size()<1){
             QMessageBox alertMsg;
             alertMsg.setText("Please add prototypes to project first!");
@@ -41,7 +41,7 @@ mapInference::mapInference(SoLIMProject *proj, QWidget *parent) :
             }
             ui->prototypeBaseName_lineEdit->setText(project->prototypeBaseNames[0].c_str());
             ui->RAMEfficient_low_rbtn->setChecked(true);
-            ui->Threshold_lineEdit->setText("0.0");
+            ui->Threshold_lineEdit->setText("0.001");
             ui->CovariateFiles_tableWidget->setColumnCount(4);
             ui->CovariateFiles_tableWidget->setHorizontalHeaderItem(0,new QTableWidgetItem("Filename"));
             ui->CovariateFiles_tableWidget->setHorizontalHeaderItem(1,new QTableWidgetItem("Covariate"));
@@ -90,9 +90,11 @@ void mapInference::on_SoilFileCreate_btn_clicked()
     ui->OutputSoilFile_lineEdit->setText(soilFile);
     string uncerFile = soilFile.toStdString();
     std::size_t end = uncerFile.find_last_of('.');
+    string uncerFile0 = uncerFile.substr(0,end)+"_uncer_minus_max"+uncerFile.substr(end);
     string uncerFile1 = uncerFile.substr(0,end)+"_uncer_minus_avg"+uncerFile.substr(end);
     string uncerFile2 = uncerFile.substr(0,end)+"_uncer_minus_weighted"+uncerFile.substr(end);
     string uncerFile3 = uncerFile.substr(0,end)+"_uncer_weighted_dis"+uncerFile.substr(end);
+    ui->uncer_minus_max_lineEdit->setText(uncerFile0.c_str());
     ui->uncer_minus_avg_lineEdit->setText(uncerFile1.c_str());
     ui->uncer_minus_wei_lineEdit->setText(uncerFile2.c_str());
     ui->uncer_wei_dis_lineEdit->setText(uncerFile3.c_str());
@@ -161,17 +163,20 @@ void mapInference::on_Inference_OK_btn_clicked()
     double threshold=atof(ui->Threshold_lineEdit->text().toStdString().c_str());
     string targetName = ui->InferedProperty_comboBox->currentText().toStdString();
     string outSoil = ui->OutputSoilFile_lineEdit->text().toStdString();
+    string uncer0=ui->uncer_minus_max_lineEdit->text().toStdString();
     string uncer1=ui->uncer_minus_avg_lineEdit->text().toStdString();
     string uncer2=ui->uncer_minus_wei_lineEdit->text().toStdString();
     string uncer3=ui->uncer_wei_dis_lineEdit->text().toStdString();
     QFile outsoil_img((outSoil+".png").c_str());
     if(outsoil_img.exists()) outsoil_img.remove();
-    QFile outuncer_img((uncer1+".png").c_str());
-    if(outuncer_img.exists()) outuncer_img.remove();
+    QFile outuncer_img0((uncer0+".png").c_str());
+    if(outuncer_img0.exists()) outuncer_img0.remove();
+    QFile outuncer_img1((uncer1+".png").c_str());
+    if(outuncer_img1.exists()) outuncer_img1.remove();
     QFile outuncer_img2((uncer2+".png").c_str());
-    if(outuncer_img2.exists()) outuncer_img.remove();
+    if(outuncer_img2.exists()) outuncer_img2.remove();
     QFile outuncer_img3((uncer3+".png").c_str());
-    if(outuncer_img3.exists()) outuncer_img.remove();
+    if(outuncer_img3.exists()) outuncer_img3.remove();
     ui->progressBar->setRange(0,100);
     ui->progressBar->setValue(0);
     ui->progressBar->setVisible(TRUE);
@@ -216,7 +221,7 @@ void mapInference::on_Inference_OK_btn_clicked()
 #ifdef EXPERIMENT
     QTime start1 = QTime::currentTime();
 #endif
-    solim::Inference *infer = new solim::Inference(eds,selectedPrototypes,threshold,outSoil,uncer1,uncer2,uncer3);
+    solim::Inference *infer = new solim::Inference(eds,selectedPrototypes,threshold,outSoil,uncer0,uncer1,uncer2,uncer3);
     if(isCategorical == false){
         try{
             infer->Mapping(targetName,ui->progressBar);
@@ -255,6 +260,7 @@ void mapInference::on_Inference_OK_btn_clicked()
 
 #endif
     project->addResult(outSoil,infer->outSoilMap->getDataMax(), infer->outSoilMap->getDataMin());
+    project->addResult(uncer0,1,0);
     project->addResult(uncer1,1,0);
     project->addResult(uncer2,1,0);
     project->addResult(uncer3,1,0);
@@ -326,17 +332,27 @@ void mapInference::on_InferedProperty_comboBox_currentTextChanged(const QString 
                 i++;
             }
             ui->OutputSoilFile_lineEdit->setText(soilFile);
-
-            //uncer 1
-            QString uncerFile = dir+"/"+arg1+"_uncer_minus_avg"+ext;
-            QFileInfo uncerFileInfo(uncerFile);
+            //uncer 0
+            QString uncerFile0 = dir+"/"+arg1+"_uncer_minus_max"+ext;
+            QFileInfo uncerFileInfo0(uncerFile0);
             i = 1;
-            while(uncerFileInfo.exists()){
-                uncerFile = dir+"/"+arg1+"_uncer_minus_avg("+QString::number(i)+")"+ext;
-                uncerFileInfo.setFile(uncerFile);
+            while(uncerFileInfo0.exists()){
+                uncerFile0 = dir+"/"+arg1+"_uncer_minus_max("+QString::number(i)+")"+ext;
+                uncerFileInfo0.setFile(uncerFile0);
                 i++;
             }
-            ui->uncer_minus_avg_lineEdit->setText(uncerFile);
+            ui->uncer_minus_max_lineEdit->setText(uncerFile0);
+
+            //uncer 1
+            QString uncerFile1 = dir+"/"+arg1+"_uncer_minus_avg"+ext;
+            QFileInfo uncerFileInfo1(uncerFile1);
+            i = 1;
+            while(uncerFileInfo1.exists()){
+                uncerFile1 = dir+"/"+arg1+"_uncer_minus_avg("+QString::number(i)+")"+ext;
+                uncerFileInfo1.setFile(uncerFile1);
+                i++;
+            }
+            ui->uncer_minus_avg_lineEdit->setText(uncerFile1);
 
             //uncer 2
             QString uncerFile2 = dir+"/"+arg1+"_uncer_minus_weighted"+ext;
@@ -370,6 +386,17 @@ void mapInference::on_InferedProperty_comboBox_currentTextChanged(const QString 
                 i++;
             }
             ui->OutputSoilFile_lineEdit->setText(soilFile);
+
+            //uncer 1
+            QString uncerFile0 = dir+"\\"+arg1+"_uncer_minus_max"+ext;
+            QFileInfo uncerFileInfo0(uncerFile0);
+            i = 1;
+            while(uncerFileInfo0.exists()){
+                uncerFile0 = dir+"\\"+arg1+"_uncer_minus_max("+QString::number(i)+")"+ext;
+                uncerFileInfo0.setFile(uncerFile0);
+                i++;
+            }
+            ui->uncer_minus_max_lineEdit->setText(uncerFile0);
 
             //uncer 1
             QString uncerFile = dir+"\\"+arg1+"_uncer_minus_avg"+ext;

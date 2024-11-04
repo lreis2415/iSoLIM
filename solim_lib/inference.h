@@ -20,9 +20,11 @@ namespace solim {
         vector<Prototype>* Prototypes;
         string outSoilFilename;
         BaseIO *outSoilMap;
+        string outUncerFilename0;
         string outUncerFilename1;
         string outUncerFilename2;
         string outUncerFilename3;
+        BaseIO *outUncerMap0;
         BaseIO *outUncerMap1;
         BaseIO *outUncerMap2;
         BaseIO *outUncerMap3;
@@ -33,7 +35,7 @@ namespace solim {
 #endif
     public:
         Inference(EnvDataset *eds, vector<Prototype>* prototypes, double threshold,
-                  string outSoilFile, string uncer1,string uncer2,string uncer3,IntegrationMethod integrate = MINIMUM);
+                  string outSoilFile, string uncer0,string uncer1,string uncer2,string uncer3,IntegrationMethod integrate = MINIMUM);
         void Mapping(string targetVName,QProgressBar *progressBar);
         void MappingCategorical(string targetVName,string membershipFolder,QProgressBar *progressBar);
         static void inferMap(EnvDataset *eds, vector<Prototype>* prototypes, string targetVName, double threshold,

@@ -3,8 +3,8 @@
 
 namespace solim {
 Inference::Inference(EnvDataset *eds, vector<Prototype>* prototypes, double threshold,
-                     string outSoilFile, string uncer1,string uncer2,string uncer3,IntegrationMethod integrate):
-    EDS(eds),Prototypes(prototypes),Threshold(threshold), outSoilFilename(outSoilFile),outUncerFilename1(uncer1),outUncerFilename2(uncer2),outUncerFilename3(uncer3),
+                     string outSoilFile, string uncer0, string uncer1,string uncer2,string uncer3,IntegrationMethod integrate):
+    EDS(eds),Prototypes(prototypes),Threshold(threshold), outSoilFilename(outSoilFile),outUncerFilename0(uncer0),outUncerFilename1(uncer1),outUncerFilename2(uncer2),outUncerFilename3(uncer3),
     Integrate(integrate),outSoilMap(nullptr),outUncerMap1(nullptr),outUncerMap2(nullptr),outUncerMap3(nullptr){}
 
 void Inference::Mapping(string targetVName,QProgressBar *progressBar){
@@ -20,7 +20,8 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
     int block_size = EDS->Layers.at(0)->BlockSize;
     nx = EDS->XSize;
     ny = EDS->YSize;
-    float *uncertaintyValue1,*uncertaintyValue2,*uncertaintyValue3, *predictedValue;
+    float *uncertaintyValue0,*uncertaintyValue1,*uncertaintyValue2,*uncertaintyValue3, *predictedValue;
+    uncertaintyValue0 = new float[nx*ny];
     uncertaintyValue1 = new float[nx*ny];
     uncertaintyValue2 = new float[nx*ny];
     uncertaintyValue3 = new float[nx*ny];
@@ -28,6 +29,9 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
     outSoilMap = new BaseIO(EDS->LayerRef);
     outSoilMap->setFileName(outSoilFilename);
     outSoilMap->setNodataValue(NODATA);
+    outUncerMap0 = new BaseIO(EDS->LayerRef);
+    outUncerMap0->setFileName(outUncerFilename0);
+    outUncerMap0->setNodataValue(-1);
     outUncerMap1 = new BaseIO(EDS->LayerRef);
     outUncerMap1->setFileName(outUncerFilename1);
     outUncerMap1->setNodataValue(-1);
@@ -87,6 +91,7 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
                 envValues[k] = value;
             }
             if (!validEnvUnitFlag) {
+                uncertaintyValue0[n] = -1;
                 uncertaintyValue1[n] = -1;
                 uncertaintyValue2[n] = -1;
                 uncertaintyValue3[n] = -1;
@@ -121,6 +126,7 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
                 }
             }
             if (fabs(weightSum) < VERY_SMALL) {
+                uncertaintyValue0[n] = -1;
                 uncertaintyValue1[n] = -1;
                 uncertaintyValue2[n] = -1;
                 uncertaintyValue3[n] = -1;
@@ -128,6 +134,7 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
             }
             else {
                 predictedValue[n] = valueSum / weightSum;
+                uncertaintyValue0[n] = 1 - maxSimi;
                 uncertaintyValue1[n] = 1 - weightSum/sample_count;
                 uncertaintyValue2[n] = 1 - simi_sq_sum/weightSum;
                 uncertaintyValue3[n] = (sample_count - 2*weightSum+simi_sq_sum)/(sample_count-weightSum);
@@ -139,6 +146,7 @@ void Inference::Mapping(string targetVName,QProgressBar *progressBar){
 #endif
         EDS->LayerRef->localToGlobal(i, 0, 0, Xstart, Ystart);
         outSoilMap->write(Xstart, Ystart, ny, nx, predictedValue);
+        outUncerMap0->write(Xstart, Ystart, ny, nx, uncertaintyValue0);
         outUncerMap1->write(Xstart, Ystart, ny, nx, uncertaintyValue1);
         outUncerMap2->write(Xstart, Ystart, ny, nx, uncertaintyValue2);
         outUncerMap3->write(Xstart, Ystart, ny, nx, uncertaintyValue3);
